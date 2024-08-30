@@ -6,7 +6,7 @@ import ModelEditor from "./components/ModelEditor/ModelEditor";
 import { Provider } from "react-redux";
 import store from "./store";
 import { Group } from "three";
-import { ModelProvider } from "./components/Main/ModelContext";
+import { ModelProvider } from "./components/ModelContext";
 
 const App: React.FC = () => {
   const selectedModel = useSelector(

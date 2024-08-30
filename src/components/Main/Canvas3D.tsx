@@ -12,7 +12,7 @@ import {
   MeshPhongMaterial,
   MeshLambertMaterial,
 } from "three";
-import { ModelProvider } from "./ModelContext";
+import { ModelProvider } from "../ModelContext";
 import { ModelMetadata } from "../../store/slices/modelSlice";
 import SceneContent from "./SceneContent";
 
