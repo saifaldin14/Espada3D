@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { GizmoHelper, GizmoViewcube } from "@react-three/drei";
 import { useSelector } from "react-redux";
-import { Group, BoxGeometry, Mesh, MeshStandardMaterial } from "three";
+import {
+  Group,
+  BoxGeometry,
+  SphereGeometry,
+  CylinderGeometry,
+  Mesh,
+  MeshStandardMaterial,
+} from "three";
 import { ModelProvider } from "./ModelContext";
 import { ModelMetadata } from "../store/slices/modelSlice";
 import SceneContent from "./SceneContent";
@@ -21,14 +28,26 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
   const [models, setModels] = useState<{ [id: string]: Group }>({});
 
   useEffect(() => {
-    const newModels = { ...models }; // Start with the current models
+    const newModels = { ...models };
 
     modelsMetadata.forEach((meta: ModelMetadata) => {
       let modelGroup = newModels[meta.id];
 
       if (!modelGroup) {
         // Create new model if it doesn't exist
-        const geometry = new BoxGeometry(1, 1, 1);
+        let geometry;
+        switch (meta.type) {
+          case "sphere":
+            geometry = new SphereGeometry(0.5, 32, 32);
+            break;
+          case "cylinder":
+            geometry = new CylinderGeometry(0.5, 0.5, 1, 32);
+            break;
+          case "box":
+          default:
+            geometry = new BoxGeometry(1, 1, 1);
+        }
+
         const material = new MeshStandardMaterial({
           color: 0x00ff00,
           wireframe: showWireframe,
@@ -59,7 +78,7 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
       }
     });
 
-    setModels(newModels); // Update state with the new merged models
+    setModels(newModels); // Update state with the new models
   }, [modelsMetadata, showWireframe]);
 
   return (

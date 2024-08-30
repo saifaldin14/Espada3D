@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { createNewModel, selectModel } from "../store/slices/modelSlice";
+import {
+  createNewModel,
+  selectModel,
+  ModelMetadata,
+} from "../store/slices/modelSlice";
 import { setActiveTool, setGrid, setWireframe } from "../store/slices/uiSlice";
 import { FaArrowsAlt, FaSyncAlt, FaPlus, FaThLarge } from "react-icons/fa";
 import { FaArrowsLeftRight } from "react-icons/fa6";
@@ -18,6 +22,8 @@ import {
   FormControlLabel,
   Switch,
   FormLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 
 const Sidebar: React.FC = () => {
@@ -28,6 +34,10 @@ const Sidebar: React.FC = () => {
   const activeTool = useSelector((state: any) => state.ui.activeTool);
   const dispatch = useDispatch();
 
+  const [modelType, setModelType] = useState<"box" | "sphere" | "cylinder">(
+    "box"
+  );
+
   const handleModelSelect = (id: string) => {
     dispatch(selectModel(id));
   };
@@ -37,7 +47,7 @@ const Sidebar: React.FC = () => {
   };
 
   const handleCreateModel = () => {
-    dispatch(createNewModel({ type: "box" }));
+    dispatch(createNewModel({ type: modelType }));
   };
 
   const handleGridChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +66,7 @@ const Sidebar: React.FC = () => {
         Models
       </Typography>
       <List sx={styles.modelList}>
-        {models.map((model: any, index: number) => (
+        {models.map((model: ModelMetadata, index: number) => (
           <ListItem
             key={index}
             disablePadding
@@ -117,6 +127,17 @@ const Sidebar: React.FC = () => {
           <FaArrowsLeftRight />
         </IconButton>
       </Box>
+      <Select
+        value={modelType}
+        onChange={(e) =>
+          setModelType(e.target.value as "box" | "sphere" | "cylinder")
+        }
+        sx={styles.select}
+      >
+        <MenuItem value="box">Box</MenuItem>
+        <MenuItem value="sphere">Sphere</MenuItem>
+        <MenuItem value="cylinder">Cylinder</MenuItem>
+      </Select>
       <Button
         sx={styles.createButton}
         variant="contained"
@@ -175,6 +196,15 @@ const styles = {
     borderRadius: "8px",
     "&:hover": {
       backgroundColor: "#16a085",
+    },
+  },
+  select: {
+    marginBottom: "16px",
+    backgroundColor: "#1abc9c",
+    color: "#ecf0f1",
+    borderRadius: "8px",
+    "& .MuiSelect-select": {
+      padding: "10px",
     },
   },
   createButton: {

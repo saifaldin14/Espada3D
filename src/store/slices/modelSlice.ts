@@ -5,7 +5,7 @@ export type Vector3Tuple = [number, number, number];
 
 export interface ModelMetadata {
   id: string;
-  type: string; // To indicate the type of geometry, e.g., 'box'
+  type: 'box' | 'sphere' | 'cylinder'; // Update to include new types
   position: Vector3Tuple;
   rotation: Vector3Tuple;
   scale: Vector3Tuple;
@@ -43,7 +43,10 @@ const modelSlice = createSlice({
         model.scale = action.payload.scale;
       }
     },
-    createNewModel: (state, action: PayloadAction<{ type: string; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple }>) => {
+    createNewModel: (
+      state,
+      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple }>
+    ) => {
       const newModel: ModelMetadata = {
         id: uuidv4(), // Generate a new unique ID
         type: action.payload.type,
