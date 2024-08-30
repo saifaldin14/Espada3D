@@ -10,8 +10,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Typography,
+  Tooltip,
+  Box,
 } from "@mui/material";
 import { createNewModel, MaterialProperties } from "../store/slices/modelSlice";
+import { FaCube, FaGlobe, FaShapes } from "react-icons/fa";
 
 interface CreateModelModalProps {
   open: boolean;
@@ -32,13 +36,17 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
 
   const handleCreateModel = () => {
     dispatch(createNewModel({ type: modelType, material }));
-    onClose(); // Close the modal after creating the model
+    onClose();
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Create New Model</DialogTitle>
-      <DialogContent>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        <Typography variant="h6" component="div" align="center">
+          Create New Model
+        </Typography>
+      </DialogTitle>
+      <DialogContent dividers>
         <FormControl fullWidth sx={{ marginBottom: 2 }}>
           <InputLabel>Model Type</InputLabel>
           <Select
@@ -47,17 +55,29 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
               setModelType(e.target.value as "box" | "sphere" | "cylinder")
             }
             label="Model Type"
+            startAdornment={
+              <Tooltip title="Choose the shape of your model">
+                <Box sx={{ mr: 1, display: "flex", alignItems: "center" }}>
+                  {modelType === "box" && <FaCube />}
+                  {modelType === "sphere" && <FaGlobe />}
+                  {modelType === "cylinder" && <FaShapes />}
+                </Box>
+              </Tooltip>
+            }
           >
             <MenuItem value="box">Box</MenuItem>
             <MenuItem value="sphere">Sphere</MenuItem>
             <MenuItem value="cylinder">Cylinder</MenuItem>
           </Select>
+          <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
+            Select the 3D shape you want to create.
+          </Typography>
         </FormControl>
 
         <FormControl fullWidth>
           <InputLabel>Material</InputLabel>
           <Select
-            value={material}
+            value={material.type}
             onChange={(e) =>
               setMaterial({
                 type: e.target.value as "standard" | "phong" | "lambert",
@@ -69,13 +89,22 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
             <MenuItem value="phong">Phong</MenuItem>
             <MenuItem value="lambert">Lambert</MenuItem>
           </Select>
+          <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
+            Choose the material type to define how your model interacts with
+            light.
+          </Typography>
         </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="secondary">
+        <Button onClick={onClose} color="secondary" variant="outlined">
           Cancel
         </Button>
-        <Button onClick={handleCreateModel} color="primary">
+        <Button
+          onClick={handleCreateModel}
+          color="primary"
+          variant="contained"
+          sx={{ ml: 2 }}
+        >
           Create
         </Button>
       </DialogActions>

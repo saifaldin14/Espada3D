@@ -85,13 +85,6 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     }
   }, [selectedModelId, models]);
 
-  const resetAllModelColors = () => {
-    Object.values(models).forEach((model) => {
-      const mesh = model.children[0] as Mesh;
-      (mesh.material as MeshStandardMaterial).color.set(0x00ff00);
-    });
-  };
-
   const handleObjectClick = (
     mesh: Object3D<Object3DEventMap>,
     uuid: string
@@ -99,8 +92,6 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     const modelId = uuidToModelId.current[uuid];
 
     if (modelId && selectedModelId !== modelId) {
-      resetAllModelColors();
-
       selectedMeshRef.current = mesh as Mesh;
       dispatch(selectModel(modelId));
     }
