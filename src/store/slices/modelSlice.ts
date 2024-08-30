@@ -29,7 +29,7 @@ const modelSlice = createSlice({
       state.models.push(action.payload);
       state.selectedModelId = action.payload.id;  // Automatically select the new model
     },
-    selectModel: (state, action: PayloadAction<string>) => {
+    selectModel: (state, action: PayloadAction<string | null>) => {
       state.selectedModelId = action.payload;
     },
     updateModelTransform: (
