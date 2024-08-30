@@ -112,98 +112,98 @@ const ModelEditor: React.FC = () => {
       <Typography variant="h5" sx={styles.title}>
         Model Editor
       </Typography>
+      <Box sx={styles.scrollContainer}>
+        <Typography variant="h6" sx={styles.subTitle}>
+          {activeTool
+            ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
+            : ""}
+        </Typography>
+        <Grid container spacing={2}>
+          {["X", "Y", "Z"].map((axis, i) => (
+            <Grid item xs={12} key={i}>
+              <Card sx={styles.card}>
+                <CardContent sx={styles.cardContent}>
+                  <Box sx={styles.cardHeader}>
+                    <Typography variant="h6" component="div">
+                      {axis}
+                    </Typography>
+                    <IconButton sx={styles.iconButton}>
+                      <Transform />
+                    </IconButton>
+                  </Box>
+                  <TextField
+                    value={
+                      activeTool === "translate"
+                        ? position[i]
+                        : activeTool === "rotate"
+                        ? rotation[i]
+                        : scale[i]
+                    }
+                    type="number"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    onChange={(e) =>
+                      handleTransformChange(i, parseFloat(e.target.value))
+                    }
+                    sx={styles.textField}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
 
-      <Typography variant="h6" sx={styles.subTitle}>
-        {activeTool
-          ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
-          : ""}
-      </Typography>
-
-      <Grid container spacing={2}>
-        {["X", "Y", "Z"].map((axis, i) => (
-          <Grid item xs={12} key={i}>
+          {/* Material Editor Section */}
+          <Grid item xs={12}>
             <Card sx={styles.card}>
               <CardContent sx={styles.cardContent}>
-                <Box sx={styles.cardHeader}>
-                  <Typography variant="h6" component="div">
-                    {axis}
-                  </Typography>
-                  <IconButton sx={styles.iconButton}>
-                    <Transform />
-                  </IconButton>
-                </Box>
-                <TextField
-                  value={
-                    activeTool === "translate"
-                      ? position[i]
-                      : activeTool === "rotate"
-                      ? rotation[i]
-                      : scale[i]
+                <Typography variant="h6" sx={styles.subTitle}>
+                  Material
+                </Typography>
+                <FormControl fullWidth sx={{ marginBottom: 2 }}>
+                  <InputLabel>Material Type</InputLabel>
+                  <Select
+                    value={materialType}
+                    onChange={(e) => {
+                      setMaterialType(
+                        e.target.value as "standard" | "phong" | "lambert"
+                      );
+                      handleMaterialChange("type", e.target.value);
+                    }}
+                    label="Material Type"
+                  >
+                    <MenuItem value="standard">Standard</MenuItem>
+                    <MenuItem value="phong">Phong</MenuItem>
+                    <MenuItem value="lambert">Lambert</MenuItem>
+                  </Select>
+                </FormControl>
+                <Typography variant="body1" sx={{ marginBottom: 1 }}>
+                  Color
+                </Typography>
+                <SketchPicker
+                  color={color}
+                  onChange={(color: { hex: React.SetStateAction<string> }) => {
+                    setColor(color.hex);
+                    handleMaterialChange("color", color.hex);
+                  }}
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={wireframe}
+                      onChange={(e) => {
+                        setWireframe(e.target.checked);
+                        handleMaterialChange("wireframe", e.target.checked);
+                      }}
+                    />
                   }
-                  type="number"
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  onChange={(e) =>
-                    handleTransformChange(i, parseFloat(e.target.value))
-                  }
-                  sx={styles.textField}
+                  label="Wireframe"
                 />
               </CardContent>
             </Card>
           </Grid>
-        ))}
-
-        {/* Material Editor Section */}
-        <Grid item xs={12}>
-          <Card sx={styles.card}>
-            <CardContent sx={styles.cardContent}>
-              <Typography variant="h6" sx={styles.subTitle}>
-                Material
-              </Typography>
-              <FormControl fullWidth sx={{ marginBottom: 2 }}>
-                <InputLabel>Material Type</InputLabel>
-                <Select
-                  value={materialType}
-                  onChange={(e) => {
-                    setMaterialType(
-                      e.target.value as "standard" | "phong" | "lambert"
-                    );
-                    handleMaterialChange("type", e.target.value);
-                  }}
-                  label="Material Type"
-                >
-                  <MenuItem value="standard">Standard</MenuItem>
-                  <MenuItem value="phong">Phong</MenuItem>
-                  <MenuItem value="lambert">Lambert</MenuItem>
-                </Select>
-              </FormControl>
-              <Typography variant="body1" sx={{ marginBottom: 1 }}>
-                Color
-              </Typography>
-              <SketchPicker
-                color={color}
-                onChange={(color: { hex: React.SetStateAction<string> }) => {
-                  setColor(color.hex);
-                  handleMaterialChange("color", color.hex);
-                }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={wireframe}
-                    onChange={(e) => {
-                      setWireframe(e.target.checked);
-                      handleMaterialChange("wireframe", e.target.checked);
-                    }}
-                  />
-                }
-                label="Wireframe"
-              />
-            </CardContent>
-          </Card>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 };
@@ -214,6 +214,7 @@ const styles = {
     background: "#f5f5f5",
     borderRadius: "8px",
     width: "260px",
+    height: "98vh",
     boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
   },
   title: {
@@ -224,6 +225,10 @@ const styles = {
     marginBottom: "8px",
     fontWeight: "bold",
     color: "#555",
+  },
+  scrollContainer: {
+    overflowY: "auto" as "auto", // Enable scrolling
+    maxHeight: "calc(100vh - 80px)", // Adjust based on other elements' height
   },
   card: {
     background: "#ffffff",

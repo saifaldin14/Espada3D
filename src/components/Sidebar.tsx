@@ -19,7 +19,7 @@ import {
   FormLabel,
   Button,
 } from "@mui/material";
-import CreateModelModal from "./CreateModelModal"; // Import the modal component
+import CreateModelModal from "./CreateModelModal";
 
 const Sidebar: React.FC = () => {
   const models = useSelector((state: any) => state.models.models);
@@ -62,35 +62,37 @@ const Sidebar: React.FC = () => {
       <Typography variant="h5" sx={styles.header}>
         Models
       </Typography>
-      <List sx={styles.modelList}>
-        {models.map((model: any, index: number) => (
-          <ListItem
-            key={index}
-            disablePadding
-            sx={{
-              backgroundColor:
-                model.id === selectedModelId ? "#1abc9c" : "#34495e",
-              borderRadius: 1,
-              mb: 1,
-              transition: "background-color 0.3s",
-              "&:hover": {
+      <Box sx={styles.scrollContainer}>
+        <List sx={styles.modelList}>
+          {models.map((model: any, index: number) => (
+            <ListItem
+              key={index}
+              disablePadding
+              sx={{
                 backgroundColor:
-                  model.id === selectedModelId ? "#16a085" : "#2c3e50",
-              },
-            }}
-          >
-            <ListItemButton
-              onClick={() => handleModelSelect(model.id)}
-              sx={styles.modelItemButton}
+                  model.id === selectedModelId ? "#1abc9c" : "#34495e",
+                borderRadius: 1,
+                mb: 1,
+                transition: "background-color 0.3s",
+                "&:hover": {
+                  backgroundColor:
+                    model.id === selectedModelId ? "#16a085" : "#2c3e50",
+                },
+              }}
             >
-              <ListItemText
-                primary={`Model ${index + 1}`}
-                sx={styles.modelItemText}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
+              <ListItemButton
+                onClick={() => handleModelSelect(model.id)}
+                sx={styles.modelItemButton}
+              >
+                <ListItemText
+                  primary={`Model ${index + 1}`}
+                  sx={styles.modelItemText}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
       <Divider sx={styles.divider} />
       <Typography variant="h5" sx={styles.header}>
         Controls
@@ -160,6 +162,7 @@ const styles = {
     padding: "16px",
     boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
     borderRadius: "8px",
+    height: "98vh",
   },
   header: {
     marginBottom: "16px",
@@ -169,6 +172,10 @@ const styles = {
   divider: {
     marginBottom: "16px",
     backgroundColor: "#95a5a6",
+  },
+  scrollContainer: {
+    overflowY: "auto" as "auto",
+    flexGrow: 1,
   },
   toolButtons: {
     display: "flex",
