@@ -107,16 +107,18 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         selectedMeshRef.current = null;
       }
     } else {
-      if (transformControlsRef.current) {
-        transformControlsRef.current.detach();
-      }
-      if (outlineMeshRef.current) {
-        outlineMeshRef.current.visible = false;
-      }
+      const model: ModelMetadata = sceneModels.find(
+        (m: any) => m.id === selectedModelId
+      );
 
-      if (selectedMeshRef.current) {
+      if (!model && selectedMeshRef.current) {
         selectedMeshRef.current.visible = false;
+        selectedMeshRef.current.removeFromParent();
         selectedMeshRef.current.remove();
+
+        if (transformControlsRef.current) transformControlsRef.current.detach();
+
+        if (outlineMeshRef.current) outlineMeshRef.current.visible = false;
       }
 
       selectedMeshRef.current = null;
