@@ -86,11 +86,11 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, acti
   return (
     <>
       <OrbitControls ref={orbitControlsRef} makeDefault />
-      {selectedModel && activeTool && selectedMeshRef.current && (
+      { selectedMeshRef.current && (
         <TransformControls
           ref={transformControlsRef}
-          object={selectedMeshRef.current}  // Pass the selected mesh directly
-          mode={activeTool}
+          object={selectedMeshRef.current}
+          mode={activeTool ?? 'translate'}
           onObjectChange={handleTransformChange}
         />
       )}
