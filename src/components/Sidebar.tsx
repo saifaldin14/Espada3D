@@ -1,13 +1,15 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { createNewModel, selectModel } from '../store/slices/modelSlice';
-import { setActiveTool } from '../store/slices/uiSlice';
-import { FaArrowsAlt, FaSyncAlt, FaPlus } from 'react-icons/fa';
+import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { createNewModel, selectModel } from "../store/slices/modelSlice";
+import { setActiveTool } from "../store/slices/uiSlice";
+import { FaArrowsAlt, FaSyncAlt, FaPlus } from "react-icons/fa";
 import { FaArrowsLeftRight } from "react-icons/fa6";
 
 const Sidebar: React.FC = () => {
   const models = useSelector((state: any) => state.models.models);
-  const selectedModelId = useSelector((state: any) => state.models.selectedModelId);
+  const selectedModelId = useSelector(
+    (state: any) => state.models.selectedModelId
+  );
   const activeTool = useSelector((state: any) => state.ui.activeTool);
   const dispatch = useDispatch();
 
@@ -15,12 +17,12 @@ const Sidebar: React.FC = () => {
     dispatch(selectModel(id));
   };
 
-  const handleToolSelect = (tool: 'translate' | 'rotate' | 'scale') => {
+  const handleToolSelect = (tool: "translate" | "rotate" | "scale") => {
     dispatch(setActiveTool(tool));
   };
 
   const handleCreateModel = () => {
-    dispatch(createNewModel({ type: 'box' }));
+    dispatch(createNewModel({ type: "box" }));
   };
 
   return (
@@ -33,7 +35,8 @@ const Sidebar: React.FC = () => {
               key={index}
               style={{
                 ...styles.modelItem,
-                backgroundColor: model.id === selectedModelId ? '#1abc9c' : '#34495e', // Highlight selected model
+                backgroundColor:
+                  model.id === selectedModelId ? "#1abc9c" : "#34495e", // Highlight selected model
               }}
               onClick={() => handleModelSelect(model.id)} // Pass the model ID
             >
@@ -48,27 +51,27 @@ const Sidebar: React.FC = () => {
           <button
             style={{
               ...styles.toolButton,
-              background: activeTool === 'translate' ? '#16a085' : '#1abc9c',
+              background: activeTool === "translate" ? "#16a085" : "#1abc9c",
             }}
-            onClick={() => handleToolSelect('translate')}
+            onClick={() => handleToolSelect("translate")}
           >
             <FaArrowsAlt />
           </button>
           <button
             style={{
               ...styles.toolButton,
-              background: activeTool === 'rotate' ? '#16a085' : '#1abc9c',
+              background: activeTool === "rotate" ? "#16a085" : "#1abc9c",
             }}
-            onClick={() => handleToolSelect('rotate')}
+            onClick={() => handleToolSelect("rotate")}
           >
             <FaSyncAlt />
           </button>
           <button
             style={{
               ...styles.toolButton,
-              background: activeTool === 'scale' ? '#16a085' : '#1abc9c',
+              background: activeTool === "scale" ? "#16a085" : "#1abc9c",
             }}
-            onClick={() => handleToolSelect('scale')}
+            onClick={() => handleToolSelect("scale")}
           >
             <FaArrowsLeftRight />
           </button>
@@ -83,62 +86,62 @@ const Sidebar: React.FC = () => {
 
 const styles = {
   sidebar: {
-    width: '240px',
-    background: '#2c3e50',
-    color: '#ecf0f1',
-    padding: '10px',
-    display: 'flex',
-    flexDirection: 'column' as 'column', // Ensure correct flex direction
+    width: "240px",
+    background: "#2c3e50",
+    color: "#ecf0f1",
+    padding: "10px",
+    display: "flex",
+    flexDirection: "column" as "column", // Ensure correct flex direction
   },
   toolbar: {
-    background: '#2c3e50',
-    color: '#ecf0f1',
-    display: 'flex',
-    flexDirection: 'column' as 'column',
-    padding: '10px',
-    width: '240px',
+    background: "#2c3e50",
+    color: "#ecf0f1",
+    display: "flex",
+    flexDirection: "column" as "column",
+    padding: "10px",
+    width: "240px",
   },
   toolButtons: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '10px',
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "10px",
   },
   toolButton: {
-    background: '#1abc9c',
-    color: '#ecf0f1',
-    border: 'none',
-    padding: '10px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'background 0.3s',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '30%',
+    background: "#1abc9c",
+    color: "#ecf0f1",
+    border: "none",
+    padding: "10px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    transition: "background 0.3s",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "30%",
   },
   createButton: {
-    background: '#1abc9c',
-    color: '#ecf0f1',
-    border: 'none',
-    padding: '10px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'background 0.3s',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    background: "#1abc9c",
+    color: "#ecf0f1",
+    border: "none",
+    padding: "10px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    transition: "background 0.3s",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
   modelList: {
-    listStyleType: 'none',
+    listStyleType: "none",
     padding: 0,
   },
   modelItem: {
-    padding: '8px',
-    cursor: 'pointer',
-    marginBottom: '5px',
-    borderRadius: '4px',
-    transition: 'background-color 0.3s',
+    padding: "8px",
+    cursor: "pointer",
+    marginBottom: "5px",
+    borderRadius: "4px",
+    transition: "background-color 0.3s",
   },
 };
 

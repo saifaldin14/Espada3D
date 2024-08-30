@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { GizmoHelper, GizmoViewcube } from '@react-three/drei';
-import { useSelector } from 'react-redux';
-import { Group, BoxGeometry, Mesh, MeshStandardMaterial } from 'three';
-import { ModelProvider } from './ModelContext';
-import { ModelMetadata } from '../store/slices/modelSlice';
-import SceneContent from './SceneContent';
+import React, { useState, useEffect } from "react";
+import { Canvas } from "@react-three/fiber";
+import { GizmoHelper, GizmoViewcube } from "@react-three/drei";
+import { useSelector } from "react-redux";
+import { Group, BoxGeometry, Mesh, MeshStandardMaterial } from "three";
+import { ModelProvider } from "./ModelContext";
+import { ModelMetadata } from "../store/slices/modelSlice";
+import SceneContent from "./SceneContent";
 
 interface Canvas3DProps {
   selectedModel: Group | null;
 }
 
 const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
-  const modelsMetadata = useSelector((state: any) => state.models.models) as ModelMetadata[];
+  const modelsMetadata = useSelector(
+    (state: any) => state.models.models
+  ) as ModelMetadata[];
   const activeTool = useSelector((state: any) => state.ui.activeTool);
   const [models, setModels] = useState<{ [id: string]: Group }>({});
 
@@ -20,7 +22,8 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
     const newModels = { ...models }; // Start with the current models
 
     modelsMetadata.forEach((meta: ModelMetadata) => {
-      if (!newModels[meta.id]) {  // Only add new models that don't already exist
+      if (!newModels[meta.id]) {
+        // Only add new models that don't already exist
         const geometry = new BoxGeometry(1, 1, 1);
         const material = new MeshStandardMaterial({ color: 0x00ff00 });
         const mesh = new Mesh(geometry, material);
@@ -33,7 +36,7 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
       }
     });
 
-    setModels(newModels);  // Update state with the new merged models
+    setModels(newModels); // Update state with the new merged models
   }, [modelsMetadata]);
 
   return (
@@ -41,7 +44,11 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
       <ModelProvider selectedModel={selectedModel}>
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
-        <SceneContent models={models} selectedModel={selectedModel} activeTool={activeTool} />
+        <SceneContent
+          models={models}
+          selectedModel={selectedModel}
+          activeTool={activeTool}
+        />
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewcube />
         </GizmoHelper>
