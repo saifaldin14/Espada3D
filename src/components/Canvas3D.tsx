@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { GizmoHelper, GizmoViewcube, OrbitControls, TransformControls } from '@react-three/drei';
-import { useSelector, useDispatch } from 'react-redux';
-import { Group, Mesh, BoxGeometry, MeshStandardMaterial, Color } from 'three';
+import { GizmoHelper, GizmoViewcube } from '@react-three/drei';
+import { useSelector } from 'react-redux';
+import { Group, BoxGeometry, Mesh, MeshStandardMaterial } from 'three';
 import { ModelProvider } from './ModelContext';
-import { ModelMetadata, updateModelTransform, selectModel } from '../store/slices/modelSlice';
+import { ModelMetadata } from '../store/slices/modelSlice';
 import SceneContent from './SceneContent';
 
 interface Canvas3DProps {
