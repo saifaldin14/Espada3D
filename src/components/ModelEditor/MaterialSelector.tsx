@@ -1,6 +1,6 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { updateModelMaterial } from "../store/slices/modelSlice";
+import { updateModelMaterial } from "../../store/slices/modelSlice";
 import {
   Select,
   MenuItem,
