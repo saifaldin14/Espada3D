@@ -1,9 +1,8 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { createNewModel, selectModel } from "../store/slices/modelSlice";
-import { setActiveTool } from "../store/slices/uiSlice";
-import { FaArrowsAlt, FaSyncAlt, FaPlus } from "react-icons/fa";
-import { FaArrowsLeftRight } from "react-icons/fa6";
+import { setActiveTool, toggleGrid } from "../store/slices/uiSlice";
+import { FaArrowsAlt, FaSyncAlt, FaPlus, FaThLarge } from "react-icons/fa";
 import {
   Box,
   Typography,
@@ -96,7 +95,7 @@ const Sidebar: React.FC = () => {
           }}
           onClick={() => handleToolSelect("scale")}
         >
-          <FaArrowsLeftRight />
+          <FaArrowsAlt />
         </IconButton>
       </Box>
       <Button
@@ -106,6 +105,14 @@ const Sidebar: React.FC = () => {
         onClick={handleCreateModel}
       >
         Create Model
+      </Button>
+      <Button
+        sx={styles.gridButton}
+        variant="contained"
+        startIcon={<FaThLarge />}
+        onClick={() => dispatch(toggleGrid())} // Toggle grid visibility
+      >
+        Toggle Grid
       </Button>
     </Box>
   );
@@ -148,6 +155,13 @@ const styles = {
   createButton: {
     marginTop: 2,
     backgroundColor: "#1abc9c",
+    "&:hover": {
+      backgroundColor: "#16a085",
+    },
+  },
+  gridButton: {
+    marginTop: 2,
+    backgroundColor: "#34495e",
     "&:hover": {
       backgroundColor: "#16a085",
     },

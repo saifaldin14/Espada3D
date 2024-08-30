@@ -16,6 +16,7 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
     (state: any) => state.models.models
   ) as ModelMetadata[];
   const activeTool = useSelector((state: any) => state.ui.activeTool);
+  const showGrid = useSelector((state: any) => state.ui.showGrid); // Get grid visibility from Redux
   const [models, setModels] = useState<{ [id: string]: Group }>({});
 
   useEffect(() => {
@@ -44,6 +45,7 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
       <ModelProvider selectedModel={selectedModel}>
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
+        {showGrid && <gridHelper args={[10, 10]} />}{" "}
         <SceneContent models={models} activeTool={activeTool} />
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewcube />
