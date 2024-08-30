@@ -1,13 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UIState {
-  activeTool: string | null; // Can store the current tool like 'translate', 'rotate', etc.
+  activeTool: 'translate' | 'rotate' | 'scale'; // Can store the current tool like 'translate', 'rotate', etc.
   isSidebarOpen: boolean;    // Toggle the visibility of the sidebar
   isEditorOpen: boolean;     // Toggle the visibility of the model editor
 }
 
 const initialState: UIState = {
-  activeTool: null,
+  activeTool: 'translate',  // Default tool set to 'translate'
   isSidebarOpen: true,
   isEditorOpen: true,
 };
@@ -16,7 +16,7 @@ const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    setActiveTool: (state, action: PayloadAction<string | null>) => {
+    setActiveTool: (state, action: PayloadAction<'translate' | 'rotate' | 'scale'>) => {
       state.activeTool = action.payload;
     },
     toggleSidebar: (state) => {
@@ -29,5 +29,4 @@ const uiSlice = createSlice({
 });
 
 export const { setActiveTool, toggleSidebar, toggleEditor } = uiSlice.actions;
-
 export default uiSlice.reducer;

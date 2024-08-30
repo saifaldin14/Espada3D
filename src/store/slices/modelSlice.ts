@@ -27,7 +27,7 @@ const modelSlice = createSlice({
   reducers: {
     addModel: (state, action: PayloadAction<ModelMetadata>) => {
       state.models.push(action.payload);
-      state.selectedModelId = action.payload.id;
+      state.selectedModelId = action.payload.id;  // Automatically select the new model
     },
     selectModel: (state, action: PayloadAction<string>) => {
       state.selectedModelId = action.payload;
@@ -52,7 +52,7 @@ const modelSlice = createSlice({
         scale: action.payload.scale || [1, 1, 1],
       };
       state.models.push(newModel);
-      state.selectedModelId = newModel.id;
+      state.selectedModelId = newModel.id;  // Automatically select the new model
     },
     removeModel: (state, action: PayloadAction<string>) => {
       state.models = state.models.filter((model) => model.id !== action.payload);
