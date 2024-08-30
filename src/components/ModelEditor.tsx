@@ -1,45 +1,36 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { useModel } from './ModelContext'; // Import the custom hook
-
-type Vector3Tuple = [number, number, number]; // Define a tuple type
+import { useSelector, useDispatch } from 'react-redux';
+import { useModel } from './ModelContext';
+import { updateModelTransform } from '../store/slices/modelSlice';
 
 const ModelEditor: React.FC = () => {
   const { selectedModel } = useModel();
+  const selectedModelId = useSelector((state: any) => state.models.selectedModelId);
   const dispatch = useDispatch();
 
-  const [position, setPosition] = useState<Vector3Tuple>([0, 0, 0]);
-  const [rotation, setRotation] = useState<Vector3Tuple>([0, 0, 0]);
-  const [scale, setScale] = useState<Vector3Tuple>([1, 1, 1]);
+  const [position, setPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]);
+  const [scale, setScale] = useState<[number, number, number]>([1, 1, 1]);
 
   const handlePositionChange = (axis: number, value: number) => {
-    const newPosition: Vector3Tuple = [...position]; // Spread and enforce tuple type
+    const newPosition: [number, number, number] = [...position];
     newPosition[axis] = value;
     setPosition(newPosition);
-
-    if (selectedModel) {
-      selectedModel.position.set(...newPosition); // Spread as tuple
-    }
+    dispatch(updateModelTransform({ id: selectedModelId, position: newPosition, rotation, scale }));
   };
 
   const handleRotationChange = (axis: number, value: number) => {
-    const newRotation: Vector3Tuple = [...rotation];
+    const newRotation: [number, number, number] = [...rotation];
     newRotation[axis] = value;
     setRotation(newRotation);
-
-    if (selectedModel) {
-      selectedModel.rotation.set(...newRotation);
-    }
+    dispatch(updateModelTransform({ id: selectedModelId, position, rotation: newRotation, scale }));
   };
 
   const handleScaleChange = (axis: number, value: number) => {
-    const newScale: Vector3Tuple = [...scale];
+    const newScale: [number, number, number] = [...scale];
     newScale[axis] = value;
     setScale(newScale);
-
-    if (selectedModel) {
-      selectedModel.scale.set(...newScale);
-    }
+    dispatch(updateModelTransform({ id: selectedModelId, position, rotation, scale: newScale }));
   };
 
   return (

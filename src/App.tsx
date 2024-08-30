@@ -20,7 +20,6 @@ const App: React.FC = () => {
           <Toolbar />
           <Canvas3D selectedModel={selectedModel} />
         </div>
-        {/* Wrap ModelEditor in its own ModelProvider */}
         <ModelProvider selectedModel={selectedModel}>
           <ModelEditor />
         </ModelProvider>

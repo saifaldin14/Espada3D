@@ -6,8 +6,8 @@ const Sidebar: React.FC = () => {
   const models = useSelector((state: any) => state.models.models); // Adjust based on your state structure
   const dispatch = useDispatch();
 
-  const handleModelSelect = (index: number) => {
-    dispatch(selectModel(index));
+  const handleModelSelect = (id: string) => {
+    dispatch(selectModel(id));
   };
 
   return (
@@ -18,7 +18,7 @@ const Sidebar: React.FC = () => {
           <li
             key={index}
             style={styles.modelItem}
-            onClick={() => handleModelSelect(index)}
+            onClick={() => handleModelSelect(model.id)} // Pass the model ID
           >
             Model {index + 1}
           </li>

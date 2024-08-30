@@ -1,41 +1,46 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Group, Mesh, BoxGeometry, MeshStandardMaterial } from 'three';
 
-interface ModelState {
-  models: Array<Group>;
-  selectedModel: Group | null;
+export type Vector3Tuple = [number, number, number];
+
+export interface ModelMetadata {
+  id: string;
+  type: string; // To indicate the type of geometry, e.g., 'box'
+  position: Vector3Tuple;
+  rotation: Vector3Tuple;
+  scale: Vector3Tuple;
+}
+
+export interface ModelState {
+  models: Array<ModelMetadata>;
+  selectedModelId: string | null;
 }
 
 const initialState: ModelState = {
   models: [],
-  selectedModel: null,
+  selectedModelId: null,
 };
 
 const modelSlice = createSlice({
   name: 'models',
   initialState,
   reducers: {
-    addModel: (state, action: PayloadAction<Group>) => {
+    addModel: (state, action: PayloadAction<ModelMetadata>) => {
       state.models.push(action.payload);
-      state.selectedModel = action.payload;
+      state.selectedModelId = action.payload.id;
     },
-    selectModel: (state, action: PayloadAction<number>) => {
-      state.selectedModel = state.models[action.payload];
+    selectModel: (state, action: PayloadAction<string>) => {
+      state.selectedModelId = action.payload;
     },
-    // Additional actions for model manipulation can be added here
-  },
-  extraReducers: (builder) => {
-    builder.addCase('CREATE_NEW_MODEL', (state) => {
-      const geometry = new BoxGeometry(1, 1, 1); // Example: Create a box geometry
-      const material = new MeshStandardMaterial({ color: 0x00ff00 });
-      const mesh = new Mesh(geometry, material);
-      const newModel = new Group();
-      newModel.add(mesh);
-      state.models.push(newModel);
-      state.selectedModel = newModel;
-    });
+    updateModelTransform: (state, action: PayloadAction<{ id: string, position: Vector3Tuple, rotation: Vector3Tuple, scale: Vector3Tuple }>) => {
+      const model = state.models.find(m => m.id === action.payload.id);
+      if (model) {
+        model.position = action.payload.position;
+        model.rotation = action.payload.rotation;
+        model.scale = action.payload.scale;
+      }
+    },
   },
 });
 
-export const { addModel, selectModel } = modelSlice.actions;
+export const { addModel, selectModel, updateModelTransform } = modelSlice.actions;
 export default modelSlice.reducer;

@@ -20,13 +20,10 @@ interface ModelProviderProps {
   children: ReactNode;
 }
 
-export const ModelProvider: React.FC<ModelProviderProps> = ({
-  selectedModel,
-  children,
-}) => {
+export const ModelProvider: React.FC<ModelProviderProps> = ({ selectedModel, children }) => {
   return (
     <ModelContext.Provider value={{ selectedModel }}>
-      {children} {/* Render children here */}
+      {children}
     </ModelContext.Provider>
   );
 };
