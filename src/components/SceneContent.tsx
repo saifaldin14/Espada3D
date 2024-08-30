@@ -11,30 +11,43 @@ import {
   Object3DEventMap,
 } from "three";
 import { useDispatch, useSelector } from "react-redux";
-import { updateModelTransform, selectModel } from "../store/slices/modelSlice";
+import {
+  updateModelTransform,
+  selectModel,
+  ModelMetadata,
+} from "../store/slices/modelSlice";
 
 interface SceneContentProps {
   models: { [id: string]: Group };
-  selectedModel: Group | null;
   activeTool: "translate" | "rotate" | "scale" | null;
 }
 
-const SceneContent: React.FC<SceneContentProps> = ({
-  models,
-  selectedModel,
-  activeTool,
-}) => {
+const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   const transformControlsRef = useRef<any>(null);
   const orbitControlsRef = useRef<any>(null);
   const dispatch = useDispatch();
-  const { camera, gl, scene } = useThree();
   const selectedModelId = useSelector(
     (state: any) => state.models.selectedModelId
   );
+  const sceneModels = useSelector((state: any) => state.models.models);
   const selectedMeshRef = useRef<Mesh | null>(null);
 
   // Map to store the relation between model ID and object UUID
   const uuidToModelId = useRef<{ [uuid: string]: string }>({});
+
+  useEffect(() => {
+    if (transformControlsRef.current) {
+      const controls = transformControlsRef.current;
+      const orbitControls = orbitControlsRef.current;
+
+      controls.addEventListener(
+        "dragging-changed",
+        (event: { value: boolean }) => {
+          if (orbitControls) orbitControls.enabled = !event.value;
+        }
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const newUuidToModelId: { [uuid: string]: string } = {};
@@ -43,6 +56,45 @@ const SceneContent: React.FC<SceneContentProps> = ({
     });
     uuidToModelId.current = newUuidToModelId;
   }, [models]);
+
+  useEffect(() => {
+    // Set model transforms when they change by ModelEditor
+    const model: ModelMetadata = sceneModels.find(
+      (m: any) => m.id === selectedModelId
+    );
+    if (model && selectedMeshRef.current) {
+      selectedMeshRef.current.position.set(...model.position);
+      selectedMeshRef.current.rotation.set(...model.rotation);
+      selectedMeshRef.current.scale.set(...model.scale);
+    }
+  }, [sceneModels]);
+
+  useEffect(() => {
+    if (selectedModelId) {
+      const selectedGroup = models[selectedModelId];
+      if (selectedGroup) {
+        selectedMeshRef.current = selectedGroup.children[0] as Mesh;
+
+        resetAllModelColors();
+
+        if (selectedMeshRef.current) {
+          (selectedMeshRef.current.material as MeshStandardMaterial).color.set(
+            0x0000ff
+          ); // Blue color
+
+          // Attach TransformControls to the newly selected mesh
+          if (transformControlsRef.current) {
+            transformControlsRef.current.attach(selectedMeshRef.current);
+          }
+        }
+      }
+    } else {
+      // Detach TransformControls if no model is selected
+      if (transformControlsRef.current) {
+        transformControlsRef.current.detach();
+      }
+    }
+  }, [selectedModelId, models]);
 
   const resetAllModelColors = () => {
     Object.values(models).forEach((model) => {
@@ -103,47 +155,6 @@ const SceneContent: React.FC<SceneContentProps> = ({
       );
     }
   };
-
-  useEffect(() => {
-    if (selectedModelId) {
-      const selectedGroup = models[selectedModelId];
-      if (selectedGroup) {
-        selectedMeshRef.current = selectedGroup.children[0] as Mesh;
-
-        resetAllModelColors();
-
-        if (selectedMeshRef.current) {
-          (selectedMeshRef.current.material as MeshStandardMaterial).color.set(
-            0x0000ff
-          ); // Blue color
-
-          // Attach TransformControls to the newly selected mesh
-          if (transformControlsRef.current) {
-            transformControlsRef.current.attach(selectedMeshRef.current);
-          }
-        }
-      }
-    } else {
-      // Detach TransformControls if no model is selected
-      if (transformControlsRef.current) {
-        transformControlsRef.current.detach();
-      }
-    }
-  }, [selectedModelId, models]);
-
-  useEffect(() => {
-    if (transformControlsRef.current) {
-      const controls = transformControlsRef.current;
-      const orbitControls = orbitControlsRef.current;
-
-      controls.addEventListener(
-        "dragging-changed",
-        (event: { value: boolean }) => {
-          if (orbitControls) orbitControls.enabled = !event.value;
-        }
-      );
-    }
-  }, []);
 
   return (
     <>

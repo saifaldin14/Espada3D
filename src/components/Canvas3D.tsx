@@ -44,11 +44,7 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
       <ModelProvider selectedModel={selectedModel}>
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
-        <SceneContent
-          models={models}
-          selectedModel={selectedModel}
-          activeTool={activeTool}
-        />
+        <SceneContent models={models} activeTool={activeTool} />
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewcube />
         </GizmoHelper>
