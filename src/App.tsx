@@ -12,16 +12,14 @@ const App: React.FC = () => {
   const selectedModel = useSelector((state: any) => state.models.selectedModel) as Group | null;
 
   return (
-    <Provider store={store}>
-      <div style={styles.container}>
-        <Sidebar />
-        <div style={styles.mainContent}>
-          <Toolbar />
-          <Canvas3D selectedModel={selectedModel} /> {/* Pass selectedModel as a prop */}
-        </div>
-        <ModelEditor /> {/* Add this here or within the Sidebar */}
+    <div style={styles.container}>
+      <Sidebar />
+      <div style={styles.mainContent}>
+        <Toolbar />
+        <Canvas3D selectedModel={selectedModel} />
       </div>
-    </Provider>
+      <ModelEditor />
+    </div>
   );
 };
 
@@ -36,4 +34,8 @@ const styles = {
   },
 };
 
-export default App;
+export default () => (
+  <Provider store={store}>
+    <App />
+  </Provider>
+);
