@@ -16,7 +16,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, acti
   const orbitControlsRef = useRef<any>(null);
   const selectedMeshRef = useRef<Mesh | null>(null);
   const dispatch = useDispatch();
-  const { camera, gl } = useThree();
+  const { camera, gl, scene } = useThree();  // Added 'scene' to ensure TransformControls are updated correctly
   const selectedModelId = useSelector((state: any) => state.models.selectedModelId);
 
   const handleTransformChange = () => {
@@ -96,21 +96,23 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, acti
         if (selectedMeshRef.current) {
           (selectedMeshRef.current.material as MeshStandardMaterial).color.set(0x0000ff);
         }
+
+        // Update the target of the TransformControls to the newly selected mesh
+        if (transformControlsRef.current) {
+          transformControlsRef.current.attach(selectedMeshRef.current);
+        }
       }
     }
-  }, [selectedModelId, selectedModel, activeTool]);
+  }, [selectedModelId, selectedModel, activeTool, models]);
 
   return (
     <>
       <OrbitControls ref={orbitControlsRef} makeDefault />
-      {selectedMeshRef.current && (
-        <TransformControls
-          ref={transformControlsRef}
-          object={selectedMeshRef.current}
-          mode={activeTool ?? 'translate'}
-          onObjectChange={handleTransformChange}
-        />
-      )}
+      <TransformControls
+        ref={transformControlsRef}
+        mode={activeTool ?? 'translate'}
+        onObjectChange={handleTransformChange}
+      />
       {Object.values(models).map((model, index) => (
         <primitive object={model} key={index} />
       ))}
