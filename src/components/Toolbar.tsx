@@ -1,17 +1,17 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { setActiveTool } from '../store/slices/uiSlice';
+import { createNewModel } from '../store/slices/modelSlice'; // Assuming you have this action
 
 const Toolbar: React.FC = () => {
   const dispatch = useDispatch();
 
-  const handleToolSelect = (tool: string) => {
+  const handleToolSelect = (tool: 'translate' | 'rotate' | 'scale') => {
     dispatch(setActiveTool(tool));
   };
 
   const handleCreateModel = () => {
-    // Set the active tool or dispatch an action to create a new model
-    dispatch({ type: 'CREATE_NEW_MODEL' });
+    dispatch(createNewModel({ type: 'box' })); // Pass the model type as payload
   };
 
   return (
@@ -47,6 +47,7 @@ const styles = {
     marginRight: '10px',
     borderRadius: '4px',
     cursor: 'pointer',
+    transition: 'background 0.3s',
   },
 };
 
