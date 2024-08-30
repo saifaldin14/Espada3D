@@ -9,6 +9,7 @@ export interface ModelMetadata {
   position: Vector3Tuple;
   rotation: Vector3Tuple;
   scale: Vector3Tuple;
+  material: 'standard' | 'phong' | 'lambert';
 }
 
 export interface ModelState {
@@ -43,9 +44,15 @@ const modelSlice = createSlice({
         model.scale = action.payload.scale;
       }
     },
+    updateModelMaterial: (state, action: PayloadAction<{ id: string; material: 'standard' | 'phong' | 'lambert' }>) => {
+      const model = state.models.find((m) => m.id === action.payload.id);
+      if (model) {
+        model.material = action.payload.material;
+      }
+    },
     createNewModel: (
       state,
-      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple }>
+      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple; material?: 'standard' | 'phong' | 'lambert' }>
     ) => {
       const newModel: ModelMetadata = {
         id: uuidv4(), // Generate a new unique ID
@@ -53,9 +60,10 @@ const modelSlice = createSlice({
         position: action.payload.position || [0, 0, 0],
         rotation: action.payload.rotation || [0, 0, 0],
         scale: action.payload.scale || [1, 1, 1],
+        material: 'standard'
       };
       state.models.push(newModel);
-      state.selectedModelId = newModel.id;  // Automatically select the new model
+      state.selectedModelId = newModel.id;
     },
     removeModel: (state, action: PayloadAction<string>) => {
       state.models = state.models.filter((model) => model.id !== action.payload);
@@ -77,5 +85,13 @@ const modelSlice = createSlice({
   },
 });
 
-export const { addModel, selectModel, updateModelTransform, createNewModel, removeModel, duplicateModel } = modelSlice.actions;
+export const { 
+  addModel, 
+  selectModel, 
+  updateModelMaterial,
+  updateModelTransform,
+  createNewModel, 
+  removeModel, 
+  duplicateModel, 
+} = modelSlice.actions;
 export default modelSlice.reducer;

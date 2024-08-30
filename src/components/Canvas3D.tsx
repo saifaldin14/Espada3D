@@ -9,6 +9,8 @@ import {
   CylinderGeometry,
   Mesh,
   MeshStandardMaterial,
+  MeshPhongMaterial,
+  MeshLambertMaterial,
 } from "three";
 import { ModelProvider } from "./ModelContext";
 import { ModelMetadata } from "../store/slices/modelSlice";
@@ -48,10 +50,29 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
             geometry = new BoxGeometry(1, 1, 1);
         }
 
-        const material = new MeshStandardMaterial({
-          color: 0x00ff00,
-          wireframe: showWireframe,
-        });
+        // Create the material based on the selected type
+        let material;
+        switch (meta.material) {
+          case "phong":
+            material = new MeshPhongMaterial({
+              color: 0x00ff00,
+              wireframe: showWireframe,
+            });
+            break;
+          case "lambert":
+            material = new MeshLambertMaterial({
+              color: 0x00ff00,
+              wireframe: showWireframe,
+            });
+            break;
+          case "standard":
+          default:
+            material = new MeshStandardMaterial({
+              color: 0x00ff00,
+              wireframe: showWireframe,
+            });
+        }
+
         const mesh = new Mesh(geometry, material);
         modelGroup = new Group();
         modelGroup.add(mesh);
