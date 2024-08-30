@@ -28,11 +28,10 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   );
   const sceneModels = useSelector((state: any) => state.models.models);
   const selectedMeshRef = useRef<Mesh | null>(null);
+  const outlineMeshRef = useRef<Mesh | null>(null); // Reference to the outline mesh
 
-  // Map to store the relation between model ID and object UUID
   const uuidToModelId = useRef<{ [uuid: string]: string }>({});
 
-  // Set up the event listener for TransformControls dragging
   useEffect(() => {
     if (transformControlsRef.current) {
       const controls = transformControlsRef.current;
@@ -47,7 +46,6 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     }
   }, []);
 
-  // Update the UUID to Model ID mapping when models change
   useEffect(() => {
     const newUuidToModelId: { [uuid: string]: string } = {};
     Object.entries(models).forEach(([modelId, group]) => {
@@ -56,7 +54,6 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     uuidToModelId.current = newUuidToModelId;
   }, [models]);
 
-  // Handle selection of a new model
   useEffect(() => {
     if (selectedModelId) {
       const selectedGroup = models[selectedModelId];
@@ -71,36 +68,30 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         selectedMeshRef.current.rotation.set(...model.rotation);
         selectedMeshRef.current.scale.set(...model.scale);
 
-        resetAllModelColors();
+        // Create or update the outline mesh
+        createOrUpdateOutlineMesh(selectedMeshRef.current);
 
-        if (selectedMeshRef.current) {
-          (selectedMeshRef.current.material as MeshStandardMaterial).color.set(
-            0x0000ff
-          ); // Blue color
-
-          // Attach TransformControls to the newly selected mesh
-          if (transformControlsRef.current) {
-            transformControlsRef.current.attach(selectedMeshRef.current);
-          }
+        if (transformControlsRef.current) {
+          transformControlsRef.current.attach(selectedMeshRef.current);
         }
       }
     } else {
-      // Detach TransformControls if no model is selected
       if (transformControlsRef.current) {
         transformControlsRef.current.detach();
+      }
+      if (outlineMeshRef.current) {
+        outlineMeshRef.current.visible = false;
       }
     }
   }, [selectedModelId, models]);
 
-  // Reset all models to their default color
   const resetAllModelColors = () => {
     Object.values(models).forEach((model) => {
       const mesh = model.children[0] as Mesh;
-      (mesh.material as MeshStandardMaterial).color.set(0x00ff00); // Reset to green color
+      (mesh.material as MeshStandardMaterial).color.set(0x00ff00);
     });
   };
 
-  // Handle object clicks for selection
   const handleObjectClick = (
     mesh: Object3D<Object3DEventMap>,
     uuid: string
@@ -110,23 +101,11 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     if (modelId && selectedModelId !== modelId) {
       resetAllModelColors();
 
-      // Highlight the newly selected mesh in blue
       selectedMeshRef.current = mesh as Mesh;
-      if (selectedMeshRef.current) {
-        (selectedMeshRef.current.material as MeshStandardMaterial).color.set(
-          0x0000ff
-        ); // Blue color
-        // Attach TransformControls to the newly selected mesh
-        if (transformControlsRef.current) {
-          transformControlsRef.current.attach(selectedMeshRef.current);
-        }
-      }
-
-      dispatch(selectModel(modelId)); // Select the model in Redux
+      dispatch(selectModel(modelId));
     }
   };
 
-  // Handle transform changes
   const handleTransformChange = () => {
     if (selectedMeshRef.current) {
       const position = selectedMeshRef.current.position
@@ -152,6 +131,39 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
           scale,
         })
       );
+
+      if (outlineMeshRef.current) {
+        outlineMeshRef.current.position.copy(selectedMeshRef.current.position);
+        outlineMeshRef.current.rotation.copy(selectedMeshRef.current.rotation);
+        outlineMeshRef.current.scale
+          .copy(selectedMeshRef.current.scale)
+          .multiplyScalar(1.05);
+      }
+    }
+  };
+
+  const createOrUpdateOutlineMesh = (mesh: Mesh) => {
+    if (!outlineMeshRef.current) {
+      const geometry = mesh.geometry.clone();
+      const outlineMaterial = new MeshStandardMaterial({
+        color: 0x0000ff,
+        side: 1, // THREE.BackSide
+        transparent: true,
+        opacity: 0.5,
+      });
+
+      outlineMeshRef.current = new Mesh(geometry, outlineMaterial);
+      outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
+      outlineMeshRef.current.position.copy(mesh.position);
+      outlineMeshRef.current.rotation.copy(mesh.rotation);
+      outlineMeshRef.current.renderOrder = 999;
+      mesh.parent?.add(outlineMeshRef.current);
+    } else {
+      outlineMeshRef.current.geometry.copy(mesh.geometry);
+      outlineMeshRef.current.visible = true;
+      outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
+      outlineMeshRef.current.position.copy(mesh.position);
+      outlineMeshRef.current.rotation.copy(mesh.rotation);
     }
   };
 

@@ -55,20 +55,20 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
         switch (meta.material.type) {
           case "phong":
             material = new MeshPhongMaterial({
-              color: 0x00ff00,
+              color: meta.material.color || 0x00ff00,
               wireframe: showWireframe,
             });
             break;
           case "lambert":
             material = new MeshLambertMaterial({
-              color: 0x00ff00,
+              color: meta.material.color || 0x00ff00,
               wireframe: showWireframe,
             });
             break;
           case "standard":
           default:
             material = new MeshStandardMaterial({
-              color: 0x00ff00,
+              color: meta.material.color || 0x00ff00,
               wireframe: showWireframe,
             });
         }
@@ -81,19 +81,29 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
         modelGroup.scale.set(...meta.scale);
         newModels[meta.id] = modelGroup;
       } else {
-        // Update the wireframe property for existing models
+        // Update the wireframe and color properties for existing models
         const mesh = modelGroup.children[0] as Mesh;
         const material = mesh.material;
 
         if (Array.isArray(material)) {
           material.forEach((mat) => {
-            if (mat instanceof MeshStandardMaterial) {
+            if (
+              mat instanceof MeshStandardMaterial ||
+              mat instanceof MeshPhongMaterial ||
+              mat instanceof MeshLambertMaterial
+            ) {
               mat.wireframe = showWireframe;
+              mat.color.set(meta.material.color || 0x00ff00); // Update color
               mat.needsUpdate = true;
             }
           });
-        } else if (material instanceof MeshStandardMaterial) {
+        } else if (
+          material instanceof MeshStandardMaterial ||
+          material instanceof MeshPhongMaterial ||
+          material instanceof MeshLambertMaterial
+        ) {
           material.wireframe = showWireframe;
+          material.color.set(meta.material.color || 0x00ff00); // Update color
           material.needsUpdate = true;
         }
       }
