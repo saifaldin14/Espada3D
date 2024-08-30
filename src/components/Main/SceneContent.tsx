@@ -6,6 +6,7 @@ import {
   MeshStandardMaterial,
   Object3D,
   Object3DEventMap,
+  BoxGeometry,
 } from "three";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -88,15 +89,19 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         }
       } else {
         // If the selected model has been deleted, clear the selection and controls
-        console.log("LOLOL");
-        dispatch(selectModel(null));
-        if (transformControlsRef.current) transformControlsRef.current.detach();
+        const model: ModelMetadata = sceneModels.find(
+          (m: any) => m.id === selectedModelId
+        );
 
-        if (outlineMeshRef.current) outlineMeshRef.current.visible = false;
-
-        if (selectedMeshRef.current) {
-          console.log("Yo");
+        if (!model && selectedMeshRef.current) {
           selectedMeshRef.current.visible = false;
+          selectedMeshRef.current.removeFromParent();
+          selectedMeshRef.current.remove();
+
+          if (transformControlsRef.current)
+            transformControlsRef.current.detach();
+
+          if (outlineMeshRef.current) outlineMeshRef.current.visible = false;
         }
 
         selectedMeshRef.current = null;
@@ -201,7 +206,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       />
       {Object.values(renderedModels).map((model, index) => (
         <primitive
-          object={model}
+          object={model.clone()} // Clone the model to ensure independent instances
           key={index}
           onClick={() => handleObjectClick(model.children[0], model.uuid)}
         />
