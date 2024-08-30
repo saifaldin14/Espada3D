@@ -13,7 +13,7 @@ interface Canvas3DProps {
 const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
   const modelsMetadata = useSelector((state: any) => state.models.models) as ModelMetadata[];
   const selectedModelId = useSelector((state: any) => state.models.selectedModelId);
-  const activeTool = useSelector((state: any) => state.ui.activeTool);
+  const activeTool = useSelector((state: any) => state.ui.activeTool); // Get the active tool from Redux
   const dispatch = useDispatch();
 
   const [models, setModels] = useState<{ [id: string]: Group }>({});
@@ -50,10 +50,10 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
         <pointLight position={[10, 10, 10]} />
         <OrbitControls />
         
-        {selectedModel && (
+        {selectedModel && activeTool && (
           <TransformControls
             object={selectedModel}
-            mode={activeTool as any}  // 'translate', 'rotate', or 'scale'
+            mode={activeTool}  // 'translate', 'rotate', or 'scale'
             onObjectChange={() => handleTransformChange(selectedModel)}
           />
         )}

@@ -1,28 +1,38 @@
 import React from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setActiveTool } from '../store/slices/uiSlice';
-import { createNewModel } from '../store/slices/modelSlice'; // Assuming you have this action
+import { createNewModel } from '../store/slices/modelSlice';
 
 const Toolbar: React.FC = () => {
   const dispatch = useDispatch();
+  const activeTool = useSelector((state: any) => state.ui.activeTool);
 
   const handleToolSelect = (tool: 'translate' | 'rotate' | 'scale') => {
     dispatch(setActiveTool(tool));
   };
 
   const handleCreateModel = () => {
-    dispatch(createNewModel({ type: 'box' })); // Pass the model type as payload
+    dispatch(createNewModel({ type: 'box' }));
   };
 
   return (
     <div style={styles.toolbar}>
-      <button style={styles.button} onClick={() => handleToolSelect('translate')}>
+      <button
+        style={{ ...styles.button, background: activeTool === 'translate' ? '#16a085' : '#1abc9c' }}
+        onClick={() => handleToolSelect('translate')}
+      >
         Translate
       </button>
-      <button style={styles.button} onClick={() => handleToolSelect('rotate')}>
+      <button
+        style={{ ...styles.button, background: activeTool === 'rotate' ? '#16a085' : '#1abc9c' }}
+        onClick={() => handleToolSelect('rotate')}
+      >
         Rotate
       </button>
-      <button style={styles.button} onClick={() => handleToolSelect('scale')}>
+      <button
+        style={{ ...styles.button, background: activeTool === 'scale' ? '#16a085' : '#1abc9c' }}
+        onClick={() => handleToolSelect('scale')}
+      >
         Scale
       </button>
       <button style={styles.button} onClick={handleCreateModel}>
