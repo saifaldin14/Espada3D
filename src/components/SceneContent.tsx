@@ -47,10 +47,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, acti
       const modelId = intersectedObject.uuid;
 
       // Reset color of all models to green (default state)
-      Object.values(models).forEach(model => {
-        const mesh = model.children[0] as Mesh;
-        (mesh.material as MeshStandardMaterial).color.set(0x00ff00);  // Green color
-      });
+      resetAllModelColors();
 
       // Highlight the newly selected mesh in blue
       selectedMeshRef.current = intersects[0].object as Mesh;
@@ -60,6 +57,13 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, acti
 
       dispatch(selectModel(modelId));  // Select the model in Redux
     }
+  };
+
+  const resetAllModelColors = () => {
+    Object.values(models).forEach(model => {
+      const mesh = model.children[0] as Mesh;
+      (mesh.material as MeshStandardMaterial).color.set(0x00ff00);  // Reset to green color
+    });
   };
 
   useEffect(() => {
@@ -80,14 +84,18 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, acti
       });
     }
 
+    // If a model is selected (either from the sidebar or from the scene), reset all models' colors first
+    resetAllModelColors();
+
     if (selectedModelId) {
-      // Update the selectedMeshRef to the currently selected model's mesh
       const selectedGroup = models[selectedModelId];
       if (selectedGroup) {
         selectedMeshRef.current = selectedGroup.children[0] as Mesh;
 
-        // Ensure the selected model is highlighted in blue
-        (selectedMeshRef.current.material as MeshStandardMaterial).color.set(0x0000ff);
+        // Highlight the selected model in blue
+        if (selectedMeshRef.current) {
+          (selectedMeshRef.current.material as MeshStandardMaterial).color.set(0x0000ff);
+        }
       }
     }
   }, [selectedModelId, selectedModel, activeTool]);
