@@ -77,11 +77,11 @@ const SceneContent: React.FC<SceneContentProps> = ({
   };
 
   const handleTransformChange = () => {
-    if (selectedModel) {
-      const position = selectedModel.position
+    if (selectedMeshRef.current) {
+      const position = selectedMeshRef.current.position
         .toArray()
         .map((n) => (isNaN(n) ? 0 : n)) as [number, number, number];
-      const rotationArray = selectedModel.rotation.toArray();
+      const rotationArray = selectedMeshRef.current.rotation.toArray();
       const rotation = rotationArray
         .slice(0, 3)
         .map((n) => (typeof n === "number" ? n : 0)) as [
@@ -89,7 +89,7 @@ const SceneContent: React.FC<SceneContentProps> = ({
         number,
         number
       ];
-      const scale = selectedModel.scale
+      const scale = selectedMeshRef.current.scale
         .toArray()
         .map((n) => (isNaN(n) ? 1 : n)) as [number, number, number];
 
