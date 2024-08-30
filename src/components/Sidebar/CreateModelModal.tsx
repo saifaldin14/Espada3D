@@ -14,7 +14,10 @@ import {
   Tooltip,
   Box,
 } from "@mui/material";
-import { createNewModel, MaterialProperties } from "../store/slices/modelSlice";
+import {
+  createNewModel,
+  MaterialProperties,
+} from "../../store/slices/modelSlice";
 import { FaCube, FaGlobe, FaShapes } from "react-icons/fa";
 
 interface CreateModelModalProps {

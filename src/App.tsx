@@ -1,12 +1,12 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import Canvas3D from "./components/Canvas3D";
-import Sidebar from "./components/Sidebar";
-import ModelEditor from "./components/ModelEditor";
+import Canvas3D from "./components/Main/Canvas3D";
+import Sidebar from "./components/Sidebar/Sidebar";
+import ModelEditor from "./components/ModelEditor/ModelEditor";
 import { Provider } from "react-redux";
 import store from "./store";
 import { Group } from "three";
-import { ModelProvider } from "./components/ModelContext";
+import { ModelProvider } from "./components/Main/ModelContext";
 
 const App: React.FC = () => {
   const selectedModel = useSelector(

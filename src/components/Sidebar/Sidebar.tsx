@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { selectModel } from "../store/slices/modelSlice";
-import { setActiveTool, setGrid, setWireframe } from "../store/slices/uiSlice";
+import { selectModel } from "../../store/slices/modelSlice";
+import {
+  setActiveTool,
+  setGrid,
+  setWireframe,
+} from "../../store/slices/uiSlice";
 import { FaArrowsAlt, FaSyncAlt, FaPlus } from "react-icons/fa";
 import { FaArrowsLeftRight } from "react-icons/fa6";
 import {

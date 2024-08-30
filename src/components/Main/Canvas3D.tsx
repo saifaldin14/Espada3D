@@ -13,7 +13,7 @@ import {
   MeshLambertMaterial,
 } from "three";
 import { ModelProvider } from "./ModelContext";
-import { ModelMetadata } from "../store/slices/modelSlice";
+import { ModelMetadata } from "../../store/slices/modelSlice";
 import SceneContent from "./SceneContent";
 
 interface Canvas3DProps {

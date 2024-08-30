@@ -5,7 +5,7 @@ import {
   updateModelMaterial,
   Vector3Tuple,
   MaterialProperties,
-} from "../store/slices/modelSlice";
+} from "../../store/slices/modelSlice";
 import {
   Card,
   CardContent,

@@ -12,7 +12,7 @@ import {
   updateModelTransform,
   selectModel,
   ModelMetadata,
-} from "../store/slices/modelSlice";
+} from "../../store/slices/modelSlice";
 
 interface SceneContentProps {
   models: { [id: string]: Group };
