@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateModelTransform, Vector3Tuple } from "../store/slices/modelSlice";
-import { Card, CardContent, TextField, Typography } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  TextField,
+  Typography,
+  Grid,
+  Box,
+  IconButton,
+} from "@mui/material";
+import { Transform } from "@mui/icons-material";
 
 const ModelEditor: React.FC = () => {
   const selectedModelId = useSelector(
     (state: any) => state.models.selectedModelId
   );
   const models = useSelector((state: any) => state.models.models);
-  const activeTool = useSelector((state: any) => state.ui.activeTool); // Get the active tool from Redux
+  const activeTool = useSelector((state: any) => state.ui.activeTool);
   const dispatch = useDispatch();
 
   const [position, setPosition] = useState<Vector3Tuple>([0, 0, 0]);
@@ -31,7 +40,7 @@ const ModelEditor: React.FC = () => {
     let newRotation: Vector3Tuple = [...rotation];
     let newScale: Vector3Tuple = [...scale];
 
-    if (isNaN(value)) value = 0; // Prevent NaN
+    if (isNaN(value)) value = 0;
 
     switch (activeTool) {
       case "translate":
@@ -61,20 +70,31 @@ const ModelEditor: React.FC = () => {
   };
 
   return (
-    <div style={styles.editor}>
-      <h3>Model Editor</h3>
+    <Box sx={styles.editor}>
+      <Typography variant="h5" sx={styles.title}>
+        Model Editor
+      </Typography>
 
-      <div style={styles.controlGroup}>
-        <h4>{activeTool?.charAt(0).toUpperCase() + activeTool?.slice(1)}</h4>
+      <Typography variant="h6" sx={styles.subTitle}>
+        {activeTool
+          ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
+          : ""}
+      </Typography>
+
+      <Grid container spacing={2}>
         {["X", "Y", "Z"].map((axis, i) => (
-          <div key={i}>
-            <Card>
-              <CardContent>
-                <Typography gutterBottom variant="h6">
-                  {axis}
-                </Typography>
+          <Grid item xs={12} key={i}>
+            <Card sx={styles.card}>
+              <CardContent sx={styles.cardContent}>
+                <Box sx={styles.cardHeader}>
+                  <Typography variant="h6" component="div">
+                    {axis}
+                  </Typography>
+                  <IconButton sx={styles.iconButton}>
+                    <Transform />
+                  </IconButton>
+                </Box>
                 <TextField
-                  id="transform-value"
                   value={
                     activeTool === "translate"
                       ? position[i]
@@ -83,33 +103,57 @@ const ModelEditor: React.FC = () => {
                       : scale[i]
                   }
                   type="number"
+                  fullWidth
+                  variant="outlined"
+                  size="small"
                   onChange={(e) =>
                     handleTransformChange(i, parseFloat(e.target.value))
                   }
+                  sx={styles.textField}
                 />
               </CardContent>
             </Card>
-          </div>
+          </Grid>
         ))}
-      </div>
-    </div>
+      </Grid>
+    </Box>
   );
 };
 
 const styles = {
   editor: {
-    padding: "10px",
-    background: "#ecf0f1",
+    padding: "16px",
+    background: "#f5f5f5",
     borderRadius: "8px",
-    width: "200px",
+    width: "260px",
+    boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
   },
-  controlGroup: {
-    marginBottom: "15px",
+  title: {
+    marginBottom: "16px",
+    fontWeight: "bold",
   },
-  control: {
+  subTitle: {
+    marginBottom: "8px",
+    fontWeight: "bold",
+    color: "#555",
+  },
+  card: {
+    background: "#ffffff",
+    borderRadius: "8px",
+  },
+  cardContent: {
+    paddingBottom: "16px !important",
+  },
+  cardHeader: {
     display: "flex",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: "5px",
+  },
+  iconButton: {
+    color: "#1abc9c",
+  },
+  textField: {
+    marginTop: "8px",
   },
 };
 
