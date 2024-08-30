@@ -1,6 +1,12 @@
 import React, { useRef, useEffect } from "react";
 import { OrbitControls, TransformControls } from "@react-three/drei";
-import { Group, Mesh, Object3D } from "three";
+import {
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  Object3D,
+  Object3DEventMap,
+} from "three";
 import { useDispatch, useSelector } from "react-redux";
 import {
   updateModelTransform,
@@ -22,6 +28,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   );
   const sceneModels = useSelector((state: any) => state.models.models);
   const selectedMeshRef = useRef<Mesh | null>(null);
+  const outlineMeshRef = useRef<Mesh | null>(null); // Reference to the outline mesh
 
   const uuidToModelId = useRef<{ [uuid: string]: string }>({});
 
@@ -39,7 +46,6 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     }
   }, []);
 
-  // Create a mapping from UUID to model ID
   useEffect(() => {
     const newUuidToModelId: { [uuid: string]: string } = {};
     Object.entries(models).forEach(([modelId, group]) => {
@@ -48,20 +54,22 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     uuidToModelId.current = newUuidToModelId;
   }, [models]);
 
-  // Handle selection and updates when a model is selected
   useEffect(() => {
     if (selectedModelId) {
       const selectedGroup = models[selectedModelId];
       if (selectedGroup) {
         selectedMeshRef.current = selectedGroup.children[0] as Mesh;
+
         const model: ModelMetadata = sceneModels.find(
           (m: any) => m.id === selectedModelId
         );
 
-        // Apply stored transformations to the selected mesh
         selectedMeshRef.current.position.set(...model.position);
         selectedMeshRef.current.rotation.set(...model.rotation);
         selectedMeshRef.current.scale.set(...model.scale);
+
+        // Create or update the outline mesh
+        createOrUpdateOutlineMesh(selectedMeshRef.current);
 
         if (transformControlsRef.current) {
           transformControlsRef.current.attach(selectedMeshRef.current);
@@ -71,76 +79,83 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       if (transformControlsRef.current) {
         transformControlsRef.current.detach();
       }
+      if (outlineMeshRef.current) {
+        outlineMeshRef.current.visible = false;
+      }
     }
   }, [selectedModelId, models]);
 
-  // Handle object click events
-  const handleObjectClick = (mesh: Object3D, uuid: string) => {
+  const handleObjectClick = (
+    mesh: Object3D<Object3DEventMap>,
+    uuid: string
+  ) => {
     const modelId = uuidToModelId.current[uuid];
+
     if (modelId && selectedModelId !== modelId) {
       selectedMeshRef.current = mesh as Mesh;
       dispatch(selectModel(modelId));
     }
   };
 
-  // Handle transformation changes
   const handleTransformChange = () => {
-    if (selectedMeshRef.current && selectedModelId) {
-      const position = selectedMeshRef.current.position.toArray() as [
-        number,
-        number,
-        number
-      ];
-      const rotation = selectedMeshRef.current.rotation
+    if (selectedMeshRef.current) {
+      const position = selectedMeshRef.current.position
         .toArray()
-        .slice(0, 3) as [number, number, number];
-      const scale = selectedMeshRef.current.scale.toArray() as [
+        .map((n) => (isNaN(n) ? 0 : n)) as [number, number, number];
+      const rotationArray = selectedMeshRef.current.rotation.toArray();
+      const rotation = rotationArray
+        .slice(0, 3)
+        .map((n) => (typeof n === "number" ? n : 0)) as [
         number,
         number,
         number
       ];
+      const scale = selectedMeshRef.current.scale
+        .toArray()
+        .map((n) => (isNaN(n) ? 1 : n)) as [number, number, number];
 
       dispatch(
         updateModelTransform({
-          id: selectedModelId,
+          id: selectedModelId as string,
           position,
           rotation,
           scale,
         })
       );
+
+      if (outlineMeshRef.current) {
+        outlineMeshRef.current.position.copy(selectedMeshRef.current.position);
+        outlineMeshRef.current.rotation.copy(selectedMeshRef.current.rotation);
+        outlineMeshRef.current.scale
+          .copy(selectedMeshRef.current.scale)
+          .multiplyScalar(1.05);
+      }
     }
   };
 
-  // Create a hierarchy of groups based on the parent-child relationships
-  const createHierarchy = () => {
-    const groups: { [id: string]: Group } = {};
+  const createOrUpdateOutlineMesh = (mesh: Mesh) => {
+    if (!outlineMeshRef.current) {
+      const geometry = mesh.geometry.clone();
+      const outlineMaterial = new MeshStandardMaterial({
+        color: 0x0000ff,
+        side: 1, // THREE.BackSide
+        transparent: true,
+        opacity: 0.5,
+      });
 
-    // Create parent groups
-    Object.values(sceneModels).forEach((m) => {
-      const model = m as unknown as ModelMetadata;
-      if (!model.parentId) {
-        const group = models[model.id];
-        if (group) {
-          group.position.set(...model.position);
-          group.rotation.set(...model.rotation);
-          group.scale.set(...model.scale);
-          groups[model.id] = group;
-        }
-      }
-    });
-
-    // Attach child groups to their parents
-    Object.values(sceneModels).forEach((m) => {
-      const model = m as unknown as ModelMetadata;
-      if (model.parentId && groups[model.parentId]) {
-        const childGroup = models[model.id];
-        if (childGroup) {
-          groups[model.parentId].add(childGroup);
-        }
-      }
-    });
-
-    return Object.values(groups);
+      outlineMeshRef.current = new Mesh(geometry, outlineMaterial);
+      outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
+      outlineMeshRef.current.position.copy(mesh.position);
+      outlineMeshRef.current.rotation.copy(mesh.rotation);
+      outlineMeshRef.current.renderOrder = 999;
+      mesh.parent?.add(outlineMeshRef.current);
+    } else {
+      outlineMeshRef.current.geometry.copy(mesh.geometry);
+      outlineMeshRef.current.visible = true;
+      outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
+      outlineMeshRef.current.position.copy(mesh.position);
+      outlineMeshRef.current.rotation.copy(mesh.rotation);
+    }
   };
 
   return (
@@ -151,13 +166,11 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         mode={activeTool ?? "translate"}
         onObjectChange={handleTransformChange}
       />
-      {createHierarchy().map((group) => (
+      {Object.values(models).map((model, index) => (
         <primitive
-          object={group}
-          key={group.uuid}
-          onClick={() =>
-            handleObjectClick(group.children[0] as Mesh, group.uuid)
-          }
+          object={model}
+          key={index}
+          onClick={() => handleObjectClick(model.children[0], model.uuid)}
         />
       ))}
     </>

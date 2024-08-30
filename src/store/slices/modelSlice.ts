@@ -10,12 +10,11 @@ export interface MaterialProperties {
 
 export interface ModelMetadata {
   id: string;
-  type: 'box' | 'sphere' | 'cylinder';
+  type: 'box' | 'sphere' | 'cylinder'; // Update to include new types
   position: Vector3Tuple;
   rotation: Vector3Tuple;
   scale: Vector3Tuple;
   material: MaterialProperties;
-  parentId: string | null;
 }
 
 export interface ModelState {
@@ -34,7 +33,7 @@ const modelSlice = createSlice({
   reducers: {
     addModel: (state, action: PayloadAction<ModelMetadata>) => {
       state.models.push(action.payload);
-      state.selectedModelId = action.payload.id;
+      state.selectedModelId = action.payload.id;  // Automatically select the new model
     },
     selectModel: (state, action: PayloadAction<string | null>) => {
       state.selectedModelId = action.payload;
@@ -58,10 +57,10 @@ const modelSlice = createSlice({
     },
     createNewModel: (
       state,
-      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple; material?: MaterialProperties; parentId?: string | null }>
+      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple; material?: MaterialProperties }>
     ) => {
       const newModel: ModelMetadata = {
-        id: uuidv4(),
+        id: uuidv4(), // Generate a new unique ID
         type: action.payload.type,
         position: action.payload.position || [0, 0, 0],
         rotation: action.payload.rotation || [0, 0, 0],
@@ -69,8 +68,7 @@ const modelSlice = createSlice({
         material: {
           type: "standard",
           color: "#ecf0f1",
-        },
-        parentId: action.payload.parentId || null, // Set parentId
+        }
       };
       state.models.push(newModel);
       state.selectedModelId = newModel.id;
@@ -78,7 +76,7 @@ const modelSlice = createSlice({
     removeModel: (state, action: PayloadAction<string>) => {
       state.models = state.models.filter((model) => model.id !== action.payload);
       if (state.selectedModelId === action.payload) {
-        state.selectedModelId = null;
+        state.selectedModelId = null; // Deselect the model if it was selected
       }
     },
     duplicateModel: (state, action: PayloadAction<string>) => {
@@ -86,21 +84,11 @@ const modelSlice = createSlice({
       if (originalModel) {
         const newModel: ModelMetadata = {
           ...originalModel,
-          id: uuidv4(),
-          parentId: originalModel.parentId, // Retain the parent relationship
+          id: uuidv4(), // Assign a new unique ID for the duplicated model
         };
         state.models.push(newModel);
-        state.selectedModelId = newModel.id;
+        state.selectedModelId = newModel.id; // Select the duplicated model
       }
-    },
-    setParentModel: (state, action: PayloadAction<{ id: string, parentId: string | null }>) => {
-      const model = state.models.find((m) => m.id === action.payload.id);
-      if (model) {
-        model.parentId = action.payload.parentId;
-      }
-    },
-    reorderModels: (state, action: PayloadAction<ModelMetadata[]>) => {
-      state.models = action.payload;
     },
   },
 });
@@ -112,9 +100,6 @@ export const {
   updateModelTransform,
   createNewModel, 
   removeModel, 
-  duplicateModel,
-  setParentModel,
-  reorderModels,
+  duplicateModel, 
 } = modelSlice.actions;
-
 export default modelSlice.reducer;
