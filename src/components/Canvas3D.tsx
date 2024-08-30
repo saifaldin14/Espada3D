@@ -17,19 +17,23 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
   const [models, setModels] = useState<{ [id: string]: Group }>({});
 
   useEffect(() => {
-    const newModels: { [id: string]: Group } = {};
+    const newModels = { ...models }; // Start with the current models
+
     modelsMetadata.forEach((meta: ModelMetadata) => {
-      const geometry = new BoxGeometry(1, 1, 1);
-      const material = new MeshStandardMaterial({ color: 0x00ff00 });
-      const mesh = new Mesh(geometry, material);
-      const group = new Group();
-      group.add(mesh);
-      group.position.set(...meta.position);
-      group.rotation.set(...meta.rotation);
-      group.scale.set(...meta.scale);
-      newModels[meta.id] = group;
+      if (!newModels[meta.id]) {  // Only add new models that don't already exist
+        const geometry = new BoxGeometry(1, 1, 1);
+        const material = new MeshStandardMaterial({ color: 0x00ff00 });
+        const mesh = new Mesh(geometry, material);
+        const group = new Group();
+        group.add(mesh);
+        group.position.set(...meta.position);
+        group.rotation.set(...meta.rotation);
+        group.scale.set(...meta.scale);
+        newModels[meta.id] = group;
+      }
     });
-    setModels(newModels);
+
+    setModels(newModels);  // Update state with the new merged models
   }, [modelsMetadata]);
 
   return (
