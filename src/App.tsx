@@ -1,26 +1,22 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Canvas3D from './components/Canvas3D';
+import Sidebar from './components/Sidebar';
+import Toolbar from './components/Toolbar';
+import { Provider } from 'react-redux';
+import store from './store';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Provider store={store}>
+      <div style={{ display: 'flex', height: '100vh' }}>
+        <Sidebar />
+        <div style={{ flex: 1 }}>
+          <Toolbar />
+          <Canvas3D />
+        </div>
+      </div>
+    </Provider>
   );
-}
+};
 
 export default App;
