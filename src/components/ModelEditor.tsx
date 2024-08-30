@@ -22,7 +22,7 @@ const ModelEditor: React.FC = () => {
       setRotation(model.rotation ?? [0, 0, 0]);
       setScale(model.scale ?? [1, 1, 1]);
     }
-  }, [models]);
+  }, [models, selectedModelId]);
 
   const handleTransformChange = (axis: number, value: number) => {
     if (!selectedModelId) return;

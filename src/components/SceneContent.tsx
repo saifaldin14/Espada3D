@@ -1,10 +1,7 @@
 import React, { useRef, useEffect } from "react";
-import { useThree } from "@react-three/fiber";
 import { OrbitControls, TransformControls } from "@react-three/drei";
 import {
   Group,
-  Raycaster,
-  Vector2,
   Mesh,
   MeshStandardMaterial,
   Object3D,
@@ -35,6 +32,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   // Map to store the relation between model ID and object UUID
   const uuidToModelId = useRef<{ [uuid: string]: string }>({});
 
+  // Set up the event listener for TransformControls dragging
   useEffect(() => {
     if (transformControlsRef.current) {
       const controls = transformControlsRef.current;
@@ -49,6 +47,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     }
   }, []);
 
+  // Update the UUID to Model ID mapping when models change
   useEffect(() => {
     const newUuidToModelId: { [uuid: string]: string } = {};
     Object.entries(models).forEach(([modelId, group]) => {
@@ -57,23 +56,20 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     uuidToModelId.current = newUuidToModelId;
   }, [models]);
 
-  useEffect(() => {
-    // Set model transforms when they change by ModelEditor
-    const model: ModelMetadata = sceneModels.find(
-      (m: any) => m.id === selectedModelId
-    );
-    if (model && selectedMeshRef.current) {
-      selectedMeshRef.current.position.set(...model.position);
-      selectedMeshRef.current.rotation.set(...model.rotation);
-      selectedMeshRef.current.scale.set(...model.scale);
-    }
-  }, [sceneModels]);
-
+  // Handle selection of a new model
   useEffect(() => {
     if (selectedModelId) {
       const selectedGroup = models[selectedModelId];
       if (selectedGroup) {
         selectedMeshRef.current = selectedGroup.children[0] as Mesh;
+
+        const model: ModelMetadata = sceneModels.find(
+          (m: any) => m.id === selectedModelId
+        );
+
+        selectedMeshRef.current.position.set(...model.position);
+        selectedMeshRef.current.rotation.set(...model.rotation);
+        selectedMeshRef.current.scale.set(...model.scale);
 
         resetAllModelColors();
 
@@ -96,6 +92,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     }
   }, [selectedModelId, models]);
 
+  // Reset all models to their default color
   const resetAllModelColors = () => {
     Object.values(models).forEach((model) => {
       const mesh = model.children[0] as Mesh;
@@ -103,6 +100,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     });
   };
 
+  // Handle object clicks for selection
   const handleObjectClick = (
     mesh: Object3D<Object3DEventMap>,
     uuid: string
@@ -128,6 +126,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     }
   };
 
+  // Handle transform changes
   const handleTransformChange = () => {
     if (selectedMeshRef.current) {
       const position = selectedMeshRef.current.position
