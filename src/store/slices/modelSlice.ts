@@ -10,11 +10,12 @@ export interface MaterialProperties {
 
 export interface ModelMetadata {
   id: string;
-  type: 'box' | 'sphere' | 'cylinder'; // Update to include new types
+  type: 'box' | 'sphere' | 'cylinder';
   position: Vector3Tuple;
   rotation: Vector3Tuple;
   scale: Vector3Tuple;
   material: MaterialProperties;
+  parentId: string | null; // To manage hierarchy
 }
 
 export interface ModelState {
@@ -57,7 +58,7 @@ const modelSlice = createSlice({
     },
     createNewModel: (
       state,
-      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple; material?: MaterialProperties }>
+      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple; material?: MaterialProperties; parentId?: string | null }>
     ) => {
       const newModel: ModelMetadata = {
         id: uuidv4(), // Generate a new unique ID
@@ -68,15 +69,22 @@ const modelSlice = createSlice({
         material: {
           type: "standard",
           color: "#ecf0f1",
-        }
+        },
+        parentId: action.payload.parentId || null, // Set parentId
       };
       state.models.push(newModel);
       state.selectedModelId = newModel.id;
     },
     removeModel: (state, action: PayloadAction<string>) => {
-      state.models = state.models.filter((model) => model.id !== action.payload);
-      if (state.selectedModelId === action.payload) {
-        state.selectedModelId = null; // Deselect the model if it was selected
+      const modelToRemove = state.models.find((model) => model.id === action.payload);
+      if (modelToRemove) {
+        // Remove the model and any of its children
+        state.models = state.models.filter(
+          (model) => model.id !== action.payload && model.parentId !== action.payload
+        );
+        if (state.selectedModelId === action.payload) {
+          state.selectedModelId = null; // Deselect the model if it was selected
+        }
       }
     },
     duplicateModel: (state, action: PayloadAction<string>) => {
@@ -85,6 +93,7 @@ const modelSlice = createSlice({
         const newModel: ModelMetadata = {
           ...originalModel,
           id: uuidv4(), // Assign a new unique ID for the duplicated model
+          parentId: originalModel.parentId, // Keep the parent relationship
         };
         state.models.push(newModel);
         state.selectedModelId = newModel.id; // Select the duplicated model

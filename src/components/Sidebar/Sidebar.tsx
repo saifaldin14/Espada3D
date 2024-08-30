@@ -1,12 +1,22 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { selectModel } from "../../store/slices/modelSlice";
+import {
+  selectModel,
+  removeModel,
+  duplicateModel,
+} from "../../store/slices/modelSlice";
 import {
   setActiveTool,
   setGrid,
   setWireframe,
 } from "../../store/slices/uiSlice";
-import { FaArrowsAlt, FaSyncAlt, FaPlus } from "react-icons/fa";
+import {
+  FaArrowsAlt,
+  FaSyncAlt,
+  FaPlus,
+  FaTrashAlt,
+  FaCopy,
+} from "react-icons/fa";
 import { FaArrowsLeftRight } from "react-icons/fa6";
 import {
   Box,
@@ -59,6 +69,18 @@ const Sidebar: React.FC = () => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     dispatch(setWireframe(event.target.checked));
+  };
+
+  const handleDeleteModel = () => {
+    if (selectedModelId) {
+      dispatch(removeModel(selectedModelId));
+    }
+  };
+
+  const handleDuplicateModel = () => {
+    if (selectedModelId) {
+      dispatch(duplicateModel(selectedModelId));
+    }
   };
 
   return (
@@ -130,6 +152,25 @@ const Sidebar: React.FC = () => {
           <FaArrowsLeftRight />
         </IconButton>
       </Box>
+
+      {/* Delete and Duplicate buttons */}
+      <Box sx={styles.actionButtons}>
+        <IconButton
+          sx={styles.actionButton}
+          disabled={!selectedModelId}
+          onClick={() => handleDuplicateModel()}
+        >
+          <FaCopy />
+        </IconButton>
+        <IconButton
+          sx={styles.actionButton}
+          disabled={!selectedModelId}
+          onClick={() => handleDeleteModel()}
+        >
+          <FaTrashAlt />
+        </IconButton>
+      </Box>
+
       <Button
         sx={styles.createButton}
         variant="contained"
@@ -151,7 +192,7 @@ const Sidebar: React.FC = () => {
           sx={styles.switchControl}
         />
       </FormGroup>
-      <CreateModelModal open={modalOpen} onClose={handleCloseModal} />{" "}
+      <CreateModelModal open={modalOpen} onClose={handleCloseModal} />
     </Box>
   );
 };
@@ -195,6 +236,20 @@ const styles = {
     "&:hover": {
       backgroundColor: "#16a085",
     },
+  },
+  actionButtons: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "16px",
+  },
+  actionButton: {
+    backgroundColor: "#1abc9c",
+    "&:hover": {
+      backgroundColor: "#16a085",
+    },
+    borderRadius: "8px",
+    color: "#ecf0f1",
+    width: "48%",
   },
   createButton: {
     marginBottom: "16px",

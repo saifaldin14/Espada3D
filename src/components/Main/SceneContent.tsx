@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { OrbitControls, TransformControls } from "@react-three/drei";
 import {
   Group,
@@ -11,6 +11,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   updateModelTransform,
   selectModel,
+  removeModel,
+  duplicateModel,
   ModelMetadata,
 } from "../../store/slices/modelSlice";
 
@@ -31,6 +33,9 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   const outlineMeshRef = useRef<Mesh | null>(null); // Reference to the outline mesh
 
   const uuidToModelId = useRef<{ [uuid: string]: string }>({});
+  const [renderedModels, setRenderedModels] = useState<{ [id: string]: Group }>(
+    {}
+  ); // Local state to track rendered models
 
   useEffect(() => {
     if (transformControlsRef.current) {
@@ -48,15 +53,20 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
 
   useEffect(() => {
     const newUuidToModelId: { [uuid: string]: string } = {};
+    const newRenderedModels: { [id: string]: Group } = {};
+
     Object.entries(models).forEach(([modelId, group]) => {
       newUuidToModelId[group.uuid] = modelId;
+      newRenderedModels[modelId] = group;
     });
+
     uuidToModelId.current = newUuidToModelId;
+    setRenderedModels(newRenderedModels); // Update the local state with the models to render
   }, [models]);
 
   useEffect(() => {
     if (selectedModelId) {
-      const selectedGroup = models[selectedModelId];
+      const selectedGroup = renderedModels[selectedModelId];
       if (selectedGroup) {
         selectedMeshRef.current = selectedGroup.children[0] as Mesh;
 
@@ -64,16 +74,32 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
           (m: any) => m.id === selectedModelId
         );
 
-        selectedMeshRef.current.position.set(...model.position);
-        selectedMeshRef.current.rotation.set(...model.rotation);
-        selectedMeshRef.current.scale.set(...model.scale);
+        if (model) {
+          selectedMeshRef.current.position.set(...model.position);
+          selectedMeshRef.current.rotation.set(...model.rotation);
+          selectedMeshRef.current.scale.set(...model.scale);
 
-        // Create or update the outline mesh
-        createOrUpdateOutlineMesh(selectedMeshRef.current);
+          // Create or update the outline mesh
+          createOrUpdateOutlineMesh(selectedMeshRef.current);
 
-        if (transformControlsRef.current) {
-          transformControlsRef.current.attach(selectedMeshRef.current);
+          if (transformControlsRef.current) {
+            transformControlsRef.current.attach(selectedMeshRef.current);
+          }
         }
+      } else {
+        // If the selected model has been deleted, clear the selection and controls
+        console.log("LOLOL");
+        dispatch(selectModel(null));
+        if (transformControlsRef.current) transformControlsRef.current.detach();
+
+        if (outlineMeshRef.current) outlineMeshRef.current.visible = false;
+
+        if (selectedMeshRef.current) {
+          console.log("Yo");
+          selectedMeshRef.current.visible = false;
+        }
+
+        selectedMeshRef.current = null;
       }
     } else {
       if (transformControlsRef.current) {
@@ -82,8 +108,15 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       if (outlineMeshRef.current) {
         outlineMeshRef.current.visible = false;
       }
+
+      if (selectedMeshRef.current) {
+        selectedMeshRef.current.visible = false;
+        selectedMeshRef.current.remove();
+      }
+
+      selectedMeshRef.current = null;
     }
-  }, [selectedModelId, models]);
+  }, [selectedModelId, renderedModels, sceneModels, dispatch]);
 
   const handleObjectClick = (
     mesh: Object3D<Object3DEventMap>,
@@ -166,7 +199,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         mode={activeTool ?? "translate"}
         onObjectChange={handleTransformChange}
       />
-      {Object.values(models).map((model, index) => (
+      {Object.values(renderedModels).map((model, index) => (
         <primitive
           object={model}
           key={index}
