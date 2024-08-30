@@ -1,7 +1,7 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { createNewModel, selectModel } from "../store/slices/modelSlice";
-import { setActiveTool, toggleGrid } from "../store/slices/uiSlice";
+import { setActiveTool, setGrid, setWireframe } from "../store/slices/uiSlice";
 import { FaArrowsAlt, FaSyncAlt, FaPlus, FaThLarge } from "react-icons/fa";
 import { FaArrowsLeftRight } from "react-icons/fa6";
 import {
@@ -14,6 +14,10 @@ import {
   ListItemText,
   IconButton,
   Divider,
+  FormGroup,
+  FormControlLabel,
+  Switch,
+  FormLabel,
 } from "@mui/material";
 
 const Sidebar: React.FC = () => {
@@ -36,6 +40,16 @@ const Sidebar: React.FC = () => {
     dispatch(createNewModel({ type: "box" }));
   };
 
+  const handleGridChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(setGrid(event.target.checked));
+  };
+
+  const handleWireframeChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    dispatch(setWireframe(event.target.checked));
+  };
+
   return (
     <Box sx={styles.sidebar}>
       <Typography variant="h5" sx={styles.header}>
@@ -52,6 +66,10 @@ const Sidebar: React.FC = () => {
               borderRadius: 1,
               mb: 1,
               transition: "background-color 0.3s",
+              "&:hover": {
+                backgroundColor:
+                  model.id === selectedModelId ? "#16a085" : "#2c3e50",
+              },
             }}
           >
             <ListItemButton
@@ -107,72 +125,86 @@ const Sidebar: React.FC = () => {
       >
         Create Model
       </Button>
-      <Button
-        sx={styles.gridButton}
-        variant="contained"
-        startIcon={<FaThLarge />}
-        onClick={() => dispatch(toggleGrid())} // Toggle grid visibility
-      >
-        Toggle Grid
-      </Button>
+      <FormGroup sx={styles.formGroup}>
+        <FormLabel sx={styles.formLabel}>Adjust Scene</FormLabel>
+        <FormControlLabel
+          control={<Switch defaultChecked onChange={handleGridChange} />}
+          label="Show Grid"
+          sx={styles.switchControl}
+        />
+        <FormControlLabel
+          control={<Switch onChange={handleWireframeChange} />}
+          label="Show Wireframes"
+          sx={styles.switchControl}
+        />
+      </FormGroup>
     </Box>
   );
 };
 
 const styles = {
   sidebar: {
-    width: "240px",
+    width: "260px",
     background: "#2c3e50",
     color: "#ecf0f1",
     display: "flex",
     flexDirection: "column" as "column",
-    padding: 2,
-    boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
+    padding: "16px",
+    boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
+    borderRadius: "8px",
   },
   header: {
-    marginBottom: 2,
+    marginBottom: "16px",
     fontWeight: "bold",
     color: "#ecf0f1",
   },
   divider: {
-    marginBottom: 2,
+    marginBottom: "16px",
     backgroundColor: "#95a5a6",
   },
   toolButtons: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: 2,
+    marginBottom: "16px",
   },
   toolButton: {
     color: "#ecf0f1",
     transition: "background-color 0.3s",
-    width: "30%",
-    height: "40px",
-    borderRadius: 1,
+    width: "32%",
+    height: "48px",
+    borderRadius: "8px",
     "&:hover": {
       backgroundColor: "#16a085",
     },
   },
   createButton: {
-    marginTop: 2,
+    marginBottom: "16px",
     backgroundColor: "#1abc9c",
+    height: "48px",
     "&:hover": {
       backgroundColor: "#16a085",
     },
+    borderRadius: "8px",
   },
-  gridButton: {
-    marginTop: 2,
-    backgroundColor: "#34495e",
-    "&:hover": {
-      backgroundColor: "#16a085",
-    },
+  formGroup: {
+    marginTop: "16px",
+  },
+  formLabel: {
+    color: "#ecf0f1",
+    marginBottom: "8px",
+    fontWeight: "bold",
+  },
+  switchControl: {
+    marginBottom: "8px",
+    color: "#ecf0f1",
   },
   modelList: {
     overflowY: "auto" as "auto",
-    marginBottom: 2,
+    marginBottom: "16px",
   },
   modelItemButton: {
-    padding: "10px",
+    padding: "12px",
+    borderRadius: "8px",
   },
   modelItemText: {
     color: "#ecf0f1",

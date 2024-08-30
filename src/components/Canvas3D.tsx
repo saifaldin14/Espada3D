@@ -16,29 +16,51 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
     (state: any) => state.models.models
   ) as ModelMetadata[];
   const activeTool = useSelector((state: any) => state.ui.activeTool);
-  const showGrid = useSelector((state: any) => state.ui.showGrid); // Get grid visibility from Redux
+  const showGrid = useSelector((state: any) => state.ui.showGrid);
+  const showWireframe = useSelector((state: any) => state.ui.showWireframe);
   const [models, setModels] = useState<{ [id: string]: Group }>({});
 
   useEffect(() => {
     const newModels = { ...models }; // Start with the current models
 
     modelsMetadata.forEach((meta: ModelMetadata) => {
-      if (!newModels[meta.id]) {
-        // Only add new models that don't already exist
+      let modelGroup = newModels[meta.id];
+
+      if (!modelGroup) {
+        // Create new model if it doesn't exist
         const geometry = new BoxGeometry(1, 1, 1);
-        const material = new MeshStandardMaterial({ color: 0x00ff00 });
+        const material = new MeshStandardMaterial({
+          color: 0x00ff00,
+          wireframe: showWireframe,
+        });
         const mesh = new Mesh(geometry, material);
-        const group = new Group();
-        group.add(mesh);
-        group.position.set(...meta.position);
-        group.rotation.set(...meta.rotation);
-        group.scale.set(...meta.scale);
-        newModels[meta.id] = group;
+        modelGroup = new Group();
+        modelGroup.add(mesh);
+        modelGroup.position.set(...meta.position);
+        modelGroup.rotation.set(...meta.rotation);
+        modelGroup.scale.set(...meta.scale);
+        newModels[meta.id] = modelGroup;
+      } else {
+        // Update the wireframe property for existing models
+        const mesh = modelGroup.children[0] as Mesh;
+        const material = mesh.material;
+
+        if (Array.isArray(material)) {
+          material.forEach((mat) => {
+            if (mat instanceof MeshStandardMaterial) {
+              mat.wireframe = showWireframe;
+              mat.needsUpdate = true;
+            }
+          });
+        } else if (material instanceof MeshStandardMaterial) {
+          material.wireframe = showWireframe;
+          material.needsUpdate = true;
+        }
       }
     });
 
     setModels(newModels); // Update state with the new merged models
-  }, [modelsMetadata]);
+  }, [modelsMetadata, showWireframe]);
 
   return (
     <Canvas>

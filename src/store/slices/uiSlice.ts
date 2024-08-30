@@ -5,6 +5,7 @@ interface UIState {
   isSidebarOpen: boolean;    // Toggle the visibility of the sidebar
   isEditorOpen: boolean;     // Toggle the visibility of the model editor
   showGrid: boolean;       // Toggle the visibility of the grid
+  showWireframe: boolean;   // Toggle for wireframe view
 }
 
 const initialState: UIState = {
@@ -12,6 +13,7 @@ const initialState: UIState = {
   isSidebarOpen: true,
   isEditorOpen: true,
   showGrid: true,
+  showWireframe: false,
 };
 
 const uiSlice = createSlice({
@@ -27,11 +29,14 @@ const uiSlice = createSlice({
     toggleEditor: (state) => {
       state.isEditorOpen = !state.isEditorOpen;
     },
-    toggleGrid: (state) => {
-      state.showGrid = !state.showGrid;
+    setGrid: (state, action: PayloadAction<boolean>) => {
+      state.showGrid = action.payload;
+    },
+    setWireframe: (state, action: PayloadAction<boolean>) => {
+      state.showWireframe = action.payload;
     },
   },
 });
 
-export const { setActiveTool, toggleSidebar, toggleEditor, toggleGrid } = uiSlice.actions;
+export const { setActiveTool, toggleSidebar, toggleEditor, setGrid, setWireframe } = uiSlice.actions;
 export default uiSlice.reducer;
