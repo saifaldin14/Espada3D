@@ -1,28 +1,29 @@
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useThree } from '@react-three/fiber';
+import { useDispatch } from 'react-redux';
+import { useModel } from './ModelContext'; // Import the custom hook
+
+type Vector3Tuple = [number, number, number]; // Define a tuple type
 
 const ModelEditor: React.FC = () => {
-  const selectedModel = useSelector((state: any) => state.models.selectedModel);
+  const { selectedModel } = useModel();
   const dispatch = useDispatch();
-  const { scene } = useThree();
 
-  const [position, setPosition] = useState([0, 0, 0]);
-  const [rotation, setRotation] = useState([0, 0, 0]);
-  const [scale, setScale] = useState([1, 1, 1]);
+  const [position, setPosition] = useState<Vector3Tuple>([0, 0, 0]);
+  const [rotation, setRotation] = useState<Vector3Tuple>([0, 0, 0]);
+  const [scale, setScale] = useState<Vector3Tuple>([1, 1, 1]);
 
   const handlePositionChange = (axis: number, value: number) => {
-    const newPosition = [...position];
+    const newPosition: Vector3Tuple = [...position]; // Spread and enforce tuple type
     newPosition[axis] = value;
     setPosition(newPosition);
 
     if (selectedModel) {
-      selectedModel.position.set(...newPosition);
+      selectedModel.position.set(...newPosition); // Spread as tuple
     }
   };
 
   const handleRotationChange = (axis: number, value: number) => {
-    const newRotation = [...rotation];
+    const newRotation: Vector3Tuple = [...rotation];
     newRotation[axis] = value;
     setRotation(newRotation);
 
@@ -32,7 +33,7 @@ const ModelEditor: React.FC = () => {
   };
 
   const handleScaleChange = (axis: number, value: number) => {
-    const newScale = [...scale];
+    const newScale: Vector3Tuple = [...scale];
     newScale[axis] = value;
     setScale(newScale);
 
