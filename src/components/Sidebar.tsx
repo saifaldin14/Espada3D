@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { createNewModel, selectModel } from "../store/slices/modelSlice";
 import { setActiveTool, toggleGrid } from "../store/slices/uiSlice";
 import { FaArrowsAlt, FaSyncAlt, FaPlus, FaThLarge } from "react-icons/fa";
+import { FaArrowsLeftRight } from "react-icons/fa6";
 import {
   Box,
   Typography,
@@ -95,7 +96,7 @@ const Sidebar: React.FC = () => {
           }}
           onClick={() => handleToolSelect("scale")}
         >
-          <FaArrowsAlt />
+          <FaArrowsLeftRight />
         </IconButton>
       </Box>
       <Button
