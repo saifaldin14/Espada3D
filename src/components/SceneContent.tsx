@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { OrbitControls, TransformControls } from '@react-three/drei';
 import { Group, Raycaster, Vector2, Mesh, MeshStandardMaterial } from 'three';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { updateModelTransform, selectModel } from '../store/slices/modelSlice';
 
 interface SceneContentProps {
@@ -14,9 +14,10 @@ interface SceneContentProps {
 const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, activeTool }) => {
   const transformControlsRef = useRef<any>(null);
   const orbitControlsRef = useRef<any>(null);
-  const selectedMeshRef = useRef<Mesh | null>(null);  // The currently selected mesh
+  const selectedMeshRef = useRef<Mesh | null>(null);
   const dispatch = useDispatch();
   const { camera, gl } = useThree();
+  const selectedModelId = useSelector((state: any) => state.models.selectedModelId);
 
   const handleTransformChange = () => {
     if (selectedModel) {
@@ -78,7 +79,18 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, acti
         if (orbitControls) orbitControls.enabled = !event.value;
       });
     }
-  }, [selectedModel, activeTool]);
+
+    if (selectedModelId) {
+      // Update the selectedMeshRef to the currently selected model's mesh
+      const selectedGroup = models[selectedModelId];
+      if (selectedGroup) {
+        selectedMeshRef.current = selectedGroup.children[0] as Mesh;
+
+        // Ensure the selected model is highlighted in blue
+        (selectedMeshRef.current.material as MeshStandardMaterial).color.set(0x0000ff);
+      }
+    }
+  }, [selectedModelId, selectedModel, activeTool]);
 
   return (
     <>
