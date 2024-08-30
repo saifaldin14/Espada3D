@@ -15,18 +15,23 @@ const ModelEditor: React.FC = () => {
 
   useEffect(() => {
     if (selectedModel) {
-      setPosition(selectedModel.position.toArray() as [number, number, number]);
-      setRotation(selectedModel.rotation.toArray().slice(0, 3) as [number, number, number]);
-      setScale(selectedModel.scale.toArray() as [number, number, number]);
+      const newPosition = selectedModel.position.toArray().map(n => (isNaN(n) ? 0 : n)) as [number, number, number];
+      const newRotation = selectedModel.rotation.toArray().slice(0, 3).map(n => (typeof n === 'number' ? n : 0)) as [number, number, number];
+      const newScale = selectedModel.scale.toArray().map(n => (isNaN(n) ? 1 : n)) as [number, number, number];
+      setPosition(newPosition);
+      setRotation(newRotation);
+      setScale(newScale);
     }
   }, [selectedModel]);
 
   const handleTransformChange = (axis: number, value: number) => {
     if (!selectedModelId) return;
 
-    let newPosition: [number, number, number] = [...position] as [number, number, number];
-    let newRotation: [number, number, number] = [...rotation] as [number, number, number];
-    let newScale: [number, number, number] = [...scale] as [number, number, number];
+    let newPosition: [number, number, number] = [...position];
+    let newRotation: [number, number, number] = [...rotation];
+    let newScale: [number, number, number] = [...scale];
+
+    if (isNaN(value)) value = 0; // Prevent NaN
 
     switch (activeTool) {
       case 'translate':

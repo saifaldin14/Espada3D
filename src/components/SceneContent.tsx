@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { OrbitControls, TransformControls } from '@react-three/drei';
-import { Group, Raycaster, Vector2, Mesh, MeshStandardMaterial, Euler } from 'three';
+import { Group, Raycaster, Vector2, Mesh, MeshStandardMaterial } from 'three';
 import { useDispatch } from 'react-redux';
 import { updateModelTransform, selectModel } from '../store/slices/modelSlice';
 
@@ -19,14 +19,12 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, selectedModel, acti
   const dispatch = useDispatch();
   const { camera, gl } = useThree();
 
-  const isNumber = (value: any): value is number => typeof value === 'number';
-
   const handleTransformChange = () => {
     if (selectedModel) {
       const position = selectedModel.position.toArray().map(n => (isNaN(n) ? 0 : n)) as [number, number, number];
       
       const rotationArray = selectedModel.rotation.toArray();
-      const rotation = rotationArray.slice(0, 3).map(n => (isNumber(n) ? n : 0)) as [number, number, number]; // Handle potential undefined or non-number values
+      const rotation = rotationArray.slice(0, 3).map(n => (typeof n === 'number' ? n : 0)) as [number, number, number]; // Ensure it's a number
       
       const scale = selectedModel.scale.toArray().map(n => (isNaN(n) ? 1 : n)) as [number, number, number];
       
