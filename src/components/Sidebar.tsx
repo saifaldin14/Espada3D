@@ -4,6 +4,17 @@ import { createNewModel, selectModel } from "../store/slices/modelSlice";
 import { setActiveTool } from "../store/slices/uiSlice";
 import { FaArrowsAlt, FaSyncAlt, FaPlus } from "react-icons/fa";
 import { FaArrowsLeftRight } from "react-icons/fa6";
+import {
+  Box,
+  Typography,
+  Button,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  IconButton,
+  Divider,
+} from "@mui/material";
 
 const Sidebar: React.FC = () => {
   const models = useSelector((state: any) => state.models.models);
@@ -26,61 +37,77 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <>
-      <div style={styles.sidebar}>
-        <h3>Models</h3>
-        <ul style={styles.modelList}>
-          {models.map((model: any, index: number) => (
-            <li
-              key={index}
-              style={{
-                ...styles.modelItem,
-                backgroundColor:
-                  model.id === selectedModelId ? "#1abc9c" : "#34495e", // Highlight selected model
-              }}
-              onClick={() => handleModelSelect(model.id)} // Pass the model ID
+    <Box sx={styles.sidebar}>
+      <Typography variant="h5" sx={styles.header}>
+        Models
+      </Typography>
+      <List sx={styles.modelList}>
+        {models.map((model: any, index: number) => (
+          <ListItem
+            key={index}
+            disablePadding
+            sx={{
+              backgroundColor:
+                model.id === selectedModelId ? "#1abc9c" : "#34495e",
+              borderRadius: 1,
+              mb: 1,
+              transition: "background-color 0.3s",
+            }}
+          >
+            <ListItemButton
+              onClick={() => handleModelSelect(model.id)}
+              sx={styles.modelItemButton}
             >
-              Model {index + 1}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div style={styles.toolbar}>
-        <h3>Controls</h3>
-        <div style={styles.toolButtons}>
-          <button
-            style={{
-              ...styles.toolButton,
-              background: activeTool === "translate" ? "#16a085" : "#1abc9c",
-            }}
-            onClick={() => handleToolSelect("translate")}
-          >
-            <FaArrowsAlt />
-          </button>
-          <button
-            style={{
-              ...styles.toolButton,
-              background: activeTool === "rotate" ? "#16a085" : "#1abc9c",
-            }}
-            onClick={() => handleToolSelect("rotate")}
-          >
-            <FaSyncAlt />
-          </button>
-          <button
-            style={{
-              ...styles.toolButton,
-              background: activeTool === "scale" ? "#16a085" : "#1abc9c",
-            }}
-            onClick={() => handleToolSelect("scale")}
-          >
-            <FaArrowsLeftRight />
-          </button>
-        </div>
-        <button style={styles.createButton} onClick={handleCreateModel}>
-          <FaPlus /> Create Model
-        </button>
-      </div>
-    </>
+              <ListItemText
+                primary={`Model ${index + 1}`}
+                sx={styles.modelItemText}
+              />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+      <Divider sx={styles.divider} />
+      <Typography variant="h5" sx={styles.header}>
+        Controls
+      </Typography>
+      <Box sx={styles.toolButtons}>
+        <IconButton
+          sx={{
+            ...styles.toolButton,
+            backgroundColor: activeTool === "translate" ? "#16a085" : "#1abc9c",
+          }}
+          onClick={() => handleToolSelect("translate")}
+        >
+          <FaArrowsAlt />
+        </IconButton>
+        <IconButton
+          sx={{
+            ...styles.toolButton,
+            backgroundColor: activeTool === "rotate" ? "#16a085" : "#1abc9c",
+          }}
+          onClick={() => handleToolSelect("rotate")}
+        >
+          <FaSyncAlt />
+        </IconButton>
+        <IconButton
+          sx={{
+            ...styles.toolButton,
+            backgroundColor: activeTool === "scale" ? "#16a085" : "#1abc9c",
+          }}
+          onClick={() => handleToolSelect("scale")}
+        >
+          <FaArrowsLeftRight />
+        </IconButton>
+      </Box>
+      <Button
+        sx={styles.createButton}
+        variant="contained"
+        startIcon={<FaPlus />}
+        onClick={handleCreateModel}
+      >
+        Create Model
+      </Button>
+    </Box>
   );
 };
 
@@ -89,59 +116,51 @@ const styles = {
     width: "240px",
     background: "#2c3e50",
     color: "#ecf0f1",
-    padding: "10px",
-    display: "flex",
-    flexDirection: "column" as "column", // Ensure correct flex direction
-  },
-  toolbar: {
-    background: "#2c3e50",
-    color: "#ecf0f1",
     display: "flex",
     flexDirection: "column" as "column",
-    padding: "10px",
-    width: "240px",
+    padding: 2,
+    boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
+  },
+  header: {
+    marginBottom: 2,
+    fontWeight: "bold",
+    color: "#ecf0f1",
+  },
+  divider: {
+    marginBottom: 2,
+    backgroundColor: "#95a5a6",
   },
   toolButtons: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "10px",
+    marginBottom: 2,
   },
   toolButton: {
-    background: "#1abc9c",
     color: "#ecf0f1",
-    border: "none",
-    padding: "10px",
-    borderRadius: "4px",
-    cursor: "pointer",
-    transition: "background 0.3s",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
+    transition: "background-color 0.3s",
     width: "30%",
+    height: "40px",
+    borderRadius: 1,
+    "&:hover": {
+      backgroundColor: "#16a085",
+    },
   },
   createButton: {
-    background: "#1abc9c",
-    color: "#ecf0f1",
-    border: "none",
-    padding: "10px",
-    borderRadius: "4px",
-    cursor: "pointer",
-    transition: "background 0.3s",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
+    marginTop: 2,
+    backgroundColor: "#1abc9c",
+    "&:hover": {
+      backgroundColor: "#16a085",
+    },
   },
   modelList: {
-    listStyleType: "none",
-    padding: 0,
+    overflowY: "auto" as "auto",
+    marginBottom: 2,
   },
-  modelItem: {
-    padding: "8px",
-    cursor: "pointer",
-    marginBottom: "5px",
-    borderRadius: "4px",
-    transition: "background-color 0.3s",
+  modelItemButton: {
+    padding: "10px",
+  },
+  modelItemText: {
+    color: "#ecf0f1",
   },
 };
 
