@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useModel } from './ModelContext';
 import { updateModelTransform } from '../store/slices/modelSlice';
@@ -6,31 +6,46 @@ import { updateModelTransform } from '../store/slices/modelSlice';
 const ModelEditor: React.FC = () => {
   const { selectedModel } = useModel();
   const selectedModelId = useSelector((state: any) => state.models.selectedModelId);
+  const activeTool = useSelector((state: any) => state.ui.activeTool); // Get the active tool from Redux
   const dispatch = useDispatch();
 
   const [position, setPosition] = useState<[number, number, number]>([0, 0, 0]);
   const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]);
   const [scale, setScale] = useState<[number, number, number]>([1, 1, 1]);
 
-  const handlePositionChange = (axis: number, value: number) => {
-    const newPosition: [number, number, number] = [...position];
-    newPosition[axis] = value;
-    setPosition(newPosition);
-    dispatch(updateModelTransform({ id: selectedModelId, position: newPosition, rotation, scale }));
-  };
+  useEffect(() => {
+    if (selectedModel) {
+      setPosition(selectedModel.position.toArray() as [number, number, number]);
+      setRotation(selectedModel.rotation.toArray().slice(0, 3) as [number, number, number]);
+      setScale(selectedModel.scale.toArray() as [number, number, number]);
+    }
+  }, [selectedModel]);
 
-  const handleRotationChange = (axis: number, value: number) => {
-    const newRotation: [number, number, number] = [...rotation];
-    newRotation[axis] = value;
-    setRotation(newRotation);
-    dispatch(updateModelTransform({ id: selectedModelId, position, rotation: newRotation, scale }));
-  };
+  const handleTransformChange = (axis: number, value: number) => {
+    if (!selectedModelId) return;
 
-  const handleScaleChange = (axis: number, value: number) => {
-    const newScale: [number, number, number] = [...scale];
-    newScale[axis] = value;
-    setScale(newScale);
-    dispatch(updateModelTransform({ id: selectedModelId, position, rotation, scale: newScale }));
+    let newPosition: [number, number, number] = [...position] as [number, number, number];
+    let newRotation: [number, number, number] = [...rotation] as [number, number, number];
+    let newScale: [number, number, number] = [...scale] as [number, number, number];
+
+    switch (activeTool) {
+      case 'translate':
+        newPosition[axis] = value;
+        setPosition(newPosition);
+        break;
+      case 'rotate':
+        newRotation[axis] = value;
+        setRotation(newRotation);
+        break;
+      case 'scale':
+        newScale[axis] = value;
+        setScale(newScale);
+        break;
+      default:
+        return;
+    }
+
+    dispatch(updateModelTransform({ id: selectedModelId, position: newPosition, rotation: newRotation, scale: newScale }));
   };
 
   return (
@@ -38,44 +53,14 @@ const ModelEditor: React.FC = () => {
       <h3>Model Editor</h3>
 
       <div style={styles.controlGroup}>
-        <h4>Position</h4>
+        <h4>{activeTool?.charAt(0).toUpperCase() + activeTool?.slice(1)}</h4>
         {['X', 'Y', 'Z'].map((axis, i) => (
           <div key={i} style={styles.control}>
             <label>{axis}</label>
             <input
               type="number"
-              value={position[i]}
-              onChange={(e) => handlePositionChange(i, parseFloat(e.target.value))}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div style={styles.controlGroup}>
-        <h4>Rotation</h4>
-        {['X', 'Y', 'Z'].map((axis, i) => (
-          <div key={i} style={styles.control}>
-            <label>{axis}</label>
-            <input
-              type="number"
-              step="0.1"
-              value={rotation[i]}
-              onChange={(e) => handleRotationChange(i, parseFloat(e.target.value))}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div style={styles.controlGroup}>
-        <h4>Scale</h4>
-        {['X', 'Y', 'Z'].map((axis, i) => (
-          <div key={i} style={styles.control}>
-            <label>{axis}</label>
-            <input
-              type="number"
-              step="0.1"
-              value={scale[i]}
-              onChange={(e) => handleScaleChange(i, parseFloat(e.target.value))}
+              value={activeTool === 'translate' ? position[i] : activeTool === 'rotate' ? rotation[i] : scale[i]}
+              onChange={(e) => handleTransformChange(i, parseFloat(e.target.value))}
             />
           </div>
         ))}
