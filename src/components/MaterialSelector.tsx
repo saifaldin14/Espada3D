@@ -23,7 +23,9 @@ const MaterialSelector: React.FC = () => {
       dispatch(
         updateModelMaterial({
           id: selectedModelId,
-          material: event.target.value as "standard" | "phong" | "lambert",
+          material: {
+            type: event.target.value as "standard" | "phong" | "lambert",
+          },
         })
       );
     }

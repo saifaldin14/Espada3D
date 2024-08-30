@@ -3,13 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type Vector3Tuple = [number, number, number];
 
+export interface MaterialProperties {
+  type: "standard" | "phong" | "lambert";
+  color?: string;
+}
+
 export interface ModelMetadata {
   id: string;
   type: 'box' | 'sphere' | 'cylinder'; // Update to include new types
   position: Vector3Tuple;
   rotation: Vector3Tuple;
   scale: Vector3Tuple;
-  material: 'standard' | 'phong' | 'lambert';
+  material: MaterialProperties;
 }
 
 export interface ModelState {
@@ -44,7 +49,7 @@ const modelSlice = createSlice({
         model.scale = action.payload.scale;
       }
     },
-    updateModelMaterial: (state, action: PayloadAction<{ id: string; material: 'standard' | 'phong' | 'lambert' }>) => {
+    updateModelMaterial: (state, action: PayloadAction<{ id: string; material: MaterialProperties }>) => {
       const model = state.models.find((m) => m.id === action.payload.id);
       if (model) {
         model.material = action.payload.material;
@@ -52,7 +57,7 @@ const modelSlice = createSlice({
     },
     createNewModel: (
       state,
-      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple; material?: 'standard' | 'phong' | 'lambert' }>
+      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple; material?: MaterialProperties }>
     ) => {
       const newModel: ModelMetadata = {
         id: uuidv4(), // Generate a new unique ID
@@ -60,7 +65,10 @@ const modelSlice = createSlice({
         position: action.payload.position || [0, 0, 0],
         rotation: action.payload.rotation || [0, 0, 0],
         scale: action.payload.scale || [1, 1, 1],
-        material: 'standard'
+        material: {
+          type: "standard",
+          color: "#ecf0f1",
+        }
       };
       state.models.push(newModel);
       state.selectedModelId = newModel.id;

@@ -11,7 +11,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { createNewModel } from "../store/slices/modelSlice";
+import { createNewModel, MaterialProperties } from "../store/slices/modelSlice";
 
 interface CreateModelModalProps {
   open: boolean;
@@ -25,9 +25,9 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
   const [modelType, setModelType] = useState<"box" | "sphere" | "cylinder">(
     "box"
   );
-  const [material, setMaterial] = useState<"standard" | "phong" | "lambert">(
-    "standard"
-  );
+  const [material, setMaterial] = useState<MaterialProperties>({
+    type: "standard",
+  });
   const dispatch = useDispatch();
 
   const handleCreateModel = () => {
@@ -59,7 +59,9 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
           <Select
             value={material}
             onChange={(e) =>
-              setMaterial(e.target.value as "standard" | "phong" | "lambert")
+              setMaterial({
+                type: e.target.value as "standard" | "phong" | "lambert",
+              })
             }
             label="Material"
           >

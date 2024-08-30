@@ -52,7 +52,7 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
 
         // Create the material based on the selected type
         let material;
-        switch (meta.material) {
+        switch (meta.material.type) {
           case "phong":
             material = new MeshPhongMaterial({
               color: 0x00ff00,
