@@ -7,19 +7,25 @@ import ModelEditor from './components/ModelEditor';
 import { Provider } from 'react-redux';
 import store from './store';
 import { Group } from 'three';
+import { ModelProvider } from './components/ModelContext';
 
 const App: React.FC = () => {
   const selectedModel = useSelector((state: any) => state.models.selectedModel) as Group | null;
 
   return (
-    <div style={styles.container}>
-      <Sidebar />
-      <div style={styles.mainContent}>
-        <Toolbar />
-        <Canvas3D selectedModel={selectedModel} />
+    <Provider store={store}>
+      <div style={styles.container}>
+        <Sidebar />
+        <div style={styles.mainContent}>
+          <Toolbar />
+          <Canvas3D selectedModel={selectedModel} />
+        </div>
+        {/* Wrap ModelEditor in its own ModelProvider */}
+        <ModelProvider selectedModel={selectedModel}>
+          <ModelEditor />
+        </ModelProvider>
       </div>
-      <ModelEditor />
-    </div>
+    </Provider>
   );
 };
 
@@ -34,8 +40,4 @@ const styles = {
   },
 };
 
-export default () => (
-  <Provider store={store}>
-    <App />
-  </Provider>
-);
+export default App;
