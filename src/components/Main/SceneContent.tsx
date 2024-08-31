@@ -115,9 +115,9 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         outlineMeshRef.current.removeFromParent();
         selectedMeshRef.current.remove();
       }
-    }
 
-    selectedMeshRef.current = null;
+      selectedMeshRef.current = null;
+    }
   };
 
   const handleObjectClick = (
