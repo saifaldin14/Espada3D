@@ -89,42 +89,36 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
           }
         }
       } else {
-        // If the selected model has been deleted, clear the selection and controls
-        const model: ModelMetadata = sceneModels.find(
-          (m: any) => m.id === selectedModelId
-        );
-
-        if (!model && selectedMeshRef.current) {
-          selectedMeshRef.current.visible = false;
-          selectedMeshRef.current.removeFromParent();
-          selectedMeshRef.current.remove();
-
-          if (transformControlsRef.current)
-            transformControlsRef.current.detach();
-
-          if (outlineMeshRef.current) outlineMeshRef.current.visible = false;
-        }
-
-        selectedMeshRef.current = null;
+        handleDelete();
       }
     } else {
-      const model: ModelMetadata = sceneModels.find(
-        (m: any) => m.id === selectedModelId
-      );
-
-      if (!model && selectedMeshRef.current) {
-        selectedMeshRef.current.visible = false;
-        selectedMeshRef.current.removeFromParent();
-        selectedMeshRef.current.remove();
-
-        if (transformControlsRef.current) transformControlsRef.current.detach();
-
-        if (outlineMeshRef.current) outlineMeshRef.current.visible = false;
-      }
-
-      selectedMeshRef.current = null;
+      handleDelete();
     }
   }, [selectedModelId, renderedModels, sceneModels, dispatch]);
+
+  const handleDelete = () => {
+    const model: ModelMetadata = sceneModels.find(
+      (m: any) => m.id === selectedModelId
+    );
+
+    if (!model && selectedMeshRef.current) {
+      selectedMeshRef.current.visible = false;
+      selectedMeshRef.current.removeFromParent();
+      selectedMeshRef.current.remove();
+
+      if (transformControlsRef.current) {
+        transformControlsRef.current.detach();
+      }
+
+      if (outlineMeshRef.current) {
+        outlineMeshRef.current.visible = false;
+        outlineMeshRef.current.removeFromParent();
+        selectedMeshRef.current.remove();
+      }
+    }
+
+    selectedMeshRef.current = null;
+  };
 
   const handleObjectClick = (
     mesh: Object3D<Object3DEventMap>,
@@ -171,6 +165,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         outlineMeshRef.current.scale
           .copy(selectedMeshRef.current.scale)
           .multiplyScalar(1.05);
+        outlineMeshRef.current.visible = true;
       }
     }
   };
@@ -194,6 +189,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     outlineMeshRef.current.position.copy(mesh.position);
     outlineMeshRef.current.rotation.copy(mesh.rotation);
     outlineMeshRef.current.renderOrder = 999;
+    outlineMeshRef.current.visible = true;
     mesh.parent?.add(outlineMeshRef.current);
   };
 
