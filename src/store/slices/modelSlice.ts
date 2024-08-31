@@ -87,18 +87,21 @@ const modelSlice = createSlice({
         }
       }
     },
-    // In your Redux slice (modelSlice.ts or modelSlice.js)
     duplicateModel: (state, action: PayloadAction<string>) => {
       const originalModel = state.models.find((model) => model.id === action.payload);
       if (originalModel) {
         const newModel: ModelMetadata = {
           ...originalModel,
           id: uuidv4(), // Assign a new unique ID for the duplicated model
-          position: [...originalModel.position] as Vector3Tuple, // Clone position
-          rotation: [...originalModel.rotation] as Vector3Tuple, // Clone rotation
-          scale: [...originalModel.scale] as Vector3Tuple, // Clone scale
+          position: [...originalModel.position] as Vector3Tuple, // Exact clone of position
+          rotation: [...originalModel.rotation] as Vector3Tuple, // Exact clone of rotation
+          scale: [...originalModel.scale] as Vector3Tuple, // Exact clone of scale
           material: { ...originalModel.material }, // Clone material properties
         };
+
+        // Place the new model slightly offset from the original to avoid overlap, if necessary
+        newModel.position[0] += 0.5;
+
         state.models.push(newModel);
         state.selectedModelId = newModel.id; // Select the duplicated model
       }
