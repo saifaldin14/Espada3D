@@ -82,6 +82,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
 
           // Create or update the outline mesh
           createOrUpdateOutlineMesh(selectedMeshRef.current);
+          dispatch(selectModel(selectedModelId));
 
           if (transformControlsRef.current) {
             transformControlsRef.current.attach(selectedMeshRef.current);
@@ -133,6 +134,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
 
     if (modelId && selectedModelId !== modelId) {
       selectedMeshRef.current = mesh as Mesh;
+      createOrUpdateOutlineMesh(selectedMeshRef.current);
       dispatch(selectModel(modelId));
     }
   };
@@ -191,10 +193,11 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       mesh.parent?.add(outlineMeshRef.current);
     } else {
       outlineMeshRef.current.geometry.copy(mesh.geometry);
-      outlineMeshRef.current.visible = true;
       outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
       outlineMeshRef.current.position.copy(mesh.position);
       outlineMeshRef.current.rotation.copy(mesh.rotation);
+      outlineMeshRef.current.renderOrder = 999;
+      mesh.parent?.add(outlineMeshRef.current);
     }
   };
 
