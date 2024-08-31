@@ -186,19 +186,15 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       });
 
       outlineMeshRef.current = new Mesh(geometry, outlineMaterial);
-      outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
-      outlineMeshRef.current.position.copy(mesh.position);
-      outlineMeshRef.current.rotation.copy(mesh.rotation);
-      outlineMeshRef.current.renderOrder = 999;
-      mesh.parent?.add(outlineMeshRef.current);
     } else {
       outlineMeshRef.current.geometry.copy(mesh.geometry);
-      outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
-      outlineMeshRef.current.position.copy(mesh.position);
-      outlineMeshRef.current.rotation.copy(mesh.rotation);
-      outlineMeshRef.current.renderOrder = 999;
-      mesh.parent?.add(outlineMeshRef.current);
     }
+
+    outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
+    outlineMeshRef.current.position.copy(mesh.position);
+    outlineMeshRef.current.rotation.copy(mesh.rotation);
+    outlineMeshRef.current.renderOrder = 999;
+    mesh.parent?.add(outlineMeshRef.current);
   };
 
   return (
