@@ -4,6 +4,7 @@ import {
   selectModel,
   removeModel,
   duplicateModel,
+  clearSelection,
 } from "../../store/slices/modelSlice";
 import {
   setActiveTool,
@@ -37,16 +38,16 @@ import CreateModelModal from "./CreateModelModal";
 
 const Sidebar: React.FC = () => {
   const models = useSelector((state: any) => state.models.models);
-  const selectedModelId = useSelector(
-    (state: any) => state.models.selectedModelId
-  );
+  const selectedModelIds = useSelector(
+    (state: any) => state.models.selectedModelIds
+  ); // Track multiple selected models
   const activeTool = useSelector((state: any) => state.ui.activeTool);
   const dispatch = useDispatch();
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  const handleModelSelect = (id: string) => {
-    dispatch(selectModel(id));
+  const handleModelSelect = (id: string, multiSelect: boolean) => {
+    dispatch(selectModel({ id, multiSelect }));
   };
 
   const handleToolSelect = (tool: "translate" | "rotate" | "scale") => {
@@ -72,15 +73,16 @@ const Sidebar: React.FC = () => {
   };
 
   const handleDeleteModel = () => {
-    if (selectedModelId) {
-      dispatch(removeModel(selectedModelId));
-    }
+    selectedModelIds.forEach((id: string) => {
+      dispatch(removeModel(id));
+    });
+    dispatch(clearSelection()); // Clear selection after deletion
   };
 
   const handleDuplicateModel = () => {
-    if (selectedModelId) {
-      dispatch(duplicateModel(selectedModelId));
-    }
+    selectedModelIds.forEach((id: string) => {
+      dispatch(duplicateModel(id));
+    });
   };
 
   return (
@@ -95,19 +97,24 @@ const Sidebar: React.FC = () => {
               key={index}
               disablePadding
               sx={{
-                backgroundColor:
-                  model.id === selectedModelId ? "#1abc9c" : "#34495e",
+                backgroundColor: selectedModelIds.includes(model.id)
+                  ? "#1abc9c"
+                  : "#34495e",
                 borderRadius: 1,
                 mb: 1,
                 transition: "background-color 0.3s",
                 "&:hover": {
-                  backgroundColor:
-                    model.id === selectedModelId ? "#16a085" : "#2c3e50",
+                  backgroundColor: selectedModelIds.includes(model.id)
+                    ? "#16a085"
+                    : "#2c3e50",
                 },
               }}
             >
               <ListItemButton
-                onClick={() => handleModelSelect(model.id)}
+                onClick={
+                  (e: { shiftKey: boolean }) =>
+                    handleModelSelect(model.id, e.shiftKey) // Support multi-select with SHIFT key
+                }
                 sx={styles.modelItemButton}
               >
                 <ListItemText
@@ -157,15 +164,15 @@ const Sidebar: React.FC = () => {
       <Box sx={styles.actionButtons}>
         <IconButton
           sx={styles.actionButton}
-          disabled={!selectedModelId}
-          onClick={() => handleDuplicateModel()}
+          disabled={selectedModelIds.length === 0}
+          onClick={handleDuplicateModel}
         >
           <FaCopy />
         </IconButton>
         <IconButton
           sx={styles.actionButton}
-          disabled={!selectedModelId}
-          onClick={() => handleDeleteModel()}
+          disabled={selectedModelIds.length === 0}
+          onClick={handleDeleteModel}
         >
           <FaTrashAlt />
         </IconButton>

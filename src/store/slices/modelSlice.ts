@@ -15,17 +15,17 @@ export interface ModelMetadata {
   rotation: Vector3Tuple;
   scale: Vector3Tuple;
   material: MaterialProperties;
-  parentId: string | null; // To manage hierarchy
+  parentId: string | null;
 }
 
 export interface ModelState {
   models: Array<ModelMetadata>;
-  selectedModelId: string | null;
+  selectedModelIds: string[]; // Updated to an array of selected IDs
 }
 
 const initialState: ModelState = {
   models: [],
-  selectedModelId: null,
+  selectedModelIds: [], // Initialize as an empty array
 };
 
 const modelSlice = createSlice({
@@ -34,10 +34,24 @@ const modelSlice = createSlice({
   reducers: {
     addModel: (state, action: PayloadAction<ModelMetadata>) => {
       state.models.push(action.payload);
-      state.selectedModelId = action.payload.id;  // Automatically select the new model
+      state.selectedModelIds = [action.payload.id];  // Automatically select the new model
     },
-    selectModel: (state, action: PayloadAction<string | null>) => {
-      state.selectedModelId = action.payload;
+    selectModel: (state, action: PayloadAction<{ id: string; multiSelect: boolean }>) => {
+      if (action.payload.multiSelect) {
+        if (state.selectedModelIds.includes(action.payload.id)) {
+          // If already selected, deselect it
+          state.selectedModelIds = state.selectedModelIds.filter(id => id !== action.payload.id);
+        } else {
+          // Add to selected models
+          state.selectedModelIds.push(action.payload.id);
+        }
+      } else {
+        // Single selection mode
+        state.selectedModelIds = [action.payload.id];
+      }
+    },
+    clearSelection: (state) => {
+      state.selectedModelIds = [];
     },
     updateModelTransform: (
       state,
@@ -73,7 +87,7 @@ const modelSlice = createSlice({
         parentId: action.payload.parentId || null, // Set parentId
       };
       state.models.push(newModel);
-      state.selectedModelId = newModel.id;
+      state.selectedModelIds = [newModel.id];
     },
     removeModel: (state, action: PayloadAction<string>) => {
       const modelToRemove = state.models.find((model) => model.id === action.payload);
@@ -82,9 +96,7 @@ const modelSlice = createSlice({
         state.models = state.models.filter(
           (model) => model.id !== action.payload && model.parentId !== action.payload
         );
-        if (state.selectedModelId === action.payload) {
-          state.selectedModelId = null; // Deselect the model if it was selected
-        }
+        state.selectedModelIds = state.selectedModelIds.filter(id => id !== action.payload); // Deselect the model if it was selected
       }
     },
     duplicateModel: (state, action: PayloadAction<string>) => {
@@ -93,17 +105,13 @@ const modelSlice = createSlice({
         const newModel: ModelMetadata = {
           ...originalModel,
           id: uuidv4(), // Assign a new unique ID for the duplicated model
-          position: [...originalModel.position] as Vector3Tuple, // Exact clone of position
-          rotation: [...originalModel.rotation] as Vector3Tuple, // Exact clone of rotation
-          scale: [...originalModel.scale] as Vector3Tuple, // Exact clone of scale
+          position: [...originalModel.position] as Vector3Tuple, // Clone position
+          rotation: [...originalModel.rotation] as Vector3Tuple, // Clone rotation
+          scale: [...originalModel.scale] as Vector3Tuple, // Clone scale
           material: { ...originalModel.material }, // Clone material properties
         };
-
-        // Place the new model slightly offset from the original to avoid overlap, if necessary
-        newModel.position[0] += 0.5;
-
         state.models.push(newModel);
-        state.selectedModelId = newModel.id; // Select the duplicated model
+        state.selectedModelIds = [newModel.id]; // Select the duplicated model
       }
     },
   },
@@ -112,10 +120,12 @@ const modelSlice = createSlice({
 export const { 
   addModel, 
   selectModel, 
+  clearSelection,
   updateModelMaterial,
   updateModelTransform,
   createNewModel, 
   removeModel, 
-  duplicateModel, 
+  duplicateModel 
 } = modelSlice.actions;
+
 export default modelSlice.reducer;
