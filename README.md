@@ -1,5 +1,7 @@
 # Espada3D: A Custom 3D Web Model Editor
 
+Custom web-based 3D rendering and modelling engine. It is built with React, TypeScript, R3F and Redux
+
 Adding models in a scene
 ![](images/1.png)
 
