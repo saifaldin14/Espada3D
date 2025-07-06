@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { UIState, ToolType, EditMode, SelectionMode, SubObjectType, SelectSubObjectPayload, MeshEditData } from '../../types';
+import { UIState, ToolType, EditMode, SelectionMode, SubObjectType, SelectSubObjectPayload, MeshEditData, GeometryData } from '../../types';
 
 const initialState: UIState = {
   activeTool: 'translate',
@@ -14,6 +14,7 @@ const initialState: UIState = {
   snap: false,
   snapSize: 0.5,
   meshEditData: {},
+  geometryCache: {},
   subObjectSelectionMode: 'single',
   currentSubObjectType: 'vertex',
 };
@@ -100,6 +101,12 @@ const uiSlice = createSlice({
     clearMeshEditData: (state, action: PayloadAction<string>) => {
       delete state.meshEditData[action.payload];
     },
+    setGeometryCache: (state, action: PayloadAction<GeometryData>) => {
+      state.geometryCache[action.payload.modelId] = action.payload;
+    },
+    clearGeometryCache: (state, action: PayloadAction<string>) => {
+      delete state.geometryCache[action.payload];
+    },
   },
 });
 
@@ -119,6 +126,8 @@ export const {
   setCurrentSubObjectType,
   initializeMeshEditData,
   selectSubObjects,
-  clearMeshEditData
+  clearMeshEditData,
+  setGeometryCache,
+  clearGeometryCache,
 } = uiSlice.actions;
 export default uiSlice.reducer;

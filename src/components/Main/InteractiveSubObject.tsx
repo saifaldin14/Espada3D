@@ -247,6 +247,20 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     );
   };
 
+  // Debug: Log the state to understand what's happening
+  React.useEffect(() => {
+    console.log("InteractiveSubObject Debug:", {
+      modelId,
+      editMode,
+      currentSubObjectType,
+      meshEditData: !!meshEditData,
+      meshEditDataKeys: meshEditData ? Object.keys(meshEditData) : "none",
+      vertexCount: meshEditData?.vertices?.length || 0,
+      edgeCount: meshEditData?.edges?.length || 0,
+      faceCount: meshEditData?.faces?.length || 0,
+    });
+  }, [modelId, editMode, currentSubObjectType, meshEditData]);
+
   if (!["vertex", "edge", "face"].includes(editMode)) {
     return (
       <mesh

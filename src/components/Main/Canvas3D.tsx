@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { GizmoHelper, GizmoViewcube } from "@react-three/drei";
+import { useDispatch } from "react-redux";
 import {
   Group,
   BoxGeometry,
@@ -15,9 +16,13 @@ import { ModelProvider } from "./ModelContext";
 import SceneContent from "./SceneContent";
 import ErrorBoundary from "../ErrorBoundary";
 import { useAppSelector } from "../../hooks/useRedux";
+import { setGeometryCache } from "../../store/slices/uiSlice";
+import { MeshEditor } from "../../utils/meshEditor";
 import { APP_CONFIG } from "../../config/constants";
+import { GeometryType } from "../../types";
 
 const Canvas3D: React.FC = () => {
+  const dispatch = useDispatch();
   const modelsMetadata = useAppSelector((state) => state.models.models);
   const activeTool = useAppSelector((state) => state.ui.activeTool);
   const showGrid = useAppSelector((state) => state.ui.showGrid);
@@ -63,6 +68,22 @@ const Canvas3D: React.FC = () => {
           case "box":
           default:
             geometry = new BoxGeometry(1, 1, 1);
+        }
+
+        // Cache geometry data for mesh editing
+        try {
+          const geometryData = MeshEditor.createGeometryData(
+            geometry,
+            meta.id,
+            meta.type
+          );
+          dispatch(setGeometryCache(geometryData));
+        } catch (error) {
+          console.warn(
+            "Failed to cache geometry data for model",
+            meta.id,
+            error
+          );
         }
 
         const material = createMaterial(

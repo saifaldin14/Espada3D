@@ -21,6 +21,7 @@ import { MeshEditor } from "../../utils/meshEditor";
 import VertexEditor from "./VertexEditor";
 import EdgeEditor from "./EdgeEditor";
 import FaceEditor from "./FaceEditor";
+import * as THREE from "three";
 
 interface SubObjectEditorProps {
   modelId: string;
@@ -37,6 +38,9 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
   const meshEditData = useSelector(
     (state: RootState) => state.ui.meshEditData[modelId]
   );
+  const geometryCache = useSelector(
+    (state: RootState) => state.ui.geometryCache[modelId]
+  );
   const editMode = useSelector((state: RootState) => state.ui.editMode);
 
   useEffect(() => {
@@ -44,13 +48,20 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
     if (
       (editMode === "vertex" || editMode === "edge" || editMode === "face") &&
       !meshEditData &&
-      selectedModel
+      selectedModel &&
+      geometryCache
     ) {
-      // Try to get the actual geometry from the 3D scene
-      // We need to access the Canvas3D's models to get the real geometry
-      // For now, we'll create mock data but this should be replaced with real geometry extraction
-      const mockMeshData = createMockMeshData(selectedModel.type, modelId);
-      dispatch(initializeMeshEditData(mockMeshData));
+      try {
+        // Extract real mesh data from cached geometry
+        const geometry = createGeometryFromCache(geometryCache);
+        const realMeshData = MeshEditor.extractMeshData(geometry, modelId);
+        dispatch(initializeMeshEditData(realMeshData));
+      } catch (error) {
+        console.warn("Failed to extract mesh data, using fallback:", error);
+        // Fallback to mock data if real extraction fails
+        const mockMeshData = createMockMeshData(selectedModel.type, modelId);
+        dispatch(initializeMeshEditData(mockMeshData));
+      }
     }
 
     // Clean up mesh edit data when leaving sub-object editing mode
@@ -59,10 +70,50 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
         dispatch(clearMeshEditData(modelId));
       }
     };
-  }, [editMode, modelId, meshEditData, selectedModel, dispatch]);
+  }, [editMode, modelId, meshEditData, selectedModel, geometryCache, dispatch]);
+
+  // Synchronize currentSubObjectType with editMode for sub-object editing
+  useEffect(() => {
+    if (editMode === "vertex" || editMode === "edge" || editMode === "face") {
+      if (currentSubObjectType !== editMode) {
+        dispatch(setCurrentSubObjectType(editMode));
+      }
+    }
+  }, [editMode, currentSubObjectType, dispatch]);
 
   const handleSubObjectTypeChange = (type: SubObjectType) => {
     dispatch(setCurrentSubObjectType(type));
+  };
+
+  // Helper function to recreate Three.js geometry from cache
+  const createGeometryFromCache = (cache: any): THREE.BufferGeometry => {
+    const geometry = new THREE.BufferGeometry();
+
+    // Set position attribute
+    geometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(cache.positionArray, 3)
+    );
+
+    // Set normal attribute if available
+    if (cache.normalArray) {
+      geometry.setAttribute(
+        "normal",
+        new THREE.BufferAttribute(cache.normalArray, 3)
+      );
+    }
+
+    // Set UV attribute if available
+    if (cache.uvArray) {
+      geometry.setAttribute("uv", new THREE.BufferAttribute(cache.uvArray, 2));
+    }
+
+    // Set index if available
+    if (cache.indexArray) {
+      geometry.setIndex(new THREE.BufferAttribute(cache.indexArray, 1));
+    }
+
+    return geometry;
   };
 
   // Mock mesh data creation (in real implementation, this would extract from Three.js geometry)

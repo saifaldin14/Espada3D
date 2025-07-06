@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VertexData, EdgeData, FaceData, MeshEditData, Vector3Tuple } from '../types';
+import { VertexData, EdgeData, FaceData, MeshEditData, Vector3Tuple, GeometryData, GeometryType } from '../types';
 
 /**
  * Advanced mesh editor inspired by Blender's topology-aware editing system
@@ -1397,6 +1397,31 @@ export class MeshEditor {
     return {
       isValid: errors.length === 0,
       errors
+    };
+  }
+
+  /**
+   * Create geometry data cache from Three.js geometry for efficient access
+   */
+  static createGeometryData(geometry: THREE.BufferGeometry, modelId: string, type: GeometryType): GeometryData {
+    const positionAttribute = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const normalAttribute = geometry.getAttribute('normal') as THREE.BufferAttribute;
+    const uvAttribute = geometry.getAttribute('uv') as THREE.BufferAttribute;
+    const indexAttribute = geometry.getIndex();
+
+    if (!positionAttribute) {
+      throw new Error('Geometry has no position attribute');
+    }
+
+    return {
+      modelId,
+      type: type,
+      positionArray: positionAttribute.array as Float32Array,
+      normalArray: normalAttribute?.array as Float32Array,
+      uvArray: uvAttribute?.array as Float32Array,
+      indexArray: indexAttribute?.array as Uint32Array,
+      vertexCount: positionAttribute.count,
+      faceCount: indexAttribute ? indexAttribute.count / 3 : positionAttribute.count / 3
     };
   }
 }

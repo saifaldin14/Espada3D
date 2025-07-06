@@ -258,6 +258,18 @@ export interface MeshValidationResult {
   errors: string[];
 }
 
+// Geometry data cache for mesh editing
+export interface GeometryData {
+  modelId: string;
+  type: GeometryType;
+  positionArray: Float32Array;
+  normalArray?: Float32Array;
+  uvArray?: Float32Array;
+  indexArray?: Uint32Array;
+  vertexCount: number;
+  faceCount: number;
+}
+
 // State interfaces
 export interface ModelState {
   models: ModelMetadata[];
@@ -283,6 +295,7 @@ export interface UIState {
   snap: boolean;
   snapSize: number;
   meshEditData: { [modelId: string]: MeshEditData };
+  geometryCache: { [modelId: string]: GeometryData };
   subObjectSelectionMode: SelectionMode;
   currentSubObjectType: SubObjectType;
 }
