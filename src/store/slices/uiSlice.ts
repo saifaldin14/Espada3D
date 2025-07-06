@@ -1,26 +1,20 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface UIState {
-  activeTool: 'translate' | 'rotate' | 'scale'; // Can store the current tool like 'translate', 'rotate', etc.
-  isSidebarOpen: boolean;    // Toggle the visibility of the sidebar
-  isEditorOpen: boolean;     // Toggle the visibility of the model editor
-  showGrid: boolean;       // Toggle the visibility of the grid
-  showWireframe: boolean;   // Toggle for wireframe view
-}
+import { UIState, ToolType } from '../../types';
 
 const initialState: UIState = {
-  activeTool: 'translate',  // Default tool set to 'translate'
+  activeTool: 'translate',
   isSidebarOpen: true,
   isEditorOpen: true,
   showGrid: true,
   showWireframe: false,
+  isModalOpen: false,
 };
 
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    setActiveTool: (state, action: PayloadAction<'translate' | 'rotate' | 'scale'>) => {
+    setActiveTool: (state, action: PayloadAction<ToolType>) => {
       state.activeTool = action.payload;
     },
     toggleSidebar: (state) => {
@@ -35,8 +29,11 @@ const uiSlice = createSlice({
     setWireframe: (state, action: PayloadAction<boolean>) => {
       state.showWireframe = action.payload;
     },
+    setModalOpen: (state, action: PayloadAction<boolean>) => {
+      state.isModalOpen = action.payload;
+    },
   },
 });
 
-export const { setActiveTool, toggleSidebar, toggleEditor, setGrid, setWireframe } = uiSlice.actions;
+export const { setActiveTool, toggleSidebar, toggleEditor, setGrid, setWireframe, setModalOpen } = uiSlice.actions;
 export default uiSlice.reducer;

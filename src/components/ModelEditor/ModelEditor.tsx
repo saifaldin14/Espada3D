@@ -3,8 +3,6 @@ import { useSelector, useDispatch } from "react-redux";
 import {
   updateModelTransform,
   updateModelMaterial,
-  Vector3Tuple,
-  MaterialProperties,
 } from "../../store/slices/modelSlice";
 import {
   Card,
@@ -21,6 +19,7 @@ import {
   Switch,
 } from "@mui/material";
 import { SketchPicker } from "react-color"; // Import a color picker component
+import { MaterialProperties, Vector3Tuple } from "../../types";
 
 const ModelEditor: React.FC = () => {
   const selectedModelId = useSelector(

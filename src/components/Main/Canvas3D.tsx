@@ -13,8 +13,8 @@ import {
   MeshLambertMaterial,
 } from "three";
 import { ModelProvider } from "./ModelContext";
-import { ModelMetadata } from "../../store/slices/modelSlice";
 import SceneContent from "./SceneContent";
+import { ModelMetadata } from "../../types";
 
 interface Canvas3DProps {
   selectedModel: Group | null;

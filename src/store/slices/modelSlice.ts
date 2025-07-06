@@ -1,121 +1,189 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
-
-export type Vector3Tuple = [number, number, number];
-
-export interface MaterialProperties {
-  type: "standard" | "phong" | "lambert";
-  color?: string;
-}
-
-export interface ModelMetadata {
-  id: string;
-  type: 'box' | 'sphere' | 'cylinder';
-  position: Vector3Tuple;
-  rotation: Vector3Tuple;
-  scale: Vector3Tuple;
-  material: MaterialProperties;
-  parentId: string | null; // To manage hierarchy
-}
-
-export interface ModelState {
-  models: Array<ModelMetadata>;
-  selectedModelId: string | null;
-}
+import { 
+  ModelMetadata, 
+  ModelState, 
+  CreateModelPayload,
+  UpdateModelTransformPayload,
+  UpdateModelMaterialPayload,
+  ModelValidationError
+} from '../../types';
+import { APP_CONFIG, ERROR_MESSAGES } from '../../config/constants';
+import { validateCreateModelPayload, validateVector3, validateMaterial } from '../../utils/validation';
 
 const initialState: ModelState = {
   models: [],
   selectedModelId: null,
+  loading: false,
+  error: null,
 };
 
 const modelSlice = createSlice({
   name: 'models',
   initialState,
   reducers: {
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+    },
     addModel: (state, action: PayloadAction<ModelMetadata>) => {
+      if (state.models.length >= APP_CONFIG.SCENE.MAX_MODELS) {
+        state.error = ERROR_MESSAGES.RUNTIME.MAX_MODELS_REACHED;
+        return;
+      }
       state.models.push(action.payload);
-      state.selectedModelId = action.payload.id;  // Automatically select the new model
+      state.selectedModelId = action.payload.id;
+      state.error = null;
     },
     selectModel: (state, action: PayloadAction<string | null>) => {
       state.selectedModelId = action.payload;
     },
-    updateModelTransform: (
-      state,
-      action: PayloadAction<{ id: string; position: Vector3Tuple; rotation: Vector3Tuple; scale: Vector3Tuple }>
-    ) => {
-      const model = state.models.find((m) => m.id === action.payload.id);
-      if (model) {
+    updateModelTransform: (state, action: PayloadAction<UpdateModelTransformPayload>) => {
+      try {
+        // Validate input
+        validateVector3(action.payload.position, 'position');
+        validateVector3(action.payload.rotation, 'rotation');
+        validateVector3(action.payload.scale, 'scale');
+        
+        const model = state.models.find((m) => m.id === action.payload.id);
+        if (!model) {
+          state.error = ERROR_MESSAGES.RUNTIME.MODEL_NOT_FOUND;
+          return;
+        }
+        
         model.position = action.payload.position;
         model.rotation = action.payload.rotation;
         model.scale = action.payload.scale;
+        model.updatedAt = new Date().toISOString();
+        state.error = null;
+      } catch (error) {
+        state.error = error instanceof ModelValidationError ? error.message : 'Invalid transform data';
       }
     },
-    updateModelMaterial: (state, action: PayloadAction<{ id: string; material: MaterialProperties }>) => {
-      const model = state.models.find((m) => m.id === action.payload.id);
-      if (model) {
+    updateModelMaterial: (state, action: PayloadAction<UpdateModelMaterialPayload>) => {
+      try {
+        // Validate material
+        validateMaterial(action.payload.material);
+        
+        const model = state.models.find((m) => m.id === action.payload.id);
+        if (!model) {
+          state.error = ERROR_MESSAGES.RUNTIME.MODEL_NOT_FOUND;
+          return;
+        }
+        
         model.material = action.payload.material;
+        model.updatedAt = new Date().toISOString();
+        state.error = null;
+      } catch (error) {
+        state.error = error instanceof ModelValidationError ? error.message : 'Invalid material data';
       }
     },
-    createNewModel: (
-      state,
-      action: PayloadAction<{ type: 'box' | 'sphere' | 'cylinder'; position?: Vector3Tuple; rotation?: Vector3Tuple; scale?: Vector3Tuple; material?: MaterialProperties; parentId?: string | null }>
-    ) => {
-      const newModel: ModelMetadata = {
-        id: uuidv4(), // Generate a new unique ID
-        type: action.payload.type,
-        position: action.payload.position || [0, 0, 0],
-        rotation: action.payload.rotation || [0, 0, 0],
-        scale: action.payload.scale || [1, 1, 1],
-        material: {
-          type: "standard",
-          color: "#ecf0f1",
-        },
-        parentId: action.payload.parentId || null, // Set parentId
-      };
-      state.models.push(newModel);
-      state.selectedModelId = newModel.id;
+    createNewModel: (state, action: PayloadAction<CreateModelPayload>) => {
+      try {
+        if (state.models.length >= APP_CONFIG.SCENE.MAX_MODELS) {
+          state.error = ERROR_MESSAGES.RUNTIME.MAX_MODELS_REACHED;
+          return;
+        }
+
+        // Validate payload
+        const validatedPayload = validateCreateModelPayload(action.payload);
+        
+        const now = new Date().toISOString();
+        const newModel: ModelMetadata = {
+          id: uuidv4(),
+          type: validatedPayload.type,
+          position: validatedPayload.position || [...APP_CONFIG.SCENE.DEFAULT_POSITION],
+          rotation: validatedPayload.rotation || [...APP_CONFIG.SCENE.DEFAULT_ROTATION],
+          scale: validatedPayload.scale || [...APP_CONFIG.SCENE.DEFAULT_SCALE],
+          material: validatedPayload.material || {
+            type: "standard",
+            color: APP_CONFIG.MATERIALS.DEFAULT_COLOR,
+            opacity: APP_CONFIG.MATERIALS.DEFAULT_OPACITY,
+            metalness: APP_CONFIG.MATERIALS.DEFAULT_METALNESS,
+            roughness: APP_CONFIG.MATERIALS.DEFAULT_ROUGHNESS,
+          },
+          parentId: validatedPayload.parentId || null,
+          createdAt: now,
+          updatedAt: now,
+          name: validatedPayload.name,
+        };
+        
+        state.models.push(newModel);
+        state.selectedModelId = newModel.id;
+        state.error = null;
+      } catch (error) {
+        state.error = error instanceof ModelValidationError ? error.message : 'Failed to create model';
+      }
     },
     removeModel: (state, action: PayloadAction<string>) => {
       const modelToRemove = state.models.find((model) => model.id === action.payload);
-      if (modelToRemove) {
-        // Remove the model and any of its children
-        state.models = state.models.filter(
-          (model) => model.id !== action.payload && model.parentId !== action.payload
-        );
-        if (state.selectedModelId === action.payload) {
-          state.selectedModelId = null; // Deselect the model if it was selected
-        }
+      if (!modelToRemove) {
+        state.error = ERROR_MESSAGES.RUNTIME.MODEL_NOT_FOUND;
+        return;
       }
+      
+      // Remove the model and any of its children
+      state.models = state.models.filter(
+        (model) => model.id !== action.payload && model.parentId !== action.payload
+      );
+      
+      if (state.selectedModelId === action.payload) {
+        state.selectedModelId = null;
+      }
+      state.error = null;
     },
     duplicateModel: (state, action: PayloadAction<string>) => {
       const originalModel = state.models.find((model) => model.id === action.payload);
-      if (originalModel) {
-        const newModel: ModelMetadata = {
-          ...originalModel,
-          id: uuidv4(), // Assign a new unique ID for the duplicated model
-          position: [...originalModel.position] as Vector3Tuple, // Exact clone of position
-          rotation: [...originalModel.rotation] as Vector3Tuple, // Exact clone of rotation
-          scale: [...originalModel.scale] as Vector3Tuple, // Exact clone of scale
-          material: { ...originalModel.material }, // Clone material properties
-        };
-
-        // Place the new model slightly offset from the original to avoid overlap, if necessary
-        newModel.position[0] += 0.5;
-
-        state.models.push(newModel);
-        state.selectedModelId = newModel.id; // Select the duplicated model
+      if (!originalModel) {
+        state.error = ERROR_MESSAGES.RUNTIME.MODEL_NOT_FOUND;
+        return;
       }
+      
+      if (state.models.length >= APP_CONFIG.SCENE.MAX_MODELS) {
+        state.error = ERROR_MESSAGES.RUNTIME.MAX_MODELS_REACHED;
+        return;
+      }
+      
+      const now = new Date().toISOString();
+      const newModel: ModelMetadata = {
+        ...originalModel,
+        id: uuidv4(),
+        position: [
+          originalModel.position[0] + 0.5,
+          originalModel.position[1],
+          originalModel.position[2]
+        ],
+        rotation: [...originalModel.rotation],
+        scale: [...originalModel.scale],
+        material: { ...originalModel.material },
+        name: originalModel.name ? `${originalModel.name} Copy` : undefined,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      state.models.push(newModel);
+      state.selectedModelId = newModel.id;
+      state.error = null;
+    },
+    clearError: (state) => {
+      state.error = null;
     },
   },
 });
 
 export const { 
+  setLoading,
+  setError,
   addModel, 
   selectModel, 
   updateModelMaterial,
   updateModelTransform,
   createNewModel, 
   removeModel, 
-  duplicateModel, 
+  duplicateModel,
+  clearError
 } = modelSlice.actions;
+
 export default modelSlice.reducer;

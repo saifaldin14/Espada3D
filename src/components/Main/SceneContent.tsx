@@ -14,8 +14,8 @@ import {
   selectModel,
   removeModel,
   duplicateModel,
-  ModelMetadata,
 } from "../../store/slices/modelSlice";
+import { ModelMetadata } from "../../types";
 
 interface SceneContentProps {
   models: { [id: string]: Group };
