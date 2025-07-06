@@ -46,8 +46,9 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
       !meshEditData &&
       selectedModel
     ) {
-      // In a real implementation, we would extract geometry from the actual 3D model
-      // For now, we'll create mock data based on the model type
+      // Try to get the actual geometry from the 3D scene
+      // We need to access the Canvas3D's models to get the real geometry
+      // For now, we'll create mock data but this should be replaced with real geometry extraction
       const mockMeshData = createMockMeshData(selectedModel.type, modelId);
       dispatch(initializeMeshEditData(mockMeshData));
     }

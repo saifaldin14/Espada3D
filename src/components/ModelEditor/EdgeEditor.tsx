@@ -12,14 +12,27 @@ import {
   ListItem,
   ListItemText,
   Chip,
+  FormControlLabel,
+  Switch,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Slider,
+  Paper,
+  Tooltip,
 } from "@mui/material";
 import {
   Delete,
-  CallSplit,
-  LinearScale,
   SelectAll,
   DeselectOutlined,
+  Add,
+  Remove,
+  Loop,
+  ContentCut,
+  Architecture,
+  BlurOn,
+  LinearScale,
 } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
@@ -27,8 +40,15 @@ import {
   setSubObjectSelectionMode,
   selectSubObjects,
 } from "../../store/slices/uiSlice";
-import { bevelEdges } from "../../store/slices/modelSlice";
-import { SelectionMode } from "../../types";
+import {
+  bevelEdges,
+  splitEdges,
+  loopCut,
+  selectEdgeLoop,
+  growSelection,
+  deleteSelectedElements,
+} from "../../store/slices/modelSlice";
+import { SelectionMode, BevelProfile } from "../../types";
 import { MeshEditor } from "../../utils/meshEditor";
 
 interface EdgeEditorProps {
@@ -44,8 +64,17 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
     (state: RootState) => state.ui.subObjectSelectionMode
   );
 
-  const [bevelSegments, setBevelSegments] = useState(2);
+  // Bevel parameters
   const [bevelDistance, setBevelDistance] = useState(0.1);
+  const [bevelSegments, setBevelSegments] = useState(1);
+  const [bevelProfile, setBevelProfile] = useState<BevelProfile>(0.5);
+
+  // Split parameters
+  const [splitCount, setSplitCount] = useState(1);
+
+  // Loop cut parameters
+  const [loopCuts, setLoopCuts] = useState(1);
+  const [loopSmoothness, setLoopSmoothness] = useState(0.0);
 
   if (!meshEditData) {
     return (
@@ -87,6 +116,19 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
     );
   };
 
+  const handleGrowSelection = () => {
+    dispatch(growSelection({ modelId, operation: "grow" }));
+  };
+
+  const handleShrinkSelection = () => {
+    dispatch(growSelection({ modelId, operation: "shrink" }));
+  };
+
+  const handleSelectEdgeLoop = () => {
+    if (selectedEdges.length === 0) return;
+    dispatch(selectEdgeLoop({ modelId, edgeIndex: selectedEdges[0].index }));
+  };
+
   const handleBevelEdges = () => {
     if (selectedEdges.length === 0) return;
 
@@ -94,8 +136,9 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
       bevelEdges({
         modelId,
         edgeIndices: selectedEdges.map((e) => e.index),
-        segments: bevelSegments,
         distance: bevelDistance,
+        segments: bevelSegments,
+        profile: bevelProfile,
       })
     );
   };
@@ -103,19 +146,54 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
   const handleSplitEdges = () => {
     if (selectedEdges.length === 0) return;
 
-    console.log(
-      "Splitting edges:",
-      selectedEdges.map((e) => e.index)
+    dispatch(
+      splitEdges({
+        modelId,
+        edgeIndices: selectedEdges.map((e) => e.index),
+        splits: splitCount,
+      })
+    );
+  };
+
+  const handleLoopCut = () => {
+    if (selectedEdges.length === 0) return;
+
+    dispatch(
+      loopCut({
+        modelId,
+        edgeIndex: selectedEdges[0].index,
+        cuts: loopCuts,
+        smoothness: loopSmoothness,
+      })
     );
   };
 
   const handleDeleteEdges = () => {
     if (selectedEdges.length === 0) return;
+    dispatch(deleteSelectedElements({ modelId }));
+  };
 
-    console.log(
-      "Deleting edges:",
-      selectedEdges.map((e) => e.index)
-    );
+  const calculateTotalLength = (): number => {
+    return selectedEdges.reduce((total, edge) => {
+      if (!meshEditData) return total;
+      const [v1Index, v2Index] = edge.vertices;
+      const v1 = meshEditData.vertices[v1Index];
+      const v2 = meshEditData.vertices[v2Index];
+
+      if (!v1 || !v2) return total;
+
+      const dx = v2.position[0] - v1.position[0];
+      const dy = v2.position[1] - v1.position[1];
+      const dz = v2.position[2] - v1.position[2];
+
+      return total + Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }, 0);
+  };
+
+  const getBevelProfileName = (profile: number): string => {
+    if (profile < 0.4) return "Concave";
+    if (profile > 0.6) return "Convex";
+    return "Linear";
   };
 
   return (
@@ -126,179 +204,328 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
         </Typography>
 
         {/* Selection Info */}
-        <Box mb={2}>
+        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
           <Typography variant="body2" color="textSecondary">
             {selectedEdges.length} of {totalEdges} edges selected
           </Typography>
           {selectedEdges.length > 0 && (
-            <Box mt={1}>
-              {selectedEdges.slice(0, 5).map((edge) => (
-                <Chip
-                  key={edge.index}
-                  label={`E${edge.index}`}
-                  size="small"
-                  color="primary"
-                  style={{ margin: 2 }}
-                />
-              ))}
-              {selectedEdges.length > 5 && (
-                <Chip
-                  label={`+${selectedEdges.length - 5} more`}
-                  size="small"
-                  variant="outlined"
-                  style={{ margin: 2 }}
-                />
-              )}
-            </Box>
+            <>
+              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                Total Length: {calculateTotalLength().toFixed(3)} units
+              </Typography>
+              <Box mt={1}>
+                {selectedEdges.slice(0, 8).map((edge) => (
+                  <Chip
+                    key={edge.index}
+                    label={`E${edge.index}`}
+                    size="small"
+                    color="primary"
+                    style={{ margin: 2 }}
+                  />
+                ))}
+                {selectedEdges.length > 8 && (
+                  <Chip
+                    label={`+${selectedEdges.length - 8} more`}
+                    size="small"
+                    variant="outlined"
+                    style={{ margin: 2 }}
+                  />
+                )}
+              </Box>
+            </>
           )}
-        </Box>
+        </Paper>
 
         {/* Selection Mode */}
-        <Box mb={2}>
+        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
           <Typography variant="subtitle2" gutterBottom>
             Selection Mode
           </Typography>
-          <ButtonGroup size="small" variant="outlined">
-            <Button
-              variant={selectionMode === "single" ? "contained" : "outlined"}
-              onClick={() => handleSelectionModeChange("single")}
-            >
-              Single
-            </Button>
-            <Button
-              variant={selectionMode === "multiple" ? "contained" : "outlined"}
-              onClick={() => handleSelectionModeChange("multiple")}
-            >
-              Multiple
-            </Button>
-            <Button
-              variant={selectionMode === "box" ? "contained" : "outlined"}
-              onClick={() => handleSelectionModeChange("box")}
-            >
-              Box
-            </Button>
+          <ButtonGroup size="small" sx={{ mb: 2 }}>
+            {(["single", "multiple", "box", "lasso"] as SelectionMode[]).map(
+              (mode) => (
+                <Button
+                  key={mode}
+                  variant={selectionMode === mode ? "contained" : "outlined"}
+                  onClick={() => handleSelectionModeChange(mode)}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </Button>
+              )
+            )}
           </ButtonGroup>
-        </Box>
 
-        {/* Selection Controls */}
-        <Box mb={2}>
-          <ButtonGroup size="small" variant="outlined" fullWidth>
-            <Button startIcon={<SelectAll />} onClick={handleSelectAll}>
-              Select All
-            </Button>
-            <Button
-              startIcon={<DeselectOutlined />}
-              onClick={handleDeselectAll}
-            >
-              Deselect All
-            </Button>
-          </ButtonGroup>
-        </Box>
+          <Box display="flex" gap={1} flexWrap="wrap">
+            <Tooltip title="Select All (A)">
+              <Button
+                startIcon={<SelectAll />}
+                onClick={handleSelectAll}
+                size="small"
+              >
+                All
+              </Button>
+            </Tooltip>
+            <Tooltip title="Deselect All (Alt+A)">
+              <Button
+                startIcon={<DeselectOutlined />}
+                onClick={handleDeselectAll}
+                size="small"
+              >
+                None
+              </Button>
+            </Tooltip>
+            <Tooltip title="Grow Selection (Ctrl+NumPad+)">
+              <Button
+                startIcon={<Add />}
+                onClick={handleGrowSelection}
+                size="small"
+                disabled={selectedEdges.length === 0}
+              >
+                Grow
+              </Button>
+            </Tooltip>
+            <Tooltip title="Shrink Selection (Ctrl+NumPad-)">
+              <Button
+                startIcon={<Remove />}
+                onClick={handleShrinkSelection}
+                size="small"
+                disabled={selectedEdges.length === 0}
+              >
+                Shrink
+              </Button>
+            </Tooltip>
+            <Tooltip title="Select Edge Loop (Alt+Click)">
+              <Button
+                startIcon={<Loop />}
+                onClick={handleSelectEdgeLoop}
+                size="small"
+                disabled={selectedEdges.length === 0}
+              >
+                Edge Loop
+              </Button>
+            </Tooltip>
+          </Box>
+        </Paper>
 
         {/* Edge Operations */}
         {selectedEdges.length > 0 && (
           <>
-            <Typography variant="subtitle2" gutterBottom>
-              Edge Operations
-            </Typography>
-
-            {/* Bevel Settings */}
-            <Box mb={2}>
-              <Typography variant="body2" gutterBottom>
-                Bevel Settings
+            {/* Bevel */}
+            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Bevel Edges (Ctrl+B)
               </Typography>
-              <Grid container spacing={2} mb={1}>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Segments"
-                    type="number"
-                    size="small"
-                    value={bevelSegments}
-                    onChange={(e) =>
-                      setBevelSegments(parseInt(e.target.value) || 2)
-                    }
-                    inputProps={{ min: 1, max: 10 }}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Distance"
-                    type="number"
-                    size="small"
-                    value={bevelDistance}
-                    onChange={(e) =>
-                      setBevelDistance(parseFloat(e.target.value) || 0.1)
-                    }
-                    inputProps={{ step: 0.01, min: 0.01 }}
-                    fullWidth
-                  />
-                </Grid>
-              </Grid>
-            </Box>
 
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Distance: {bevelDistance.toFixed(3)}
+                </Typography>
+                <Slider
+                  value={bevelDistance}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setBevelDistance(value as number)
+                  }
+                  min={0.0}
+                  max={1.0}
+                  step={0.001}
+                  size="small"
+                />
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Segments: {bevelSegments}
+                </Typography>
+                <Slider
+                  value={bevelSegments}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setBevelSegments(value as number)
+                  }
+                  min={1}
+                  max={10}
+                  step={1}
+                  marks
+                  size="small"
+                />
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Profile: {bevelProfile.toFixed(2)} (
+                  {getBevelProfileName(bevelProfile)})
+                </Typography>
+                <Slider
+                  value={bevelProfile}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setBevelProfile(value as number)
+                  }
+                  min={0.0}
+                  max={1.0}
+                  step={0.01}
+                  size="small"
+                />
+              </Box>
+
+              <Button
+                startIcon={<BlurOn />}
+                onClick={handleBevelEdges}
+                variant="contained"
+                size="small"
+                color="primary"
+              >
+                Bevel ({selectedEdges.length} edges)
+              </Button>
+            </Paper>
+
+            {/* Split */}
+            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Split Edges (Knife Tool)
+              </Typography>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Splits per Edge: {splitCount}
+                </Typography>
+                <Slider
+                  value={splitCount}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setSplitCount(value as number)
+                  }
+                  min={1}
+                  max={5}
+                  step={1}
+                  marks
+                  size="small"
+                />
+              </Box>
+
+              <Button
+                startIcon={<ContentCut />}
+                onClick={handleSplitEdges}
+                variant="contained"
+                size="small"
+                color="secondary"
+              >
+                Split ({selectedEdges.length} edges)
+              </Button>
+            </Paper>
+
+            {/* Loop Cut */}
+            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Loop Cut (Ctrl+R)
+              </Typography>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Number of Cuts: {loopCuts}
+                </Typography>
+                <Slider
+                  value={loopCuts}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setLoopCuts(value as number)
+                  }
+                  min={1}
+                  max={10}
+                  step={1}
+                  marks
+                  size="small"
+                />
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Smoothness: {loopSmoothness.toFixed(2)}
+                </Typography>
+                <Slider
+                  value={loopSmoothness}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setLoopSmoothness(value as number)
+                  }
+                  min={0.0}
+                  max={1.0}
+                  step={0.1}
+                  size="small"
+                />
+              </Box>
+
               <Button
                 startIcon={<LinearScale />}
-                onClick={handleBevelEdges}
-                variant="outlined"
+                onClick={handleLoopCut}
+                variant="contained"
                 size="small"
-                fullWidth
+                color="info"
+                disabled={selectedEdges.length === 0}
               >
-                Bevel Edges
+                Loop Cut (from first edge)
               </Button>
-              <Button
-                startIcon={<CallSplit />}
-                onClick={handleSplitEdges}
-                variant="outlined"
-                size="small"
-                fullWidth
-              >
-                Split Edges
-              </Button>
-              <Button
-                startIcon={<Delete />}
-                onClick={handleDeleteEdges}
-                color="error"
-                variant="outlined"
-                size="small"
-                fullWidth
-              >
-                Delete Edges
-              </Button>
-            </Box>
+            </Paper>
+
+            {/* Selection Details */}
+            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Selection Details
+              </Typography>
+              <List dense>
+                {selectedEdges.slice(0, 5).map((edge) => {
+                  const v1 = meshEditData?.vertices[edge.vertices[0]];
+                  const v2 = meshEditData?.vertices[edge.vertices[1]];
+                  const length =
+                    v1 && v2
+                      ? Math.sqrt(
+                          Math.pow(v2.position[0] - v1.position[0], 2) +
+                            Math.pow(v2.position[1] - v1.position[1], 2) +
+                            Math.pow(v2.position[2] - v1.position[2], 2)
+                        )
+                      : 0;
+
+                  return (
+                    <ListItem key={edge.index} divider>
+                      <ListItemText
+                        primary={`Edge ${edge.index}`}
+                        secondary={`Vertices: ${edge.vertices[0]} → ${
+                          edge.vertices[1]
+                        }, Length: ${length.toFixed(3)}`}
+                      />
+                    </ListItem>
+                  );
+                })}
+                {selectedEdges.length > 5 && (
+                  <ListItem>
+                    <ListItemText
+                      primary={`... and ${selectedEdges.length - 5} more edges`}
+                    />
+                  </ListItem>
+                )}
+              </List>
+            </Paper>
           </>
         )}
 
-        {/* Edge List */}
-        {selectedEdges.length > 0 && selectedEdges.length <= 10 && (
-          <Box mt={2}>
+        {/* Danger Zone */}
+        {selectedEdges.length > 0 && (
+          <Paper
+            elevation={1}
+            sx={{ p: 2, bgcolor: "error.light", color: "error.contrastText" }}
+          >
             <Typography variant="subtitle2" gutterBottom>
-              Selected Edges
+              Danger Zone
             </Typography>
-            <List dense>
-              {selectedEdges.map((edge) => (
-                <ListItem key={edge.index}>
-                  <ListItemText
-                    primary={`Edge ${edge.index}`}
-                    secondary={`Vertices: ${edge.vertices[0]} - ${edge.vertices[1]}`}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Box>
+            <Button
+              startIcon={<Delete />}
+              onClick={handleDeleteEdges}
+              variant="contained"
+              color="error"
+              size="small"
+            >
+              Delete Selected Edges ({selectedEdges.length})
+            </Button>
+            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+              ⚠️ Deleting edges will dissolve them and may merge adjacent faces
+            </Typography>
+          </Paper>
         )}
-
-        {/* Edge Loop Tools */}
-        <Box mt={2}>
-          <Typography variant="subtitle2" gutterBottom>
-            Edge Loop Tools
-          </Typography>
-          <ButtonGroup size="small" variant="outlined" fullWidth>
-            <Button>Select Loop</Button>
-            <Button>Select Ring</Button>
-          </ButtonGroup>
-        </Box>
       </CardContent>
     </Card>
   );

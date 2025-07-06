@@ -158,23 +158,104 @@ export interface SelectSubObjectPayload {
   mode: 'set' | 'add' | 'remove';
 }
 
-export interface ExtrudePayload {
+// Enhanced mesh editing types
+export type TransformConstraint = 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz';
+export type MergeType = 'center' | 'cursor' | 'first' | 'last';
+export type BevelProfile = number; // 0-1 range for profile curve
+
+export interface TransformPayload {
   modelId: string;
-  faceIndices: number[];
-  distance: number;
+  delta: Vector3Tuple;
+  constraint?: TransformConstraint;
+  pivot?: Vector3Tuple;
 }
 
+export interface ScalePayload {
+  modelId: string;
+  scale: Vector3Tuple;
+  constraint?: TransformConstraint;
+  pivot?: Vector3Tuple;
+}
+
+export interface RotatePayload {
+  modelId: string;
+  rotation: Vector3Tuple;
+  axis?: 'x' | 'y' | 'z';
+  constraint?: TransformConstraint;
+  pivot?: Vector3Tuple;
+}
+
+export interface MergeVerticesPayload {
+  modelId: string;
+  mergeType: MergeType;
+}
+
+export interface SubdividePayload {
+  modelId: string;
+  faceIndices: number[];
+  cuts: number;
+  smoothness: number;
+}
+
+export interface LoopCutPayload {
+  modelId: string;
+  edgeIndex: number;
+  cuts: number;
+  smoothness: number;
+}
+
+export interface SplitEdgePayload {
+  modelId: string;
+  edgeIndices: number[];
+  splits: number;
+}
+
+// Enhanced bevel payload
+export interface BevelPayload {
+  modelId: string;
+  edgeIndices: number[];
+  distance: number;
+  segments: number;
+  profile: BevelProfile;
+}
+
+// Enhanced inset payload  
 export interface InsetPayload {
   modelId: string;
   faceIndices: number[];
   distance: number;
+  depth: number;
+  individualFaces: boolean;
 }
 
-export interface BevelPayload {
+// Enhanced extrude payload
+export interface ExtrudePayload {
   modelId: string;
-  edgeIndices: number[];
-  segments: number;
+  faceIndices: number[];
   distance: number;
+  direction?: Vector3Tuple;
+  individualFaces: boolean;
+}
+
+export interface SelectionGrowShrinkPayload {
+  modelId: string;
+  operation: 'grow' | 'shrink';
+}
+
+export interface EdgeLoopSelectPayload {
+  modelId: string;
+  edgeIndex: number;
+}
+
+export interface FaceLoopSelectPayload {
+  modelId: string;
+  faceIndex: number;
+}
+
+// Mesh validation results
+export interface MeshValidationResult {
+  isValid: boolean;
+  errors: string[];
 }
 
 // State interfaces

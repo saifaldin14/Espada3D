@@ -15,7 +15,17 @@ import {
   UpdateVertexPayload,
   ExtrudePayload,
   InsetPayload,
-  BevelPayload
+  BevelPayload,
+  TransformPayload,
+  ScalePayload,
+  RotatePayload,
+  MergeVerticesPayload,
+  SubdividePayload,
+  LoopCutPayload,
+  SplitEdgePayload,
+  SelectionGrowShrinkPayload,
+  EdgeLoopSelectPayload,
+  FaceLoopSelectPayload
 } from '../../types';
 import { APP_CONFIG, ERROR_MESSAGES } from '../../config/constants';
 import { validateCreateModelPayload, validateVector3, validateMaterial } from '../../utils/validation';
@@ -349,7 +359,7 @@ const modelSlice = createSlice({
         state.models = state.history[state.historyIndex].map(model => ({ ...model }));
       }
     },
-    // Mesh editing actions
+    // Enhanced mesh editing actions
     updateVertex: (state, action: PayloadAction<UpdateVertexPayload>) => {
       const { modelId, vertexIndex, position } = action.payload;
       const model = state.models.find(m => m.id === modelId);
@@ -362,36 +372,235 @@ const modelSlice = createSlice({
         model.updatedAt = new Date().toISOString();
       }
     },
-    extrudeFaces: (state, action: PayloadAction<ExtrudePayload>) => {
-      const { modelId, faceIndices, distance } = action.payload;
+
+    // Transform operations
+    moveVertices: (state, action: PayloadAction<TransformPayload>) => {
+      const { modelId, delta, constraint, pivot } = action.payload;
       const model = state.models.find(m => m.id === modelId);
       if (model) {
-        // Store extrude operation in userData
+        if (!model.userData) model.userData = {};
+        if (!model.userData.transformOperations) model.userData.transformOperations = [];
+        model.userData.transformOperations.push({ 
+          type: 'move', 
+          delta, 
+          constraint, 
+          pivot, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    scaleVertices: (state, action: PayloadAction<ScalePayload>) => {
+      const { modelId, scale, constraint, pivot } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.transformOperations) model.userData.transformOperations = [];
+        model.userData.transformOperations.push({ 
+          type: 'scale', 
+          scale, 
+          constraint, 
+          pivot, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    rotateVertices: (state, action: PayloadAction<RotatePayload>) => {
+      const { modelId, rotation, axis, pivot } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.transformOperations) model.userData.transformOperations = [];
+        model.userData.transformOperations.push({ 
+          type: 'rotate', 
+          rotation, 
+          axis, 
+          pivot, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    mergeVertices: (state, action: PayloadAction<MergeVerticesPayload>) => {
+      const { modelId, mergeType } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.mergeOperations) model.userData.mergeOperations = [];
+        model.userData.mergeOperations.push({ 
+          mergeType, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    // Face operations  
+    extrudeFaces: (state, action: PayloadAction<ExtrudePayload>) => {
+      const { modelId, faceIndices, distance, direction, individualFaces } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
         if (!model.userData) model.userData = {};
         if (!model.userData.extrudeOperations) model.userData.extrudeOperations = [];
-        model.userData.extrudeOperations.push({ faceIndices, distance, timestamp: Date.now() });
+        model.userData.extrudeOperations.push({ 
+          faceIndices, 
+          distance, 
+          direction, 
+          individualFaces, 
+          timestamp: Date.now() 
+        });
         model.updatedAt = new Date().toISOString();
       }
     },
+
     insetFaces: (state, action: PayloadAction<InsetPayload>) => {
-      const { modelId, faceIndices, distance } = action.payload;
+      const { modelId, faceIndices, distance, depth, individualFaces } = action.payload;
       const model = state.models.find(m => m.id === modelId);
       if (model) {
-        // Store inset operation in userData
         if (!model.userData) model.userData = {};
         if (!model.userData.insetOperations) model.userData.insetOperations = [];
-        model.userData.insetOperations.push({ faceIndices, distance, timestamp: Date.now() });
+        model.userData.insetOperations.push({ 
+          faceIndices, 
+          distance, 
+          depth, 
+          individualFaces, 
+          timestamp: Date.now() 
+        });
         model.updatedAt = new Date().toISOString();
       }
     },
-    bevelEdges: (state, action: PayloadAction<BevelPayload>) => {
-      const { modelId, edgeIndices, segments, distance } = action.payload;
+
+    subdivideFaces: (state, action: PayloadAction<SubdividePayload>) => {
+      const { modelId, faceIndices, cuts, smoothness } = action.payload;
       const model = state.models.find(m => m.id === modelId);
       if (model) {
-        // Store bevel operation in userData
+        if (!model.userData) model.userData = {};
+        if (!model.userData.subdivideOperations) model.userData.subdivideOperations = [];
+        model.userData.subdivideOperations.push({ 
+          faceIndices, 
+          cuts, 
+          smoothness, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    flipNormals: (state, action: PayloadAction<{ modelId: string }>) => {
+      const { modelId } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.flipOperations) model.userData.flipOperations = [];
+        model.userData.flipOperations.push({ timestamp: Date.now() });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    // Edge operations
+    bevelEdges: (state, action: PayloadAction<BevelPayload>) => {
+      const { modelId, edgeIndices, distance, segments, profile } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
         if (!model.userData) model.userData = {};
         if (!model.userData.bevelOperations) model.userData.bevelOperations = [];
-        model.userData.bevelOperations.push({ edgeIndices, segments, distance, timestamp: Date.now() });
+        model.userData.bevelOperations.push({ 
+          edgeIndices, 
+          distance, 
+          segments, 
+          profile, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    splitEdges: (state, action: PayloadAction<SplitEdgePayload>) => {
+      const { modelId, edgeIndices, splits } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.splitOperations) model.userData.splitOperations = [];
+        model.userData.splitOperations.push({ 
+          edgeIndices, 
+          splits, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    loopCut: (state, action: PayloadAction<LoopCutPayload>) => {
+      const { modelId, edgeIndex, cuts, smoothness } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.loopCutOperations) model.userData.loopCutOperations = [];
+        model.userData.loopCutOperations.push({ 
+          edgeIndex, 
+          cuts, 
+          smoothness, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    // Selection operations
+    growSelection: (state, action: PayloadAction<SelectionGrowShrinkPayload>) => {
+      const { modelId, operation } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.selectionOperations) model.userData.selectionOperations = [];
+        model.userData.selectionOperations.push({ 
+          operation, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    selectEdgeLoop: (state, action: PayloadAction<EdgeLoopSelectPayload>) => {
+      const { modelId, edgeIndex } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.edgeLoopSelections) model.userData.edgeLoopSelections = [];
+        model.userData.edgeLoopSelections.push({ 
+          edgeIndex, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    selectFaceLoop: (state, action: PayloadAction<FaceLoopSelectPayload>) => {
+      const { modelId, faceIndex } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.faceLoopSelections) model.userData.faceLoopSelections = [];
+        model.userData.faceLoopSelections.push({ 
+          faceIndex, 
+          timestamp: Date.now() 
+        });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+
+    // Delete operations
+    deleteSelectedElements: (state, action: PayloadAction<{ modelId: string }>) => {
+      const { modelId } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        if (!model.userData) model.userData = {};
+        if (!model.userData.deleteOperations) model.userData.deleteOperations = [];
+        model.userData.deleteOperations.push({ timestamp: Date.now() });
         model.updatedAt = new Date().toISOString();
       }
     },
@@ -420,10 +629,23 @@ export const {
   undo,
   redo,
   clearError,
+  // Enhanced mesh editing actions
   updateVertex,
+  moveVertices,
+  scaleVertices,
+  rotateVertices,
+  mergeVertices,
   extrudeFaces,
   insetFaces,
-  bevelEdges
+  subdivideFaces,
+  flipNormals,
+  bevelEdges,
+  splitEdges,
+  loopCut,
+  growSelection,
+  selectEdgeLoop,
+  selectFaceLoop,
+  deleteSelectedElements
 } = modelSlice.actions;
 
 export default modelSlice.reducer;
