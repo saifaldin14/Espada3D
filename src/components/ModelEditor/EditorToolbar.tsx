@@ -298,6 +298,50 @@ const EditorToolbar: React.FC = () => {
 
       <Divider orientation="vertical" flexItem sx={{ margin: "0 8px" }} />
 
+      {/* Mesh Editing Mode */}
+      {selectedModelId && (
+        <>
+          <Box sx={styles.section}>
+            <Typography variant="body2" sx={styles.sectionTitle}>
+              Edit Mode
+            </Typography>
+            <ToggleButtonGroup
+              value={editMode}
+              exclusive
+              onChange={handleEditModeChange}
+              size="small"
+              sx={{ gap: "2px" }}
+            >
+              <ToggleButton
+                value="model"
+                sx={{ fontSize: "10px", padding: "4px 8px" }}
+              >
+                Model
+              </ToggleButton>
+              <ToggleButton
+                value="vertex"
+                sx={{ fontSize: "10px", padding: "4px 8px" }}
+              >
+                Vertex
+              </ToggleButton>
+              <ToggleButton
+                value="edge"
+                sx={{ fontSize: "10px", padding: "4px 8px" }}
+              >
+                Edge
+              </ToggleButton>
+              <ToggleButton
+                value="face"
+                sx={{ fontSize: "10px", padding: "4px 8px" }}
+              >
+                Face
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+          <Divider orientation="vertical" flexItem sx={{ margin: "0 8px" }} />
+        </>
+      )}
+
       {/* Panel Toggles */}
       <Box sx={styles.section}>
         <Typography variant="body2" sx={styles.sectionTitle}>

@@ -5,6 +5,7 @@ import ModelEditor from "./components/ModelEditor/ModelEditor";
 import EditorToolbar from "./components/ModelEditor/EditorToolbar";
 import HierarchyPanel from "./components/ModelEditor/HierarchyPanel";
 import AnimationPanel from "./components/ModelEditor/AnimationPanel";
+import MeshEditingKeyboardShortcuts from "./components/Main/MeshEditingKeyboardShortcuts";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { Provider } from "react-redux";
 import store from "./store";
@@ -54,6 +55,9 @@ const AppContent: React.FC = () => {
           <AnimationPanel isOpen={isAnimationPanelOpen} />
         </ErrorBoundary>
       )}
+
+      {/* Global keyboard shortcuts for mesh editing */}
+      <MeshEditingKeyboardShortcuts />
     </div>
   );
 };

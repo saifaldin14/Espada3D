@@ -49,6 +49,7 @@ import {
 import { SketchPicker } from "react-color";
 import { MaterialProperties, Vector3Tuple, EditMode } from "../../types";
 import TextureManager from "./TextureManager";
+import SubObjectEditor from "./SubObjectEditor";
 
 const ModelEditor: React.FC = () => {
   const selectedModelId = useSelector(
@@ -568,11 +569,15 @@ const ModelEditor: React.FC = () => {
           <Tabs
             value={editMode}
             onChange={handleTabChange}
-            variant="fullWidth"
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{ marginBottom: 2 }}
           >
             <Tab label="Model" value="model" />
             <Tab label="Material" value="material" />
+            <Tab label="Vertex" value="vertex" />
+            <Tab label="Edge" value="edge" />
+            <Tab label="Face" value="face" />
             <Tab label="Animation" value="animation" />
             <Tab label="Hierarchy" value="hierarchy" />
           </Tabs>
@@ -589,6 +594,12 @@ const ModelEditor: React.FC = () => {
               {renderMaterialControls()}
               {renderTextureControls()}
             </>
+          )}
+
+          {(editMode === "vertex" ||
+            editMode === "edge" ||
+            editMode === "face") && (
+            <SubObjectEditor modelId={selectedModelId} />
           )}
 
           {editMode === "animation" && (

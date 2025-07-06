@@ -4,7 +4,9 @@ export type Vector3Tuple = [number, number, number];
 export type GeometryType = 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone' | 'torus' | 'dodecahedron';
 export type MaterialType = 'standard' | 'phong' | 'lambert' | 'basic' | 'physical' | 'toon';
 export type ToolType = 'translate' | 'rotate' | 'scale' | 'select';
-export type EditMode = 'model' | 'material' | 'animation' | 'hierarchy';
+export type EditMode = 'model' | 'material' | 'animation' | 'hierarchy' | 'vertex' | 'edge' | 'face';
+export type SubObjectType = 'vertex' | 'edge' | 'face';
+export type SelectionMode = 'single' | 'multiple' | 'box' | 'lasso';
 
 export interface TextureProperties {
   map?: string;
@@ -112,6 +114,69 @@ export interface GroupModelsPayload {
   groupName: string;
 }
 
+// Sub-object editing interfaces
+export interface VertexData {
+  index: number;
+  position: Vector3Tuple;
+  normal?: Vector3Tuple;
+  uv?: [number, number];
+  selected: boolean;
+}
+
+export interface EdgeData {
+  index: number;
+  vertices: [number, number];
+  selected: boolean;
+}
+
+export interface FaceData {
+  index: number;
+  vertices: number[];
+  normal: Vector3Tuple;
+  selected: boolean;
+}
+
+export interface MeshEditData {
+  modelId: string;
+  vertices: VertexData[];
+  edges: EdgeData[];
+  faces: FaceData[];
+  selectionMode: SelectionMode;
+  subObjectType: SubObjectType;
+}
+
+export interface UpdateVertexPayload {
+  modelId: string;
+  vertexIndex: number;
+  position: Vector3Tuple;
+}
+
+export interface SelectSubObjectPayload {
+  modelId: string;
+  type: SubObjectType;
+  indices: number[];
+  mode: 'set' | 'add' | 'remove';
+}
+
+export interface ExtrudePayload {
+  modelId: string;
+  faceIndices: number[];
+  distance: number;
+}
+
+export interface InsetPayload {
+  modelId: string;
+  faceIndices: number[];
+  distance: number;
+}
+
+export interface BevelPayload {
+  modelId: string;
+  edgeIndices: number[];
+  segments: number;
+  distance: number;
+}
+
 // State interfaces
 export interface ModelState {
   models: ModelMetadata[];
@@ -136,6 +201,9 @@ export interface UIState {
   isAnimationPanelOpen: boolean;
   snap: boolean;
   snapSize: number;
+  meshEditData: { [modelId: string]: MeshEditData };
+  subObjectSelectionMode: SelectionMode;
+  currentSubObjectType: SubObjectType;
 }
 
 export interface RootState {

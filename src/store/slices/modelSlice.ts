@@ -11,7 +11,11 @@ import {
   DuplicateModelPayload,
   GroupModelsPayload,
   ModelValidationError,
-  Vector3Tuple
+  Vector3Tuple,
+  UpdateVertexPayload,
+  ExtrudePayload,
+  InsetPayload,
+  BevelPayload
 } from '../../types';
 import { APP_CONFIG, ERROR_MESSAGES } from '../../config/constants';
 import { validateCreateModelPayload, validateVector3, validateMaterial } from '../../utils/validation';
@@ -345,6 +349,52 @@ const modelSlice = createSlice({
         state.models = state.history[state.historyIndex].map(model => ({ ...model }));
       }
     },
+    // Mesh editing actions
+    updateVertex: (state, action: PayloadAction<UpdateVertexPayload>) => {
+      const { modelId, vertexIndex, position } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        // In a real implementation, this would update the actual geometry
+        // For now, we'll store the vertex modifications in userData
+        if (!model.userData) model.userData = {};
+        if (!model.userData.vertexModifications) model.userData.vertexModifications = {};
+        model.userData.vertexModifications[vertexIndex] = position;
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+    extrudeFaces: (state, action: PayloadAction<ExtrudePayload>) => {
+      const { modelId, faceIndices, distance } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        // Store extrude operation in userData
+        if (!model.userData) model.userData = {};
+        if (!model.userData.extrudeOperations) model.userData.extrudeOperations = [];
+        model.userData.extrudeOperations.push({ faceIndices, distance, timestamp: Date.now() });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+    insetFaces: (state, action: PayloadAction<InsetPayload>) => {
+      const { modelId, faceIndices, distance } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        // Store inset operation in userData
+        if (!model.userData) model.userData = {};
+        if (!model.userData.insetOperations) model.userData.insetOperations = [];
+        model.userData.insetOperations.push({ faceIndices, distance, timestamp: Date.now() });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
+    bevelEdges: (state, action: PayloadAction<BevelPayload>) => {
+      const { modelId, edgeIndices, segments, distance } = action.payload;
+      const model = state.models.find(m => m.id === modelId);
+      if (model) {
+        // Store bevel operation in userData
+        if (!model.userData) model.userData = {};
+        if (!model.userData.bevelOperations) model.userData.bevelOperations = [];
+        model.userData.bevelOperations.push({ edgeIndices, segments, distance, timestamp: Date.now() });
+        model.updatedAt = new Date().toISOString();
+      }
+    },
   },
 });
 
@@ -369,7 +419,11 @@ export const {
   saveToHistory,
   undo,
   redo,
-  clearError
+  clearError,
+  updateVertex,
+  extrudeFaces,
+  insetFaces,
+  bevelEdges
 } = modelSlice.actions;
 
 export default modelSlice.reducer;
