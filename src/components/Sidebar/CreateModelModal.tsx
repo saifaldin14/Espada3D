@@ -286,7 +286,7 @@ const styles = {
     marginRight: "12px",
     display: "flex",
     alignItems: "center",
-    color: "#667eea",
+    color: "#00c9ff",
   },
   menuItem: {
     padding: "12px 16px",
@@ -294,7 +294,7 @@ const styles = {
     margin: "4px 8px",
     transition: "all 0.3s ease-in-out",
     "&:hover": {
-      background: "rgba(102, 126, 234, 0.2)",
+      background: "rgba(0, 201, 255, 0.1)",
     },
   },
   menuItemContent: {

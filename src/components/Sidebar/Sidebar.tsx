@@ -439,7 +439,7 @@ const styles = {
     color: "#ffffff",
     fontSize: "16px",
     "&:hover": {
-      background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+      background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
       color: "#ffffff",
     },
   },
