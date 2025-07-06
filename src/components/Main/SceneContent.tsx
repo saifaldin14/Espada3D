@@ -27,6 +27,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     selectedModelId,
     updateTransform,
     selectModelById,
+    deleteModel,
   } = useModels();
 
   const uuidToModelId = useRef<{ [uuid: string]: string }>({});
@@ -48,6 +49,20 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     }
   }, []);
 
+  // Add keyboard support for deleting models
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Delete" || event.key === "Backspace") {
+        if (selectedModelId) {
+          deleteModel(selectedModelId);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedModelId, deleteModel]);
+
   useEffect(() => {
     const newUuidToModelId: { [uuid: string]: string } = {};
     const newRenderedModels: { [id: string]: Group } = {};
@@ -63,60 +78,82 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
 
   useEffect(() => {
     if (selectedModelId) {
+      // Check if the selected model still exists in metadata
+      const model = modelsMetadata.find((m: any) => m.id === selectedModelId);
+
+      if (!model) {
+        // Model was deleted, clean up and deselect
+        handleDelete();
+        selectModelById(null);
+        return;
+      }
+
       const selectedGroup = renderedModels[selectedModelId];
       if (selectedGroup) {
         selectedMeshRef.current = selectedGroup.children[0] as Mesh;
 
-        const model = modelsMetadata.find((m: any) => m.id === selectedModelId);
+        selectedMeshRef.current.position.set(
+          model.position[0],
+          model.position[1],
+          model.position[2]
+        );
+        selectedMeshRef.current.rotation.set(
+          model.rotation[0],
+          model.rotation[1],
+          model.rotation[2]
+        );
+        selectedMeshRef.current.scale.set(
+          model.scale[0],
+          model.scale[1],
+          model.scale[2]
+        );
 
-        if (model) {
-          selectedMeshRef.current.position.set(
-            model.position[0],
-            model.position[1],
-            model.position[2]
-          );
-          selectedMeshRef.current.rotation.set(
-            model.rotation[0],
-            model.rotation[1],
-            model.rotation[2]
-          );
-          selectedMeshRef.current.scale.set(
-            model.scale[0],
-            model.scale[1],
-            model.scale[2]
-          );
+        // Create or update the outline mesh
+        createOrUpdateOutlineMesh(selectedMeshRef.current);
 
-          // Create or update the outline mesh
-          createOrUpdateOutlineMesh(selectedMeshRef.current);
-
-          if (transformControlsRef.current) {
-            transformControlsRef.current.attach(selectedMeshRef.current);
-          }
+        if (transformControlsRef.current) {
+          transformControlsRef.current.attach(selectedMeshRef.current);
         }
       } else {
+        // Model exists in metadata but not in rendered models yet, wait for next render
         handleDelete();
       }
     } else {
-      handleDelete();
-    }
-  }, [selectedModelId, renderedModels, modelsMetadata]);
-
-  const handleDelete = () => {
-    const model = modelsMetadata.find((m: any) => m.id === selectedModelId);
-
-    if (!model && selectedMeshRef.current) {
-      selectedMeshRef.current.visible = false;
-      selectedMeshRef.current.removeFromParent();
-      selectedMeshRef.current.remove();
+      // Clean up when no model is selected
+      if (outlineMeshRef.current) {
+        outlineMeshRef.current.removeFromParent();
+        outlineMeshRef.current.geometry.dispose();
+        if (outlineMeshRef.current.material instanceof MeshStandardMaterial) {
+          outlineMeshRef.current.material.dispose();
+        }
+        outlineMeshRef.current = null;
+      }
 
       if (transformControlsRef.current) {
         transformControlsRef.current.detach();
       }
 
+      selectedMeshRef.current = null;
+    }
+  }, [selectedModelId, renderedModels, modelsMetadata, selectModelById]);
+
+  const handleDelete = () => {
+    // This function is for cleaning up UI elements when a model no longer exists
+    // It should not be used for actually deleting models from the store
+    if (selectedMeshRef.current) {
+      if (transformControlsRef.current) {
+        transformControlsRef.current.detach();
+      }
+
+      // Properly clean up the outline mesh
       if (outlineMeshRef.current) {
         outlineMeshRef.current.visible = false;
         outlineMeshRef.current.removeFromParent();
-        selectedMeshRef.current.remove();
+        outlineMeshRef.current.geometry.dispose();
+        if (outlineMeshRef.current.material instanceof MeshStandardMaterial) {
+          outlineMeshRef.current.material.dispose();
+        }
+        outlineMeshRef.current = null;
       }
 
       selectedMeshRef.current = null;
@@ -172,20 +209,26 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   };
 
   const createOrUpdateOutlineMesh = (mesh: Mesh) => {
-    if (!outlineMeshRef.current) {
-      const geometry = mesh.geometry.clone();
-      const outlineMaterial = new MeshStandardMaterial({
-        color: 0x0000ff,
-        side: 1, // THREE.BackSide
-        transparent: true,
-        opacity: 0.5,
-      });
-
-      outlineMeshRef.current = new Mesh(geometry, outlineMaterial);
-    } else {
-      outlineMeshRef.current.geometry.copy(mesh.geometry);
+    // Remove the previous outline mesh if it exists
+    if (outlineMeshRef.current) {
+      outlineMeshRef.current.removeFromParent();
+      outlineMeshRef.current.geometry.dispose();
+      if (outlineMeshRef.current.material instanceof MeshStandardMaterial) {
+        outlineMeshRef.current.material.dispose();
+      }
+      outlineMeshRef.current = null;
     }
 
+    // Create a new outline mesh for the current selection
+    const geometry = mesh.geometry.clone();
+    const outlineMaterial = new MeshStandardMaterial({
+      color: 0x0000ff,
+      side: 1, // THREE.BackSide
+      transparent: true,
+      opacity: 0.5,
+    });
+
+    outlineMeshRef.current = new Mesh(geometry, outlineMaterial);
     outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
     outlineMeshRef.current.position.copy(mesh.position);
     outlineMeshRef.current.rotation.copy(mesh.rotation);

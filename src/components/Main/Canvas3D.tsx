@@ -49,10 +49,10 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
   }, []);
 
   useEffect(() => {
-    const newModels = { ...models };
+    const newModels: { [id: string]: Group } = {};
 
     modelsMetadata.forEach((meta) => {
-      let modelGroup = newModels[meta.id];
+      let modelGroup = models[meta.id];
 
       if (!modelGroup) {
         // Create new model if it doesn't exist
@@ -134,6 +134,9 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
         );
         modelGroup.scale.set(meta.scale[0], meta.scale[1], meta.scale[2]);
       }
+
+      // Add the model to newModels (only models that exist in metadata)
+      newModels[meta.id] = modelGroup;
     });
 
     setModels(newModels);
