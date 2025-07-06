@@ -2,6 +2,9 @@ import React from "react";
 import Canvas3D from "./components/Main/Canvas3D";
 import Sidebar from "./components/Sidebar/Sidebar";
 import ModelEditor from "./components/ModelEditor/ModelEditor";
+import EditorToolbar from "./components/ModelEditor/EditorToolbar";
+import HierarchyPanel from "./components/ModelEditor/HierarchyPanel";
+import AnimationPanel from "./components/ModelEditor/AnimationPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { Provider } from "react-redux";
 import store from "./store";
@@ -9,8 +12,11 @@ import { ModelProvider } from "./components/Main/ModelContext";
 import { useAppSelector } from "./hooks/useRedux";
 
 const AppContent: React.FC = () => {
-  const selectedModelId = useAppSelector(
-    (state) => state.models.selectedModelId
+  const isHierarchyPanelOpen = useAppSelector(
+    (state) => state.ui.isHierarchyPanelOpen
+  );
+  const isAnimationPanelOpen = useAppSelector(
+    (state) => state.ui.isAnimationPanelOpen
   );
 
   return (
@@ -21,8 +27,14 @@ const AppContent: React.FC = () => {
 
       <div style={styles.mainContent}>
         <ErrorBoundary>
-          <Canvas3D />
+          <EditorToolbar />
         </ErrorBoundary>
+
+        <div style={styles.canvasContainer}>
+          <ErrorBoundary>
+            <Canvas3D />
+          </ErrorBoundary>
+        </div>
       </div>
 
       <ErrorBoundary>
@@ -30,6 +42,18 @@ const AppContent: React.FC = () => {
           <ModelEditor />
         </ModelProvider>
       </ErrorBoundary>
+
+      {isHierarchyPanelOpen && (
+        <ErrorBoundary>
+          <HierarchyPanel isOpen={isHierarchyPanelOpen} />
+        </ErrorBoundary>
+      )}
+
+      {isAnimationPanelOpen && (
+        <ErrorBoundary>
+          <AnimationPanel isOpen={isAnimationPanelOpen} />
+        </ErrorBoundary>
+      )}
     </div>
   );
 };
@@ -50,6 +74,11 @@ const styles = {
     height: "100vh",
   },
   mainContent: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column" as const,
+  },
+  canvasContainer: {
     flex: 1,
     display: "flex",
   },

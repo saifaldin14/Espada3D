@@ -53,7 +53,9 @@ const ModelMetadataSchema = z.object({
   parentId: z.string().uuid().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  name: z.string().optional(),
+  name: z.string(),
+  visible: z.boolean(),
+  locked: z.boolean(),
 });
 
 const CreateModelPayloadSchema = z.object({

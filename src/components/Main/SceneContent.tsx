@@ -232,7 +232,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       <OrbitControls ref={orbitControlsRef} makeDefault />
       <TransformControls
         ref={transformControlsRef}
-        mode={activeTool ?? "translate"}
+        mode={activeTool === "select" ? "translate" : activeTool ?? "translate"}
         onObjectChange={handleTransformChange}
       />
       {Object.entries(renderedModels).map(([modelId, model]) => (

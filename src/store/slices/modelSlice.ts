@@ -6,7 +6,12 @@ import {
   CreateModelPayload,
   UpdateModelTransformPayload,
   UpdateModelMaterialPayload,
-  ModelValidationError
+  UpdateModelMetadataPayload,
+  UpdateModelHierarchyPayload,
+  DuplicateModelPayload,
+  GroupModelsPayload,
+  ModelValidationError,
+  Vector3Tuple
 } from '../../types';
 import { APP_CONFIG, ERROR_MESSAGES } from '../../config/constants';
 import { validateCreateModelPayload, validateVector3, validateMaterial } from '../../utils/validation';
@@ -14,8 +19,12 @@ import { validateCreateModelPayload, validateVector3, validateMaterial } from '.
 const initialState: ModelState = {
   models: [],
   selectedModelId: null,
+  selectedModelIds: [],
   loading: false,
   error: null,
+  history: [[]],
+  historyIndex: 0,
+  clipboard: [],
 };
 
 const modelSlice = createSlice({
@@ -94,6 +103,7 @@ const modelSlice = createSlice({
         const newModel: ModelMetadata = {
           id: uuidv4(),
           type: validatedPayload.type,
+          name: validatedPayload.name || `${validatedPayload.type}_${Date.now()}`,
           position: validatedPayload.position || [...APP_CONFIG.SCENE.DEFAULT_POSITION],
           rotation: validatedPayload.rotation || [...APP_CONFIG.SCENE.DEFAULT_ROTATION],
           scale: validatedPayload.scale || [...APP_CONFIG.SCENE.DEFAULT_SCALE],
@@ -105,9 +115,10 @@ const modelSlice = createSlice({
             roughness: APP_CONFIG.MATERIALS.DEFAULT_ROUGHNESS,
           },
           parentId: validatedPayload.parentId || null,
+          visible: true,
+          locked: false,
           createdAt: now,
           updatedAt: now,
-          name: validatedPayload.name,
         };
         
         state.models.push(newModel);
@@ -158,7 +169,7 @@ const modelSlice = createSlice({
         rotation: [...originalModel.rotation],
         scale: [...originalModel.scale],
         material: { ...originalModel.material },
-        name: originalModel.name ? `${originalModel.name} Copy` : undefined,
+        name: `${originalModel.name} Copy`,
         createdAt: now,
         updatedAt: now,
       };
@@ -170,6 +181,170 @@ const modelSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    // New advanced editing actions
+    updateModelMetadata: (state, action: PayloadAction<UpdateModelMetadataPayload>) => {
+      const model = state.models.find((m) => m.id === action.payload.id);
+      if (!model) {
+        state.error = ERROR_MESSAGES.RUNTIME.MODEL_NOT_FOUND;
+        return;
+      }
+      
+      if (action.payload.name !== undefined) model.name = action.payload.name;
+      if (action.payload.visible !== undefined) model.visible = action.payload.visible;
+      if (action.payload.locked !== undefined) model.locked = action.payload.locked;
+      if (action.payload.userData !== undefined) model.userData = { ...model.userData, ...action.payload.userData };
+      
+      model.updatedAt = new Date().toISOString();
+      state.error = null;
+    },
+    updateModelHierarchy: (state, action: PayloadAction<UpdateModelHierarchyPayload>) => {
+      const model = state.models.find((m) => m.id === action.payload.id);
+      if (!model) {
+        state.error = ERROR_MESSAGES.RUNTIME.MODEL_NOT_FOUND;
+        return;
+      }
+      
+      // Remove from old parent's children
+      if (model.parentId) {
+        const oldParent = state.models.find((m) => m.id === model.parentId);
+        if (oldParent && oldParent.children) {
+          oldParent.children = oldParent.children.filter(id => id !== action.payload.id);
+        }
+      }
+      
+      // Add to new parent's children
+      if (action.payload.parentId) {
+        const newParent = state.models.find((m) => m.id === action.payload.parentId);
+        if (newParent) {
+          if (!newParent.children) newParent.children = [];
+          newParent.children.push(action.payload.id);
+        }
+      }
+      
+      model.parentId = action.payload.parentId;
+      model.updatedAt = new Date().toISOString();
+      state.error = null;
+    },
+    selectMultipleModels: (state, action: PayloadAction<string[]>) => {
+      state.selectedModelIds = action.payload;
+      state.selectedModelId = action.payload.length === 1 ? action.payload[0] : null;
+    },
+    toggleModelSelection: (state, action: PayloadAction<string>) => {
+      const index = state.selectedModelIds.indexOf(action.payload);
+      if (index === -1) {
+        state.selectedModelIds.push(action.payload);
+      } else {
+        state.selectedModelIds.splice(index, 1);
+      }
+      state.selectedModelId = state.selectedModelIds.length === 1 ? state.selectedModelIds[0] : null;
+    },
+    groupModels: (state, action: PayloadAction<GroupModelsPayload>) => {
+      const { modelIds, groupName } = action.payload;
+      
+      // Create group parent
+      const groupId = uuidv4();
+      const now = new Date().toISOString();
+      const groupModel: ModelMetadata = {
+        id: groupId,
+        type: 'box',
+        name: groupName,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        material: { type: 'standard', color: '#cccccc', transparent: true, opacity: 0.1 },
+        parentId: null,
+        children: [...modelIds],
+        visible: true,
+        locked: false,
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      // Update child models
+      modelIds.forEach(id => {
+        const model = state.models.find(m => m.id === id);
+        if (model) {
+          model.parentId = groupId;
+        }
+      });
+      
+      state.models.push(groupModel);
+      state.selectedModelId = groupId;
+      state.error = null;
+    },
+    ungroupModels: (state, action: PayloadAction<string>) => {
+      const groupModel = state.models.find(m => m.id === action.payload);
+      if (!groupModel || !groupModel.children) {
+        state.error = 'Group not found or has no children';
+        return;
+      }
+      
+      // Remove parent reference from children
+      groupModel.children.forEach(childId => {
+        const child = state.models.find(m => m.id === childId);
+        if (child) {
+          child.parentId = null;
+        }
+      });
+      
+      // Remove group model
+      state.models = state.models.filter(m => m.id !== action.payload);
+      
+      if (state.selectedModelId === action.payload) {
+        state.selectedModelId = null;
+      }
+      
+      state.error = null;
+    },
+    copyModels: (state, action: PayloadAction<string[]>) => {
+      const modelsToCopy = state.models.filter(m => action.payload.includes(m.id));
+      state.clipboard = modelsToCopy.map(model => ({ ...model }));
+    },
+    pasteModels: (state) => {
+      if (state.clipboard.length === 0) return;
+      
+      const now = new Date().toISOString();
+      const newModels = state.clipboard.map(model => ({
+        ...model,
+        id: uuidv4(),
+        name: `${model.name} Copy`,
+        position: [model.position[0] + 1, model.position[1], model.position[2]] as Vector3Tuple,
+        createdAt: now,
+        updatedAt: now,
+      }));
+      
+      state.models.push(...newModels);
+      state.selectedModelIds = newModels.map(m => m.id);
+      state.selectedModelId = newModels.length === 1 ? newModels[0].id : null;
+    },
+    saveToHistory: (state) => {
+      // Remove future history if we're not at the end
+      if (state.historyIndex < state.history.length - 1) {
+        state.history = state.history.slice(0, state.historyIndex + 1);
+      }
+      
+      // Add current state to history
+      state.history.push(state.models.map(model => ({ ...model })));
+      state.historyIndex = state.history.length - 1;
+      
+      // Limit history size
+      if (state.history.length > 50) {
+        state.history.shift();
+        state.historyIndex--;
+      }
+    },
+    undo: (state) => {
+      if (state.historyIndex > 0) {
+        state.historyIndex--;
+        state.models = state.history[state.historyIndex].map(model => ({ ...model }));
+      }
+    },
+    redo: (state) => {
+      if (state.historyIndex < state.history.length - 1) {
+        state.historyIndex++;
+        state.models = state.history[state.historyIndex].map(model => ({ ...model }));
+      }
+    },
   },
 });
 
@@ -180,9 +355,20 @@ export const {
   selectModel, 
   updateModelMaterial,
   updateModelTransform,
+  updateModelMetadata,
+  updateModelHierarchy,
+  selectMultipleModels,
+  toggleModelSelection,
+  groupModels,
+  ungroupModels,
+  copyModels,
+  pasteModels,
   createNewModel, 
   removeModel, 
   duplicateModel,
+  saveToHistory,
+  undo,
+  redo,
   clearError
 } = modelSlice.actions;
 
