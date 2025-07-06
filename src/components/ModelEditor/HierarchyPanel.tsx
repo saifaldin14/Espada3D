@@ -135,11 +135,17 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
         <ListItem
           sx={{
             paddingLeft: `${depth * 20 + 16}px`,
+            paddingY: "4px",
             backgroundColor: isSelected
-              ? "rgba(25, 118, 210, 0.12)"
+              ? "rgba(0, 255, 255, 0.15)"
               : "transparent",
+            borderRadius: "8px",
+            marginBottom: "2px",
+            transition: "all 0.2s ease",
             "&:hover": {
-              backgroundColor: "rgba(0, 0, 0, 0.04)",
+              backgroundColor: isSelected
+                ? "rgba(0, 255, 255, 0.2)"
+                : "rgba(255, 255, 255, 0.08)",
             },
           }}
         >
@@ -147,7 +153,14 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
             <IconButton
               size="small"
               onClick={() => toggleExpanded(model.id)}
-              sx={{ marginRight: 1 }}
+              sx={{
+                marginRight: 1,
+                color: "rgba(255, 255, 255, 0.7)",
+                "&:hover": {
+                  background: "rgba(255, 255, 255, 0.1)",
+                  color: "#00ffff",
+                },
+              }}
             >
               {isExpanded ? <ExpandMore /> : <ChevronRight />}
             </IconButton>
@@ -160,23 +173,34 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
               dispatch(toggleModelSelection(model.id));
             }}
             size="small"
-            sx={{ marginRight: 1 }}
+            sx={{
+              marginRight: 1,
+              color: "rgba(255, 255, 255, 0.7)",
+              "&.Mui-checked": {
+                color: "#00ffff",
+              },
+            }}
           />
 
           <ListItemIcon sx={{ minWidth: "auto", marginRight: 1 }}>
             {hasChildren ? (
               isExpanded ? (
-                <FolderOpen fontSize="small" />
+                <FolderOpen fontSize="small" sx={{ color: "#00cc99" }} />
               ) : (
-                <Folder fontSize="small" />
+                <Folder
+                  fontSize="small"
+                  sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+                />
               )
             ) : (
               <Box
                 sx={{
-                  width: 20,
-                  height: 20,
+                  width: 16,
+                  height: 16,
                   backgroundColor: model.material.color,
                   borderRadius: "50%",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  boxShadow: "0 0 8px rgba(0, 0, 0, 0.3)",
                 }}
               />
             )}
@@ -185,7 +209,15 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
           <ListItemText
             primary={model.name}
             onClick={(e) => handleModelSelect(model.id, e)}
-            sx={{ cursor: "pointer", flexGrow: 1 }}
+            sx={{
+              cursor: "pointer",
+              flexGrow: 1,
+              "& .MuiListItemText-primary": {
+                color: "#ffffff",
+                fontSize: "0.875rem",
+                fontWeight: isSelected ? 600 : 400,
+              },
+            }}
           />
 
           <IconButton
@@ -198,6 +230,12 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
                   visible: !model.visible,
                 })
               );
+            }}
+            sx={{
+              color: model.visible ? "#00ff88" : "rgba(255, 255, 255, 0.3)",
+              "&:hover": {
+                background: "rgba(0, 255, 136, 0.1)",
+              },
             }}
           >
             {model.visible ? (
@@ -218,6 +256,12 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
                 })
               );
             }}
+            sx={{
+              color: model.locked ? "#ffaa00" : "rgba(255, 255, 255, 0.3)",
+              "&:hover": {
+                background: "rgba(255, 170, 0, 0.1)",
+              },
+            }}
           >
             {model.locked ? (
               <Lock fontSize="small" />
@@ -229,6 +273,13 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
           <IconButton
             size="small"
             onClick={(e: React.MouseEvent) => handleContextMenu(e, model.id)}
+            sx={{
+              color: "rgba(255, 255, 255, 0.5)",
+              "&:hover": {
+                background: "rgba(255, 255, 255, 0.1)",
+                color: "#ffffff",
+              },
+            }}
           >
             <MoreVert fontSize="small" />
           </IconButton>
@@ -247,9 +298,27 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
 
   return (
     <Box sx={styles.panel}>
-      <Typography variant="h6" sx={styles.title}>
-        Hierarchy
-      </Typography>
+      <Box sx={styles.header}>
+        <Typography variant="h6" sx={styles.title}>
+          🏗️ Scene Hierarchy
+        </Typography>
+        <Box sx={styles.headerActions}>
+          <IconButton
+            size="small"
+            sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+            onClick={() => setExpandedNodes(new Set())}
+          >
+            <Box component="span" sx={{ fontSize: "14px" }}>
+              📁
+            </Box>
+          </IconButton>
+          <IconButton size="small" sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
+            <Box component="span" sx={{ fontSize: "14px" }}>
+              ⚙️
+            </Box>
+          </IconButton>
+        </Box>
+      </Box>
 
       <Box sx={styles.toolbar}>
         <Button
@@ -257,13 +326,28 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
           startIcon={<GroupWork />}
           onClick={handleGroup}
           disabled={selectedModelIds.length < 2}
+          sx={styles.toolbarButton}
         >
           Group
         </Button>
+        <Typography variant="caption" sx={styles.objectCount}>
+          {models.length} objects
+        </Typography>
       </Box>
 
       <List sx={styles.list}>
-        {rootModels.map((model: ModelMetadata) => renderModelItem(model))}
+        {rootModels.length === 0 ? (
+          <Box sx={styles.emptyState}>
+            <Typography
+              variant="body2"
+              sx={{ color: "rgba(255, 255, 255, 0.5)" }}
+            >
+              No objects in scene
+            </Typography>
+          </Box>
+        ) : (
+          rootModels.map((model: ModelMetadata) => renderModelItem(model))
+        )}
       </List>
 
       <Menu
@@ -275,20 +359,54 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
             ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
             : undefined
         }
+        PaperProps={{
+          sx: {
+            background: "rgba(10, 15, 25, 0.95)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: "12px",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+            "& .MuiMenuItem-root": {
+              color: "#ffffff",
+              "&:hover": {
+                background: "rgba(0, 255, 255, 0.1)",
+              },
+            },
+          },
+        }}
       >
         <MenuItem onClick={handleGroup} disabled={selectedModelIds.length < 2}>
-          <GroupWork sx={{ marginRight: 1 }} />
+          <GroupWork sx={{ marginRight: 1, color: "#00ffff" }} />
           Group Selected
         </MenuItem>
         <MenuItem onClick={handleUngroup}>
-          <Group sx={{ marginRight: 1 }} />
+          <Group sx={{ marginRight: 1, color: "#00ffff" }} />
           Ungroup
         </MenuItem>
       </Menu>
 
-      <Dialog open={groupDialog} onClose={() => setGroupDialog(false)}>
-        <DialogTitle>Create Group</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={groupDialog}
+        onClose={() => setGroupDialog(false)}
+        PaperProps={{
+          sx: {
+            background: "rgba(10, 15, 25, 0.95)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: "16px",
+            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: "#ffffff",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          }}
+        >
+          Create Group
+        </DialogTitle>
+        <DialogContent sx={{ padding: "20px" }}>
           <TextField
             autoFocus
             margin="dense"
@@ -297,11 +415,47 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
             variant="outlined"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                color: "#ffffff",
+                "& fieldset": {
+                  borderColor: "rgba(255, 255, 255, 0.3)",
+                },
+                "&:hover fieldset": {
+                  borderColor: "rgba(255, 255, 255, 0.5)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#00ffff",
+                },
+              },
+              "& .MuiInputLabel-root": {
+                color: "rgba(255, 255, 255, 0.7)",
+                "&.Mui-focused": {
+                  color: "#00ffff",
+                },
+              },
+            }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setGroupDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateGroup} variant="contained">
+        <DialogActions sx={{ padding: "16px 20px" }}>
+          <Button
+            onClick={() => setGroupDialog(false)}
+            sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateGroup}
+            variant="contained"
+            sx={{
+              background: "linear-gradient(135deg, #00ffff 0%, #00cc99 100%)",
+              color: "#000000",
+              fontWeight: 600,
+              "&:hover": {
+                background: "linear-gradient(135deg, #00cccc 0%, #00aa77 100%)",
+              },
+            }}
+          >
             Create
           </Button>
         </DialogActions>
@@ -312,26 +466,87 @@ const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ isOpen }) => {
 
 const styles = {
   panel: {
-    width: "300px",
-    height: "100vh",
-    backgroundColor: "#f5f5f5",
-    borderLeft: "1px solid #ddd",
-    padding: "16px",
-    boxSizing: "border-box" as const,
+    width: "320px",
+    maxHeight: "600px",
+    minHeight: "400px",
+    background: "rgba(10, 15, 25, 0.95)",
+    backdropFilter: "blur(20px)",
+    border: "1px solid rgba(255, 255, 255, 0.15)",
+    borderRadius: "16px",
+    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column" as const,
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "16px 20px 12px",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+    background: "rgba(0, 0, 0, 0.2)",
   },
   title: {
-    marginBottom: "16px",
-    fontWeight: "bold",
+    color: "#ffffff",
+    fontWeight: 600,
+    fontSize: "1.1rem",
+    letterSpacing: "0.5px",
+    margin: 0,
+  },
+  headerActions: {
+    display: "flex",
+    gap: "4px",
   },
   toolbar: {
     display: "flex",
-    gap: "8px",
-    marginBottom: "16px",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "12px 20px",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+    background: "rgba(255, 255, 255, 0.02)",
+  },
+  toolbarButton: {
+    background: "linear-gradient(135deg, #00ffff 0%, #00cc99 100%)",
+    color: "#000000",
+    fontWeight: 600,
+    fontSize: "0.75rem",
+    "&:hover": {
+      background: "linear-gradient(135deg, #00cccc 0%, #00aa77 100%)",
+    },
+    "&:disabled": {
+      background: "rgba(255, 255, 255, 0.1)",
+      color: "rgba(255, 255, 255, 0.3)",
+    },
+  },
+  objectCount: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontWeight: 500,
   },
   list: {
-    padding: 0,
+    padding: "8px",
     overflow: "auto",
-    maxHeight: "calc(100vh - 120px)",
+    flex: 1,
+    "&::-webkit-scrollbar": {
+      width: "6px",
+    },
+    "&::-webkit-scrollbar-track": {
+      background: "rgba(255, 255, 255, 0.05)",
+      borderRadius: "3px",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      background: "rgba(255, 255, 255, 0.2)",
+      borderRadius: "3px",
+      "&:hover": {
+        background: "rgba(255, 255, 255, 0.3)",
+      },
+    },
+  },
+  emptyState: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "200px",
+    textAlign: "center" as const,
   },
 };
 

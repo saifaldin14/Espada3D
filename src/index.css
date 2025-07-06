@@ -57,13 +57,13 @@ code {
 
 /* Animation utilities */
 .fade-in {
-  animation: fadeIn 0.3s ease-in-out;
+  animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -72,13 +72,13 @@ code {
 }
 
 .slide-in-left {
-  animation: slideInLeft 0.3s ease-in-out;
+  animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateX(-30px);
   }
   to {
     opacity: 1;
@@ -86,36 +86,178 @@ code {
   }
 }
 
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Pulse animation for status indicators */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
 /* Hover effects */
 .hover-lift {
-  transition: transform 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
-/* Gradient backgrounds */
+/* Professional focus states */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.5);
+}
+
+/* Workspace grid layout helpers */
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr 380px;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.workspace-header {
+  grid-column: 1 / -1;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.workspace-sidebar-left {
+  background: rgba(15, 15, 20, 0.8);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.workspace-main {
+  background: rgba(20, 25, 35, 0.4);
+  position: relative;
+}
+
+.workspace-sidebar-right {
+  background: rgba(15, 15, 20, 0.8);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.workspace-footer {
+  grid-column: 1 / -1;
+  background: linear-gradient(90deg, rgba(10, 10, 15, 0.95) 0%, rgba(15, 20, 30, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Gradient backgrounds - Balanced and Professional */
 .gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #00ffff 0%, #00cc99 100%);
 }
 
 .gradient-secondary {
-  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .gradient-accent {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, #9966cc 0%, #cc6699 100%);
 }
 
 .gradient-success {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
 }
 
 .gradient-warning {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, #ffaa00 0%, #ff6600 100%);
+}
+
+.gradient-danger {
+  background: linear-gradient(135deg, #ff4757 0%, #c44569 100%);
 }
 
 .gradient-neutral {
   background: linear-gradient(135deg, #485563 0%, #29323c 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+/* Text gradients */
+.text-gradient-primary {
+  background: linear-gradient(135deg, #00ffff 0%, #00cc99 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-accent {
+  background: linear-gradient(135deg, #9966cc 0%, #cc6699 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Professional shadows */
+.shadow-soft {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.shadow-medium {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.shadow-strong {
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.4);
+}
+
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .workspace-grid {
+    grid-template-columns: 280px 1fr 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+  
+  .workspace-sidebar-left,
+  .workspace-sidebar-right {
+    display: none;
+  }
 }
