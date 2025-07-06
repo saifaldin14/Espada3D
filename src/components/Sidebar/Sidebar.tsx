@@ -1,26 +1,8 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  selectModel,
-  removeModel,
-  duplicateModel,
-} from "../../store/slices/modelSlice";
-import {
-  setActiveTool,
-  setGrid,
-  setWireframe,
-} from "../../store/slices/uiSlice";
-import {
-  FaArrowsAlt,
-  FaSyncAlt,
-  FaPlus,
-  FaTrashAlt,
-  FaCopy,
-  FaCube,
-  FaEye,
-  FaEyeSlash,
-} from "react-icons/fa";
-import { FaArrowsLeftRight } from "react-icons/fa6";
+import { selectModel } from "../../store/slices/modelSlice";
+import { setGrid, setWireframe } from "../../store/slices/uiSlice";
+import { FaPlus, FaCube, FaEye, FaEyeSlash } from "react-icons/fa";
 import {
   Box,
   Typography,
@@ -33,7 +15,6 @@ import {
   FormGroup,
   FormControlLabel,
   Switch,
-  FormLabel,
   Button,
   Tooltip,
   Chip,
@@ -49,25 +30,12 @@ const Sidebar: React.FC = () => {
   const selectedModelId = useSelector(
     (state: any) => state.models.selectedModelId
   );
-  const activeTool = useSelector((state: any) => state.ui.activeTool);
   const dispatch = useDispatch();
 
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleModelSelect = (id: string) => {
     dispatch(selectModel(id));
-  };
-
-  const handleToolSelect = (tool: "translate" | "rotate" | "scale") => {
-    dispatch(setActiveTool(tool));
-  };
-
-  const handleModelRemove = (id: string) => {
-    dispatch(removeModel(id));
-  };
-
-  const handleModelDuplicate = (id: string) => {
-    dispatch(duplicateModel(id));
   };
 
   return (
@@ -166,75 +134,6 @@ const Sidebar: React.FC = () => {
             </List>
           )}
         </Box>
-      </Box>
-
-      {/* Tools */}
-      <Box sx={styles.section}>
-        <Typography variant="h6" sx={styles.sectionTitle}>
-          Transform Tools
-        </Typography>
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-          <Tooltip title="Translate">
-            <IconButton
-              sx={{
-                ...styles.toolButton,
-                ...(activeTool === "translate" ? styles.activeToolButton : {}),
-              }}
-              onClick={() => handleToolSelect("translate")}
-              className="hover-lift"
-            >
-              <FaArrowsAlt />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Rotate">
-            <IconButton
-              sx={{
-                ...styles.toolButton,
-                ...(activeTool === "rotate" ? styles.activeToolButton : {}),
-              }}
-              onClick={() => handleToolSelect("rotate")}
-              className="hover-lift"
-            >
-              <FaSyncAlt />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Scale">
-            <IconButton
-              sx={{
-                ...styles.toolButton,
-                ...(activeTool === "scale" ? styles.activeToolButton : {}),
-              }}
-              onClick={() => handleToolSelect("scale")}
-              className="hover-lift"
-            >
-              <FaArrowsLeftRight />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-
-        {/* Model Actions */}
-        {selectedModelId && (
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="Delete Model">
-              <IconButton
-                sx={styles.actionButton}
-                onClick={() => handleModelRemove(selectedModelId)}
-                className="hover-lift"
-              >
-                <FaTrashAlt />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Duplicate Model">
-              <IconButton
-                sx={styles.actionButton}
-                onClick={() => handleModelDuplicate(selectedModelId)}
-                className="hover-lift"
-              >
-                <FaCopy />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        )}
       </Box>
 
       {/* Settings */}
