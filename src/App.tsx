@@ -1,29 +1,46 @@
 import React from "react";
-import { useSelector } from "react-redux";
 import Canvas3D from "./components/Main/Canvas3D";
 import Sidebar from "./components/Sidebar/Sidebar";
 import ModelEditor from "./components/ModelEditor/ModelEditor";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { Provider } from "react-redux";
 import store from "./store";
 import { Group } from "three";
 import { ModelProvider } from "./components/Main/ModelContext";
+import { useAppSelector } from "./hooks/useRedux";
 
-const App: React.FC = () => {
-  const selectedModel = useSelector(
-    (state: any) => state.models.selectedModel
+const AppContent: React.FC = () => {
+  const selectedModel = useAppSelector(
+    (state) => state.models.selectedModelId
   ) as Group | null;
 
   return (
-    <Provider store={store}>
-      <div style={styles.container}>
+    <div style={styles.container}>
+      <ErrorBoundary>
         <Sidebar />
-        <div style={styles.mainContent}>
+      </ErrorBoundary>
+
+      <div style={styles.mainContent}>
+        <ErrorBoundary>
           <Canvas3D selectedModel={selectedModel} />
-        </div>
+        </ErrorBoundary>
+      </div>
+
+      <ErrorBoundary>
         <ModelProvider selectedModel={selectedModel}>
           <ModelEditor />
         </ModelProvider>
-      </div>
+      </ErrorBoundary>
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <Provider store={store}>
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </Provider>
   );
 };

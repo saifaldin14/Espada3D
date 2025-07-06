@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { GizmoHelper, GizmoViewcube } from "@react-three/drei";
-import { useSelector } from "react-redux";
 import {
   Group,
   BoxGeometry,
@@ -14,25 +13,45 @@ import {
 } from "three";
 import { ModelProvider } from "./ModelContext";
 import SceneContent from "./SceneContent";
-import { ModelMetadata } from "../../types";
+import ErrorBoundary from "../ErrorBoundary";
+import { useAppSelector } from "../../hooks/useRedux";
+import { APP_CONFIG } from "../../config/constants";
 
 interface Canvas3DProps {
   selectedModel: Group | null;
 }
 
 const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
-  const modelsMetadata = useSelector(
-    (state: any) => state.models.models
-  ) as ModelMetadata[];
-  const activeTool = useSelector((state: any) => state.ui.activeTool);
-  const showGrid = useSelector((state: any) => state.ui.showGrid);
-  const showWireframe = useSelector((state: any) => state.ui.showWireframe);
+  const modelsMetadata = useAppSelector((state) => state.models.models);
+  const activeTool = useAppSelector((state) => state.ui.activeTool);
+  const showGrid = useAppSelector((state) => state.ui.showGrid);
+  const showWireframe = useAppSelector((state) => state.ui.showWireframe);
   const [models, setModels] = useState<{ [id: string]: Group }>({});
+
+  // Memoize material creation to avoid recreating on every render
+  const createMaterial = useMemo(() => {
+    return (materialType: string, color: string, wireframe: boolean) => {
+      const materialProps = {
+        color: color || APP_CONFIG.MATERIALS.DEFAULT_COLOR,
+        wireframe,
+      };
+
+      switch (materialType) {
+        case "phong":
+          return new MeshPhongMaterial(materialProps);
+        case "lambert":
+          return new MeshLambertMaterial(materialProps);
+        case "standard":
+        default:
+          return new MeshStandardMaterial(materialProps);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const newModels = { ...models };
 
-    modelsMetadata.forEach((meta: ModelMetadata) => {
+    modelsMetadata.forEach((meta) => {
       let modelGroup = newModels[meta.id];
 
       if (!modelGroup) {
@@ -50,35 +69,26 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
             geometry = new BoxGeometry(1, 1, 1);
         }
 
-        // Create the material based on the selected type
-        let material;
-        switch (meta.material.type) {
-          case "phong":
-            material = new MeshPhongMaterial({
-              color: meta.material.color || 0x00ff00,
-              wireframe: showWireframe,
-            });
-            break;
-          case "lambert":
-            material = new MeshLambertMaterial({
-              color: meta.material.color || 0x00ff00,
-              wireframe: showWireframe,
-            });
-            break;
-          case "standard":
-          default:
-            material = new MeshStandardMaterial({
-              color: meta.material.color || 0x00ff00,
-              wireframe: showWireframe,
-            });
-        }
+        const material = createMaterial(
+          meta.material.type,
+          meta.material.color || APP_CONFIG.MATERIALS.DEFAULT_COLOR,
+          showWireframe
+        );
 
         const mesh = new Mesh(geometry, material);
         modelGroup = new Group();
         modelGroup.add(mesh);
-        modelGroup.position.set(...meta.position);
-        modelGroup.rotation.set(...meta.rotation);
-        modelGroup.scale.set(...meta.scale);
+        modelGroup.position.set(
+          meta.position[0],
+          meta.position[1],
+          meta.position[2]
+        );
+        modelGroup.rotation.set(
+          meta.rotation[0],
+          meta.rotation[1],
+          meta.rotation[2]
+        );
+        modelGroup.scale.set(meta.scale[0], meta.scale[1], meta.scale[2]);
         newModels[meta.id] = modelGroup;
       } else {
         // Update the wireframe and color properties for existing models
@@ -93,7 +103,9 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
               mat instanceof MeshLambertMaterial
             ) {
               mat.wireframe = showWireframe;
-              mat.color.set(meta.material.color || 0x00ff00); // Update color
+              mat.color.set(
+                meta.material.color || APP_CONFIG.MATERIALS.DEFAULT_COLOR
+              );
               mat.needsUpdate = true;
             }
           });
@@ -103,27 +115,63 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
           material instanceof MeshLambertMaterial
         ) {
           material.wireframe = showWireframe;
-          material.color.set(meta.material.color || 0x00ff00); // Update color
+          material.color.set(
+            meta.material.color || APP_CONFIG.MATERIALS.DEFAULT_COLOR
+          );
           material.needsUpdate = true;
         }
+
+        // Update transforms
+        modelGroup.position.set(
+          meta.position[0],
+          meta.position[1],
+          meta.position[2]
+        );
+        modelGroup.rotation.set(
+          meta.rotation[0],
+          meta.rotation[1],
+          meta.rotation[2]
+        );
+        modelGroup.scale.set(meta.scale[0], meta.scale[1], meta.scale[2]);
       }
     });
 
-    setModels(newModels); // Update state with the new models
-  }, [modelsMetadata, showWireframe]);
+    setModels(newModels);
+  }, [modelsMetadata, showWireframe, createMaterial]);
 
   return (
-    <Canvas>
-      <ModelProvider selectedModel={selectedModel}>
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} />
-        {showGrid && <gridHelper args={[10, 10]} />}{" "}
-        <SceneContent models={models} activeTool={activeTool} />
-        <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
-          <GizmoViewcube />
-        </GizmoHelper>
-      </ModelProvider>
-    </Canvas>
+    <ErrorBoundary>
+      <Canvas
+        camera={{
+          position: [...APP_CONFIG.SCENE.DEFAULT_CAMERA_POSITION],
+          fov: 75,
+        }}
+        onCreated={({ gl }) => {
+          gl.setClearColor("#f0f0f0");
+        }}
+      >
+        <ModelProvider selectedModel={selectedModel}>
+          <ambientLight intensity={0.5} />
+          <pointLight position={[10, 10, 10]} />
+          <directionalLight position={[-10, 10, 5]} intensity={0.3} />
+
+          {showGrid && (
+            <gridHelper
+              args={[
+                APP_CONFIG.SCENE.DEFAULT_GRID_SIZE,
+                APP_CONFIG.SCENE.DEFAULT_GRID_SIZE,
+              ]}
+            />
+          )}
+
+          <SceneContent models={models} activeTool={activeTool} />
+
+          <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
+            <GizmoViewcube />
+          </GizmoHelper>
+        </ModelProvider>
+      </Canvas>
+    </ErrorBoundary>
   );
 };
 

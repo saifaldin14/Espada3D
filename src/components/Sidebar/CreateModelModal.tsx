@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
 import {
   Dialog,
   DialogTitle,
@@ -13,10 +12,16 @@ import {
   Typography,
   Tooltip,
   Box,
+  Alert,
 } from "@mui/material";
-import { createNewModel } from "../../store/slices/modelSlice";
 import { FaCube, FaGlobe, FaShapes } from "react-icons/fa";
-import { MaterialProperties } from "../../types";
+import {
+  MaterialProperties,
+  GeometryType,
+  CreateModelPayload,
+} from "../../types";
+import { useModels } from "../../hooks/useRedux";
+import { validateCreateModelPayload } from "../../utils/validation";
 
 interface CreateModelModalProps {
   open: boolean;
@@ -27,17 +32,32 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
   open,
   onClose,
 }) => {
-  const [modelType, setModelType] = useState<"box" | "sphere" | "cylinder">(
-    "box"
-  );
+  const [modelType, setModelType] = useState<GeometryType>("box");
   const [material, setMaterial] = useState<MaterialProperties>({
     type: "standard",
   });
-  const dispatch = useDispatch();
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const { createModel, error } = useModels();
 
   const handleCreateModel = () => {
-    dispatch(createNewModel({ type: modelType, material }));
-    onClose();
+    try {
+      const payload: CreateModelPayload = {
+        type: modelType,
+        material,
+      };
+
+      // Validate the payload before creating
+      validateCreateModelPayload(payload);
+
+      createModel(payload);
+      setValidationError(null);
+      onClose();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create model";
+      setValidationError(errorMessage);
+    }
   };
 
   return (
@@ -48,13 +68,17 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
         </Typography>
       </DialogTitle>
       <DialogContent dividers>
+        {(validationError || error) && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {validationError || error}
+          </Alert>
+        )}
+
         <FormControl fullWidth sx={{ marginBottom: 2 }}>
           <InputLabel>Model Type</InputLabel>
           <Select
             value={modelType}
-            onChange={(e) =>
-              setModelType(e.target.value as "box" | "sphere" | "cylinder")
-            }
+            onChange={(e) => setModelType(e.target.value as GeometryType)}
             label="Model Type"
             startAdornment={
               <Tooltip title="Choose the shape of your model">
@@ -81,7 +105,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
             value={material.type}
             onChange={(e) =>
               setMaterial({
-                type: e.target.value as "standard" | "phong" | "lambert",
+                type: e.target.value as MaterialProperties["type"],
               })
             }
             label="Material"

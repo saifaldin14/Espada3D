@@ -6,32 +6,28 @@ import {
   MeshStandardMaterial,
   Object3D,
   Object3DEventMap,
-  BoxGeometry,
 } from "three";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  updateModelTransform,
-  selectModel,
-  removeModel,
-  duplicateModel,
-} from "../../store/slices/modelSlice";
-import { ModelMetadata } from "../../types";
+import { useAppSelector } from "../../hooks/useRedux";
+import { useModels } from "../../hooks/useRedux";
+import { ModelMetadata, ToolType } from "../../types";
 
 interface SceneContentProps {
   models: { [id: string]: Group };
-  activeTool: "translate" | "rotate" | "scale" | null;
+  activeTool: ToolType | null;
 }
 
 const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   const transformControlsRef = useRef<any>(null);
   const orbitControlsRef = useRef<any>(null);
-  const dispatch = useDispatch();
-  const selectedModelId = useSelector(
-    (state: any) => state.models.selectedModelId
-  );
-  const sceneModels = useSelector((state: any) => state.models.models);
   const selectedMeshRef = useRef<Mesh | null>(null);
   const outlineMeshRef = useRef<Mesh | null>(null); // Reference to the outline mesh
+
+  const {
+    models: modelsMetadata,
+    selectedModelId,
+    updateTransform,
+    selectModelById,
+  } = useModels();
 
   const uuidToModelId = useRef<{ [uuid: string]: string }>({});
   const [renderedModels, setRenderedModels] = useState<{ [id: string]: Group }>(
@@ -71,18 +67,27 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       if (selectedGroup) {
         selectedMeshRef.current = selectedGroup.children[0] as Mesh;
 
-        const model: ModelMetadata = sceneModels.find(
-          (m: any) => m.id === selectedModelId
-        );
+        const model = modelsMetadata.find((m: any) => m.id === selectedModelId);
 
         if (model) {
-          selectedMeshRef.current.position.set(...model.position);
-          selectedMeshRef.current.rotation.set(...model.rotation);
-          selectedMeshRef.current.scale.set(...model.scale);
+          selectedMeshRef.current.position.set(
+            model.position[0],
+            model.position[1],
+            model.position[2]
+          );
+          selectedMeshRef.current.rotation.set(
+            model.rotation[0],
+            model.rotation[1],
+            model.rotation[2]
+          );
+          selectedMeshRef.current.scale.set(
+            model.scale[0],
+            model.scale[1],
+            model.scale[2]
+          );
 
           // Create or update the outline mesh
           createOrUpdateOutlineMesh(selectedMeshRef.current);
-          dispatch(selectModel(selectedModelId));
 
           if (transformControlsRef.current) {
             transformControlsRef.current.attach(selectedMeshRef.current);
@@ -94,12 +99,10 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     } else {
       handleDelete();
     }
-  }, [selectedModelId, renderedModels, sceneModels, dispatch]);
+  }, [selectedModelId, renderedModels, modelsMetadata]);
 
   const handleDelete = () => {
-    const model: ModelMetadata = sceneModels.find(
-      (m: any) => m.id === selectedModelId
-    );
+    const model = modelsMetadata.find((m: any) => m.id === selectedModelId);
 
     if (!model && selectedMeshRef.current) {
       selectedMeshRef.current.visible = false;
@@ -129,7 +132,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     if (modelId && selectedModelId !== modelId) {
       selectedMeshRef.current = mesh as Mesh;
       createOrUpdateOutlineMesh(selectedMeshRef.current);
-      dispatch(selectModel(modelId));
+      selectModelById(modelId);
     }
   };
 
@@ -150,14 +153,12 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         .toArray()
         .map((n) => (isNaN(n) ? 1 : n)) as [number, number, number];
 
-      dispatch(
-        updateModelTransform({
-          id: selectedModelId as string,
-          position,
-          rotation,
-          scale,
-        })
-      );
+      updateTransform({
+        id: selectedModelId as string,
+        position,
+        rotation,
+        scale,
+      });
 
       if (outlineMeshRef.current) {
         outlineMeshRef.current.position.copy(selectedMeshRef.current.position);
