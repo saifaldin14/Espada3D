@@ -62,24 +62,6 @@ const Sidebar: React.FC = () => {
     dispatch(setActiveTool(tool));
   };
 
-  const handleOpenModal = () => {
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-  };
-
-  const handleGridChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setGrid(event.target.checked));
-  };
-
-  const handleWireframeChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    dispatch(setWireframe(event.target.checked));
-  };
-
   const handleModelRemove = (id: string) => {
     dispatch(removeModel(id));
   };
@@ -293,7 +275,7 @@ const Sidebar: React.FC = () => {
 
 const styles = {
   sidebar: {
-    width: "320px",
+    width: "18rem",
     height: "100vh",
     ...glassStyles.panel,
     display: "flex",
@@ -303,7 +285,7 @@ const styles = {
     marginRight: "8px",
     borderRadius: "20px",
     position: "relative",
-    overflow: "hidden",
+    overflow: "auto",
     zIndex: 10,
   },
   header: {
