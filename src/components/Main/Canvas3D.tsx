@@ -17,11 +17,7 @@ import ErrorBoundary from "../ErrorBoundary";
 import { useAppSelector } from "../../hooks/useRedux";
 import { APP_CONFIG } from "../../config/constants";
 
-interface Canvas3DProps {
-  selectedModel: Group | null;
-}
-
-const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
+const Canvas3D: React.FC = () => {
   const modelsMetadata = useAppSelector((state) => state.models.models);
   const activeTool = useAppSelector((state) => state.ui.activeTool);
   const showGrid = useAppSelector((state) => state.ui.showGrid);
@@ -153,7 +149,7 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ selectedModel }) => {
           gl.setClearColor("#f0f0f0");
         }}
       >
-        <ModelProvider selectedModel={selectedModel}>
+        <ModelProvider selectedModel={null}>
           <ambientLight intensity={0.5} />
           <pointLight position={[10, 10, 10]} />
           <directionalLight position={[-10, 10, 5]} intensity={0.3} />

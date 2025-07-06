@@ -5,14 +5,13 @@ import ModelEditor from "./components/ModelEditor/ModelEditor";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { Provider } from "react-redux";
 import store from "./store";
-import { Group } from "three";
 import { ModelProvider } from "./components/Main/ModelContext";
 import { useAppSelector } from "./hooks/useRedux";
 
 const AppContent: React.FC = () => {
-  const selectedModel = useAppSelector(
+  const selectedModelId = useAppSelector(
     (state) => state.models.selectedModelId
-  ) as Group | null;
+  );
 
   return (
     <div style={styles.container}>
@@ -22,12 +21,12 @@ const AppContent: React.FC = () => {
 
       <div style={styles.mainContent}>
         <ErrorBoundary>
-          <Canvas3D selectedModel={selectedModel} />
+          <Canvas3D />
         </ErrorBoundary>
       </div>
 
       <ErrorBoundary>
-        <ModelProvider selectedModel={selectedModel}>
+        <ModelProvider selectedModel={null}>
           <ModelEditor />
         </ModelProvider>
       </ErrorBoundary>

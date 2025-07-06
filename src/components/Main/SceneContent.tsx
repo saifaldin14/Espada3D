@@ -92,22 +92,6 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       if (selectedGroup) {
         selectedMeshRef.current = selectedGroup.children[0] as Mesh;
 
-        selectedMeshRef.current.position.set(
-          model.position[0],
-          model.position[1],
-          model.position[2]
-        );
-        selectedMeshRef.current.rotation.set(
-          model.rotation[0],
-          model.rotation[1],
-          model.rotation[2]
-        );
-        selectedMeshRef.current.scale.set(
-          model.scale[0],
-          model.scale[1],
-          model.scale[2]
-        );
-
         // Create or update the outline mesh
         createOrUpdateOutlineMesh(selectedMeshRef.current);
 
@@ -229,11 +213,17 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     });
 
     outlineMeshRef.current = new Mesh(geometry, outlineMaterial);
+
+    // The outline mesh should inherit the scale and be slightly larger
     outlineMeshRef.current.scale.copy(mesh.scale).multiplyScalar(1.05);
+
+    // Position and rotation should match the mesh exactly since it's added to the same parent
     outlineMeshRef.current.position.copy(mesh.position);
     outlineMeshRef.current.rotation.copy(mesh.rotation);
     outlineMeshRef.current.renderOrder = 999;
     outlineMeshRef.current.visible = true;
+
+    // Add the outline mesh to the same parent as the original mesh
     mesh.parent?.add(outlineMeshRef.current);
   };
 
@@ -245,10 +235,10 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         mode={activeTool ?? "translate"}
         onObjectChange={handleTransformChange}
       />
-      {Object.values(renderedModels).map((model, index) => (
+      {Object.entries(renderedModels).map(([modelId, model]) => (
         <primitive
-          object={model.clone()} // Clone the model to ensure independent instances
-          key={index}
+          object={model}
+          key={modelId}
           onClick={() => handleObjectClick(model.children[0], model.uuid)}
         />
       ))}
