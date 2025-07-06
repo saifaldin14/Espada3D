@@ -33,6 +33,7 @@ import {
   Grid,
 } from "@mui/material";
 import { AnimationData, AnimationKeyframe, Vector3Tuple } from "../../types";
+import { glassStyles } from "../../config/theme";
 
 interface AnimationPanelProps {
   isOpen: boolean;

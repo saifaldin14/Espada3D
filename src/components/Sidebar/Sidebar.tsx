@@ -16,6 +16,9 @@ import {
   FaPlus,
   FaTrashAlt,
   FaCopy,
+  FaCube,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import { FaArrowsLeftRight } from "react-icons/fa6";
 import {
@@ -32,8 +35,14 @@ import {
   Switch,
   FormLabel,
   Button,
+  Tooltip,
+  Chip,
+  Avatar,
+  Stack,
+  Badge,
 } from "@mui/material";
 import CreateModelModal from "./CreateModelModal";
+import { glassStyles } from "../../config/theme";
 
 const Sidebar: React.FC = () => {
   const models = useSelector((state: any) => state.models.models);
@@ -71,217 +80,388 @@ const Sidebar: React.FC = () => {
     dispatch(setWireframe(event.target.checked));
   };
 
-  const handleDeleteModel = () => {
-    if (selectedModelId) {
-      dispatch(removeModel(selectedModelId));
-    }
+  const handleModelRemove = (id: string) => {
+    dispatch(removeModel(id));
   };
 
-  const handleDuplicateModel = () => {
-    if (selectedModelId) {
-      dispatch(duplicateModel(selectedModelId));
-    }
+  const handleModelDuplicate = (id: string) => {
+    dispatch(duplicateModel(id));
   };
 
   return (
-    <Box sx={styles.sidebar}>
-      <Typography variant="h5" sx={styles.header}>
-        Models
-      </Typography>
-      <Box sx={styles.scrollContainer}>
-        <List sx={styles.modelList}>
-          {models.map((model: any, index: number) => (
-            <ListItem
-              key={index}
-              disablePadding
-              sx={{
-                backgroundColor:
-                  model.id === selectedModelId ? "#1abc9c" : "#34495e",
-                borderRadius: 1,
-                mb: 1,
-                transition: "background-color 0.3s",
-                "&:hover": {
-                  backgroundColor:
-                    model.id === selectedModelId ? "#16a085" : "#2c3e50",
-                },
-              }}
-            >
-              <ListItemButton
-                onClick={() => handleModelSelect(model.id)}
-                sx={styles.modelItemButton}
-              >
-                <ListItemText
-                  primary={`Model ${index + 1}`}
-                  sx={styles.modelItemText}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
+    <Box sx={styles.sidebar} className="slide-in-left">
+      {/* Header */}
+      <Box sx={styles.header}>
+        <Typography variant="h5" sx={styles.headerTitle}>
+          SaifEngine
+        </Typography>
+        <Chip label="v1.0" size="small" sx={styles.versionChip} />
       </Box>
+
       <Divider sx={styles.divider} />
-      <Typography variant="h5" sx={styles.header}>
-        Controls
-      </Typography>
-      <Box sx={styles.toolButtons}>
-        <IconButton
-          sx={{
-            ...styles.toolButton,
-            backgroundColor: activeTool === "translate" ? "#16a085" : "#1abc9c",
-          }}
-          onClick={() => handleToolSelect("translate")}
+
+      {/* Quick Actions */}
+      <Box sx={styles.section}>
+        <Typography variant="h6" sx={styles.sectionTitle}>
+          Quick Actions
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<FaPlus />}
+          onClick={() => setModalOpen(true)}
+          sx={styles.createButton}
+          className="hover-lift"
+          fullWidth
         >
-          <FaArrowsAlt />
-        </IconButton>
-        <IconButton
-          sx={{
-            ...styles.toolButton,
-            backgroundColor: activeTool === "rotate" ? "#16a085" : "#1abc9c",
-          }}
-          onClick={() => handleToolSelect("rotate")}
-        >
-          <FaSyncAlt />
-        </IconButton>
-        <IconButton
-          sx={{
-            ...styles.toolButton,
-            backgroundColor: activeTool === "scale" ? "#16a085" : "#1abc9c",
-          }}
-          onClick={() => handleToolSelect("scale")}
-        >
-          <FaArrowsLeftRight />
-        </IconButton>
+          Create Model
+        </Button>
       </Box>
 
-      {/* Delete and Duplicate buttons */}
-      <Box sx={styles.actionButtons}>
-        <IconButton
-          sx={styles.actionButton}
-          disabled={!selectedModelId}
-          onClick={() => handleDuplicateModel()}
+      {/* Models List */}
+      <Box sx={styles.section}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mb: 2 }}
         >
-          <FaCopy />
-        </IconButton>
-        <IconButton
-          sx={styles.actionButton}
-          disabled={!selectedModelId}
-          onClick={() => handleDeleteModel()}
-        >
-          <FaTrashAlt />
-        </IconButton>
+          <Typography variant="h6" sx={styles.sectionTitle}>
+            Models
+          </Typography>
+          <Badge badgeContent={models.length} color="primary">
+            <FaCube size={20} />
+          </Badge>
+        </Stack>
+
+        <Box sx={styles.modelList}>
+          {models.length === 0 ? (
+            <Box sx={styles.emptyState}>
+              <FaCube size={32} style={{ opacity: 0.5, marginBottom: 8 }} />
+              <Typography variant="body2" sx={styles.emptyText}>
+                No models yet
+              </Typography>
+            </Box>
+          ) : (
+            <List sx={{ padding: 0 }}>
+              {models.map((model: any, index: number) => (
+                <ListItem
+                  key={model.id}
+                  disablePadding
+                  sx={{
+                    ...styles.modelItem,
+                    ...(model.id === selectedModelId
+                      ? styles.selectedModelItem
+                      : {}),
+                  }}
+                  className="fade-in hover-lift"
+                >
+                  <ListItemButton
+                    onClick={() => handleModelSelect(model.id)}
+                    sx={styles.modelItemButton}
+                  >
+                    <Avatar sx={styles.modelAvatar}>
+                      <FaCube />
+                    </Avatar>
+                    <ListItemText
+                      primary={`Model ${index + 1}`}
+                      secondary={model.type || "Standard"}
+                      sx={styles.modelItemText}
+                    />
+                    <Stack direction="row" spacing={0.5}>
+                      <Tooltip title={model.visible ? "Visible" : "Hidden"}>
+                        <IconButton size="small" sx={styles.miniButton}>
+                          {model.visible ? (
+                            <FaEye size={12} />
+                          ) : (
+                            <FaEyeSlash size={12} />
+                          )}
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </Box>
       </Box>
 
-      <Button
-        sx={styles.createButton}
-        variant="contained"
-        startIcon={<FaPlus />}
-        onClick={handleOpenModal} // Open the modal
-      >
-        Create Model
-      </Button>
-      <FormGroup sx={styles.formGroup}>
-        <FormLabel sx={styles.formLabel}>Adjust Scene</FormLabel>
-        <FormControlLabel
-          control={<Switch defaultChecked onChange={handleGridChange} />}
-          label="Show Grid"
-          sx={styles.switchControl}
-        />
-        <FormControlLabel
-          control={<Switch onChange={handleWireframeChange} />}
-          label="Show Wireframes"
-          sx={styles.switchControl}
-        />
-      </FormGroup>
-      <CreateModelModal open={modalOpen} onClose={handleCloseModal} />
+      {/* Tools */}
+      <Box sx={styles.section}>
+        <Typography variant="h6" sx={styles.sectionTitle}>
+          Transform Tools
+        </Typography>
+        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+          <Tooltip title="Translate">
+            <IconButton
+              sx={{
+                ...styles.toolButton,
+                ...(activeTool === "translate" ? styles.activeToolButton : {}),
+              }}
+              onClick={() => handleToolSelect("translate")}
+              className="hover-lift"
+            >
+              <FaArrowsAlt />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Rotate">
+            <IconButton
+              sx={{
+                ...styles.toolButton,
+                ...(activeTool === "rotate" ? styles.activeToolButton : {}),
+              }}
+              onClick={() => handleToolSelect("rotate")}
+              className="hover-lift"
+            >
+              <FaSyncAlt />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Scale">
+            <IconButton
+              sx={{
+                ...styles.toolButton,
+                ...(activeTool === "scale" ? styles.activeToolButton : {}),
+              }}
+              onClick={() => handleToolSelect("scale")}
+              className="hover-lift"
+            >
+              <FaArrowsLeftRight />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+
+        {/* Model Actions */}
+        {selectedModelId && (
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Delete Model">
+              <IconButton
+                sx={styles.actionButton}
+                onClick={() => handleModelRemove(selectedModelId)}
+                className="hover-lift"
+              >
+                <FaTrashAlt />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Duplicate Model">
+              <IconButton
+                sx={styles.actionButton}
+                onClick={() => handleModelDuplicate(selectedModelId)}
+                className="hover-lift"
+              >
+                <FaCopy />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        )}
+      </Box>
+
+      {/* Settings */}
+      <Box sx={styles.section}>
+        <Typography variant="h6" sx={styles.sectionTitle}>
+          Viewport Settings
+        </Typography>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={useSelector((state: any) => state.ui.showGrid)}
+                onChange={(e) => dispatch(setGrid(e.target.checked))}
+                size="small"
+              />
+            }
+            label="Show Grid"
+            sx={styles.switchControl}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={useSelector((state: any) => state.ui.wireframe)}
+                onChange={(e) => dispatch(setWireframe(e.target.checked))}
+                size="small"
+              />
+            }
+            label="Wireframe"
+            sx={styles.switchControl}
+          />
+        </FormGroup>
+      </Box>
+
+      <CreateModelModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </Box>
   );
 };
 
 const styles = {
   sidebar: {
-    width: "260px",
-    background: "#2c3e50",
-    color: "#ecf0f1",
+    width: "320px",
+    height: "100vh",
+    ...glassStyles.panel,
     display: "flex",
     flexDirection: "column" as "column",
-    padding: "16px",
-    boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
-    borderRadius: "8px",
-    height: "98vh",
+    padding: "24px",
+    margin: "16px",
+    marginRight: "8px",
+    borderRadius: "20px",
+    position: "relative",
+    overflow: "hidden",
+    zIndex: 10,
   },
   header: {
-    marginBottom: "16px",
-    fontWeight: "bold",
-    color: "#ecf0f1",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "24px",
+  },
+  headerTitle: {
+    fontWeight: 700,
+    background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+  },
+  versionChip: {
+    background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+    color: "#ffffff",
+    fontWeight: 600,
+    fontSize: "0.75rem",
   },
   divider: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    marginBottom: "24px",
+  },
+  section: {
+    marginBottom: "24px",
+  },
+  sectionTitle: {
     marginBottom: "16px",
-    backgroundColor: "#95a5a6",
-  },
-  scrollContainer: {
-    overflowY: "auto" as "auto",
-    flexGrow: 1,
-  },
-  toolButtons: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: "16px",
-  },
-  toolButton: {
-    color: "#ecf0f1",
-    transition: "background-color 0.3s",
-    width: "32%",
-    height: "48px",
-    borderRadius: "8px",
-    "&:hover": {
-      backgroundColor: "#16a085",
-    },
-  },
-  actionButtons: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: "16px",
-  },
-  actionButton: {
-    backgroundColor: "#1abc9c",
-    "&:hover": {
-      backgroundColor: "#16a085",
-    },
-    borderRadius: "8px",
-    color: "#ecf0f1",
-    width: "48%",
+    fontWeight: 600,
+    color: "#ffffff",
+    fontSize: "1rem",
   },
   createButton: {
-    marginBottom: "16px",
-    backgroundColor: "#1abc9c",
+    ...glassStyles.gradientButton,
     height: "48px",
+    fontWeight: 600,
+    fontSize: "0.875rem",
+    textTransform: "none",
     "&:hover": {
-      backgroundColor: "#16a085",
+      ...glassStyles.gradientButton["&:hover"],
     },
-    borderRadius: "8px",
-  },
-  formGroup: {
-    marginTop: "16px",
-  },
-  formLabel: {
-    color: "#ecf0f1",
-    marginBottom: "8px",
-    fontWeight: "bold",
-  },
-  switchControl: {
-    marginBottom: "8px",
-    color: "#ecf0f1",
   },
   modelList: {
+    maxHeight: "240px",
     overflowY: "auto" as "auto",
-    marginBottom: "16px",
+    paddingRight: "8px",
+    "&::-webkit-scrollbar": {
+      width: "4px",
+    },
+    "&::-webkit-scrollbar-track": {
+      background: "rgba(255, 255, 255, 0.1)",
+      borderRadius: "2px",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      background: "rgba(255, 255, 255, 0.3)",
+      borderRadius: "2px",
+    },
+  },
+  emptyState: {
+    display: "flex",
+    flexDirection: "column" as "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "32px 16px",
+    textAlign: "center" as "center",
+    color: "rgba(255, 255, 255, 0.6)",
+  },
+  emptyText: {
+    fontSize: "0.875rem",
+    color: "rgba(255, 255, 255, 0.6)",
+  },
+  modelItem: {
+    marginBottom: "8px",
+    ...glassStyles.button,
+    transition: "all 0.3s ease-in-out",
+  },
+  selectedModelItem: {
+    ...glassStyles.gradientButton,
+    background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+    boxShadow: "0 4px 15px rgba(0, 201, 255, 0.3)",
   },
   modelItemButton: {
-    padding: "12px",
-    borderRadius: "8px",
+    padding: "12px 16px",
+    "&:hover": {
+      backgroundColor: "transparent",
+    },
+  },
+  modelAvatar: {
+    width: 32,
+    height: 32,
+    marginRight: "12px",
+    background: "linear-gradient(135deg, #485563 0%, #29323c 100%)",
+    fontSize: "14px",
   },
   modelItemText: {
-    color: "#ecf0f1",
+    "& .MuiListItemText-primary": {
+      color: "#ffffff",
+      fontWeight: 600,
+      fontSize: "0.875rem",
+    },
+    "& .MuiListItemText-secondary": {
+      color: "rgba(255, 255, 255, 0.7)",
+      fontSize: "0.75rem",
+    },
+  },
+  miniButton: {
+    ...glassStyles.button,
+    minWidth: "24px",
+    minHeight: "24px",
+    width: "24px",
+    height: "24px",
+    color: "rgba(255, 255, 255, 0.8)",
+  },
+  toolButton: {
+    ...glassStyles.button,
+    width: "48px",
+    height: "48px",
+    color: "#ffffff",
+    fontSize: "18px",
+    flex: 1,
+  },
+  activeToolButton: {
+    ...glassStyles.gradientButton,
+    background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+    boxShadow: "0 4px 15px rgba(0, 201, 255, 0.3)",
+  },
+  actionButton: {
+    ...glassStyles.button,
+    width: "48px",
+    height: "48px",
+    color: "#ffffff",
+    fontSize: "16px",
+    "&:hover": {
+      background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+      color: "#ffffff",
+    },
+  },
+  switchControl: {
+    margin: "4px 0",
+    color: "#ffffff",
+    "& .MuiFormControlLabel-label": {
+      fontSize: "0.875rem",
+      fontWeight: 500,
+    },
+    "& .MuiSwitch-thumb": {
+      background: "#ffffff",
+    },
+    "& .MuiSwitch-track": {
+      backgroundColor: "rgba(255, 255, 255, 0.3)",
+    },
+    "& .Mui-checked .MuiSwitch-thumb": {
+      background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+    },
+    "& .Mui-checked + .MuiSwitch-track": {
+      backgroundColor: "rgba(0, 201, 255, 0.3)",
+    },
   },
 };
 

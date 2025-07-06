@@ -11,6 +11,8 @@ import { Provider } from "react-redux";
 import store from "./store";
 import { ModelProvider } from "./components/Main/ModelContext";
 import { useAppSelector } from "./hooks/useRedux";
+import { ThemeProvider, CssBaseline, Box } from "@mui/material";
+import { modernTheme } from "./config/theme";
 
 const AppContent: React.FC = () => {
   const isHierarchyPanelOpen = useAppSelector(
@@ -21,22 +23,22 @@ const AppContent: React.FC = () => {
   );
 
   return (
-    <div style={styles.container}>
+    <Box sx={styles.container} className="fade-in">
       <ErrorBoundary>
         <Sidebar />
       </ErrorBoundary>
 
-      <div style={styles.mainContent}>
+      <Box sx={styles.mainContent}>
         <ErrorBoundary>
           <EditorToolbar />
         </ErrorBoundary>
 
-        <div style={styles.canvasContainer}>
+        <Box sx={styles.canvasContainer}>
           <ErrorBoundary>
             <Canvas3D />
           </ErrorBoundary>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <ErrorBoundary>
         <ModelProvider selectedModel={null}>
@@ -58,16 +60,19 @@ const AppContent: React.FC = () => {
 
       {/* Global keyboard shortcuts for mesh editing */}
       <MeshEditingKeyboardShortcuts />
-    </div>
+    </Box>
   );
 };
 
 const App: React.FC = () => {
   return (
     <Provider store={store}>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <ThemeProvider theme={modernTheme}>
+        <CssBaseline />
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </ThemeProvider>
     </Provider>
   );
 };
@@ -76,15 +81,22 @@ const styles = {
   container: {
     display: "flex",
     height: "100vh",
+    width: "100vw",
+    overflow: "hidden",
+    position: "relative",
+    background: "transparent",
   },
   mainContent: {
     flex: 1,
     display: "flex",
     flexDirection: "column" as const,
+    minWidth: 0,
   },
   canvasContainer: {
     flex: 1,
     display: "flex",
+    position: "relative",
+    minHeight: 0,
   },
 };
 

@@ -5,6 +5,7 @@ import {
   setEditMode,
   setSnap,
   setSnapSize,
+  setGrid,
   toggleHierarchyPanel,
   toggleAnimationPanel,
 } from "../../store/slices/uiSlice";
@@ -43,6 +44,7 @@ import {
   CenterFocusStrong,
 } from "@mui/icons-material";
 import { ToolType, EditMode } from "../../types";
+import { glassStyles } from "../../config/theme";
 
 const EditorToolbar: React.FC = () => {
   const activeTool = useSelector((state: any) => state.ui.activeTool);
@@ -124,7 +126,7 @@ const EditorToolbar: React.FC = () => {
   }, [selectedModelIds]);
 
   return (
-    <Box sx={styles.toolbar}>
+    <Box sx={styles.toolbar} className="fade-in">
       {/* Transform Tools */}
       <Box sx={styles.section}>
         <Typography variant="body2" sx={styles.sectionTitle}>
@@ -135,67 +137,32 @@ const EditorToolbar: React.FC = () => {
           exclusive
           onChange={handleToolChange}
           size="small"
+          sx={styles.toggleGroup}
         >
-          <ToggleButton value="translate">
+          <ToggleButton value="translate" sx={styles.toggleButton}>
             <Tooltip title="Move (G)">
-              <OpenWith />
+              <OpenWith fontSize="small" />
             </Tooltip>
           </ToggleButton>
-          <ToggleButton value="rotate">
+          <ToggleButton value="rotate" sx={styles.toggleButton}>
             <Tooltip title="Rotate (R)">
-              <RotateRight />
+              <RotateRight fontSize="small" />
             </Tooltip>
           </ToggleButton>
-          <ToggleButton value="scale">
+          <ToggleButton value="scale" sx={styles.toggleButton}>
             <Tooltip title="Scale (S)">
-              <ZoomOutMap />
+              <ZoomOutMap fontSize="small" />
             </Tooltip>
           </ToggleButton>
-          <ToggleButton value="select">
+          <ToggleButton value="select" sx={styles.toggleButton}>
             <Tooltip title="Select (A)">
-              <CenterFocusStrong />
+              <CenterFocusStrong fontSize="small" />
             </Tooltip>
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
 
-      <Divider orientation="vertical" flexItem sx={{ margin: "0 8px" }} />
-
-      {/* Edit Mode */}
-      <Box sx={styles.section}>
-        <Typography variant="body2" sx={styles.sectionTitle}>
-          Mode
-        </Typography>
-        <ToggleButtonGroup
-          value={editMode}
-          exclusive
-          onChange={handleEditModeChange}
-          size="small"
-        >
-          <ToggleButton value="model">
-            <Tooltip title="Model Mode">
-              <Box>M</Box>
-            </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="material">
-            <Tooltip title="Material Mode">
-              <Box>T</Box>
-            </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="animation">
-            <Tooltip title="Animation Mode">
-              <Timeline />
-            </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="hierarchy">
-            <Tooltip title="Hierarchy Mode">
-              <AccountTree />
-            </Tooltip>
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-
-      <Divider orientation="vertical" flexItem sx={{ margin: "0 8px" }} />
+      <Divider orientation="vertical" flexItem sx={styles.divider} />
 
       {/* History Actions */}
       <Box sx={styles.section}>
@@ -208,8 +175,9 @@ const EditorToolbar: React.FC = () => {
               size="small"
               onClick={() => dispatch(undo())}
               sx={styles.iconButton}
+              className="hover-lift"
             >
-              <Undo />
+              <Undo fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Redo (Ctrl+Y)">
@@ -217,8 +185,9 @@ const EditorToolbar: React.FC = () => {
               size="small"
               onClick={() => dispatch(redo())}
               sx={styles.iconButton}
+              className="hover-lift"
             >
-              <Redo />
+              <Redo fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Save State (Ctrl+S)">
@@ -226,14 +195,15 @@ const EditorToolbar: React.FC = () => {
               size="small"
               onClick={() => dispatch(saveToHistory())}
               sx={styles.iconButton}
+              className="hover-lift"
             >
-              <Save />
+              <Save fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
       </Box>
 
-      <Divider orientation="vertical" flexItem sx={{ margin: "0 8px" }} />
+      <Divider orientation="vertical" flexItem sx={styles.divider} />
 
       {/* Clipboard Actions */}
       <Box sx={styles.section}>
@@ -247,8 +217,9 @@ const EditorToolbar: React.FC = () => {
               onClick={() => dispatch(copyModels(selectedModelIds))}
               disabled={selectedModelIds.length === 0}
               sx={styles.iconButton}
+              className="hover-lift"
             >
-              <ContentCopy />
+              <ContentCopy fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Paste (Ctrl+V)">
@@ -256,14 +227,15 @@ const EditorToolbar: React.FC = () => {
               size="small"
               onClick={() => dispatch(pasteModels())}
               sx={styles.iconButton}
+              className="hover-lift"
             >
-              <ContentPaste />
+              <ContentPaste fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
       </Box>
 
-      <Divider orientation="vertical" flexItem sx={{ margin: "0 8px" }} />
+      <Divider orientation="vertical" flexItem sx={styles.divider} />
 
       {/* Snap Settings */}
       <Box sx={styles.section}>
@@ -277,6 +249,7 @@ const EditorToolbar: React.FC = () => {
                 checked={snap}
                 onChange={(e) => dispatch(setSnap(e.target.checked))}
                 size="small"
+                sx={styles.switch}
               />
             }
             label="Grid"
@@ -290,15 +263,15 @@ const EditorToolbar: React.FC = () => {
               dispatch(setSnapSize(parseFloat(e.target.value) || 0.5))
             }
             disabled={!snap}
-            sx={{ width: 80 }}
+            sx={styles.textField}
             inputProps={{ min: 0.1, max: 5, step: 0.1 }}
           />
         </Box>
       </Box>
 
-      <Divider orientation="vertical" flexItem sx={{ margin: "0 8px" }} />
+      <Divider orientation="vertical" flexItem sx={styles.divider} />
 
-      {/* Mesh Editing Mode */}
+      {/* Edit Mode */}
       {selectedModelId && (
         <>
           <Box sx={styles.section}>
@@ -310,35 +283,23 @@ const EditorToolbar: React.FC = () => {
               exclusive
               onChange={handleEditModeChange}
               size="small"
-              sx={{ gap: "2px" }}
+              sx={styles.toggleGroup}
             >
-              <ToggleButton
-                value="model"
-                sx={{ fontSize: "10px", padding: "4px 8px" }}
-              >
+              <ToggleButton value="model" sx={styles.compactToggleButton}>
                 Model
               </ToggleButton>
-              <ToggleButton
-                value="vertex"
-                sx={{ fontSize: "10px", padding: "4px 8px" }}
-              >
+              <ToggleButton value="vertex" sx={styles.compactToggleButton}>
                 Vertex
               </ToggleButton>
-              <ToggleButton
-                value="edge"
-                sx={{ fontSize: "10px", padding: "4px 8px" }}
-              >
+              <ToggleButton value="edge" sx={styles.compactToggleButton}>
                 Edge
               </ToggleButton>
-              <ToggleButton
-                value="face"
-                sx={{ fontSize: "10px", padding: "4px 8px" }}
-              >
+              <ToggleButton value="face" sx={styles.compactToggleButton}>
                 Face
               </ToggleButton>
             </ToggleButtonGroup>
           </Box>
-          <Divider orientation="vertical" flexItem sx={{ margin: "0 8px" }} />
+          <Divider orientation="vertical" flexItem sx={styles.divider} />
         </>
       )}
 
@@ -354,15 +315,11 @@ const EditorToolbar: React.FC = () => {
               onClick={() => dispatch(toggleHierarchyPanel())}
               sx={{
                 ...styles.iconButton,
-                backgroundColor: isHierarchyPanelOpen
-                  ? "primary.main"
-                  : "transparent",
-                color: isHierarchyPanelOpen
-                  ? "primary.contrastText"
-                  : "text.primary",
+                ...(isHierarchyPanelOpen ? styles.activeIconButton : {}),
               }}
+              className="hover-lift"
             >
-              <AccountTree />
+              <AccountTree fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Toggle Animation Panel">
@@ -371,18 +328,38 @@ const EditorToolbar: React.FC = () => {
               onClick={() => dispatch(toggleAnimationPanel())}
               sx={{
                 ...styles.iconButton,
-                backgroundColor: isAnimationPanelOpen
-                  ? "primary.main"
-                  : "transparent",
-                color: isAnimationPanelOpen
-                  ? "primary.contrastText"
-                  : "text.primary",
+                ...(isAnimationPanelOpen ? styles.activeIconButton : {}),
               }}
+              className="hover-lift"
             >
-              <Timeline />
+              <Timeline fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
+      </Box>
+
+      {/* Viewport Toggle */}
+      <Box sx={styles.section}>
+        <Typography variant="body2" sx={styles.sectionTitle}>
+          View
+        </Typography>
+        <Tooltip title="Toggle Grid">
+          <IconButton
+            size="small"
+            onClick={() => dispatch(setGrid(!showGrid))}
+            sx={{
+              ...styles.iconButton,
+              ...(showGrid ? styles.activeIconButton : {}),
+            }}
+            className="hover-lift"
+          >
+            {showGrid ? (
+              <GridOn fontSize="small" />
+            ) : (
+              <GridOff fontSize="small" />
+            )}
+          </IconButton>
+        </Tooltip>
       </Box>
     </Box>
   );
@@ -392,49 +369,126 @@ const styles = {
   toolbar: {
     display: "flex",
     alignItems: "center",
-    padding: "8px 16px",
-    backgroundColor: "#ffffff",
-    borderBottom: "1px solid #ddd",
-    gap: "8px",
-    minHeight: "56px",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    padding: "12px 24px",
+    ...glassStyles.panel,
+    margin: "16px 16px 8px 8px",
+    marginLeft: "8px",
+    borderRadius: "16px",
+    minHeight: "64px",
+    position: "relative",
+    zIndex: 5,
+    gap: "16px",
   },
   section: {
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
-    gap: "4px",
+    gap: "8px",
   },
   sectionTitle: {
-    fontSize: "10px",
-    color: "text.secondary",
+    fontSize: "11px",
+    color: "rgba(255, 255, 255, 0.8)",
     textTransform: "uppercase" as const,
     letterSpacing: "0.5px",
+    fontWeight: 600,
   },
   buttonGroup: {
     display: "flex",
-    gap: "4px",
+    gap: "6px",
+  },
+  toggleGroup: {
+    ...glassStyles.button,
+    borderRadius: "12px",
+    "& .MuiToggleButtonGroup-grouped": {
+      margin: "0 2px",
+      border: "none",
+      borderRadius: "10px !important",
+      "&:not(:first-of-type)": {
+        borderLeft: "none",
+      },
+    },
+  },
+  toggleButton: {
+    ...glassStyles.button,
+    minWidth: "40px",
+    minHeight: "40px",
+    padding: "8px",
+    color: "#ffffff",
+    "&.Mui-selected": {
+      ...glassStyles.gradientButton,
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      color: "#ffffff",
+    },
+  },
+  compactToggleButton: {
+    ...glassStyles.button,
+    fontSize: "10px",
+    padding: "6px 12px",
+    minWidth: "60px",
+    minHeight: "32px",
+    color: "#ffffff",
+    "&.Mui-selected": {
+      ...glassStyles.gradientButton,
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      color: "#ffffff",
+    },
   },
   iconButton: {
-    width: "32px",
-    height: "32px",
-    border: "1px solid #ddd",
-    borderRadius: "4px",
-    "&:hover": {
-      backgroundColor: "rgba(0,0,0,0.04)",
-    },
+    ...glassStyles.button,
+    width: "40px",
+    height: "40px",
+    color: "#ffffff",
+    transition: "all 0.3s ease-in-out",
+  },
+  activeIconButton: {
+    ...glassStyles.gradientButton,
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    color: "#ffffff",
+  },
+  divider: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    margin: "0 12px",
+    height: "40px",
   },
   snapControls: {
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
-    gap: "4px",
+    gap: "8px",
   },
   switchLabel: {
     fontSize: "12px",
     margin: 0,
+    color: "#ffffff",
     "& .MuiFormControlLabel-label": {
       fontSize: "12px",
+      fontWeight: 500,
+    },
+  },
+  switch: {
+    "& .MuiSwitch-thumb": {
+      background: "#ffffff",
+    },
+    "& .MuiSwitch-track": {
+      backgroundColor: "rgba(255, 255, 255, 0.3)",
+    },
+    "& .Mui-checked .MuiSwitch-thumb": {
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    },
+    "& .Mui-checked + .MuiSwitch-track": {
+      backgroundColor: "rgba(102, 126, 234, 0.3)",
+    },
+  },
+  textField: {
+    width: "80px",
+    "& .MuiOutlinedInput-root": {
+      ...glassStyles.button,
+      height: "32px",
+      "& input": {
+        color: "#ffffff",
+        textAlign: "center",
+        fontSize: "12px",
+      },
     },
   },
 };

@@ -33,6 +33,7 @@ import {
   Divider,
   Tooltip,
   ButtonGroup,
+  Chip,
 } from "@mui/material";
 import {
   Undo,
@@ -50,6 +51,7 @@ import { SketchPicker } from "react-color";
 import { MaterialProperties, Vector3Tuple, EditMode } from "../../types";
 import TextureManager from "./TextureManager";
 import SubObjectEditor from "./SubObjectEditor";
+import { glassStyles } from "../../config/theme";
 
 const ModelEditor: React.FC = () => {
   const selectedModelId = useSelector(
@@ -557,10 +559,20 @@ const ModelEditor: React.FC = () => {
   );
 
   return (
-    <Box sx={styles.editor}>
-      <Typography variant="h5" sx={styles.title}>
-        Model Editor
-      </Typography>
+    <Box sx={styles.editor} className="slide-in-left">
+      {/* Header */}
+      <Box sx={styles.header}>
+        <Typography variant="h5" sx={styles.title}>
+          Properties
+        </Typography>
+        {selectedModelId && (
+          <Chip
+            label={`Model Selected`}
+            size="small"
+            sx={styles.selectedChip}
+          />
+        )}
+      </Box>
 
       {renderActionButtons()}
 
@@ -571,67 +583,80 @@ const ModelEditor: React.FC = () => {
             onChange={handleTabChange}
             variant="scrollable"
             scrollButtons="auto"
-            sx={{ marginBottom: 2 }}
+            sx={styles.tabs}
           >
-            <Tab label="Model" value="model" />
-            <Tab label="Material" value="material" />
-            <Tab label="Vertex" value="vertex" />
-            <Tab label="Edge" value="edge" />
-            <Tab label="Face" value="face" />
-            <Tab label="Animation" value="animation" />
-            <Tab label="Hierarchy" value="hierarchy" />
+            <Tab label="Transform" value="model" sx={styles.tab} />
+            <Tab label="Material" value="material" sx={styles.tab} />
+            <Tab label="Vertex" value="vertex" sx={styles.tab} />
+            <Tab label="Edge" value="edge" sx={styles.tab} />
+            <Tab label="Face" value="face" sx={styles.tab} />
+            <Tab label="Animation" value="animation" sx={styles.tab} />
+            <Tab label="Hierarchy" value="hierarchy" sx={styles.tab} />
           </Tabs>
 
-          {editMode === "model" && (
-            <>
-              {renderObjectControls()}
-              {renderTransformControls()}
-            </>
-          )}
+          <Box sx={styles.tabContent}>
+            {editMode === "model" && (
+              <Box sx={styles.sectionContainer}>
+                {renderObjectControls()}
+                {renderTransformControls()}
+              </Box>
+            )}
 
-          {editMode === "material" && (
-            <>
-              {renderMaterialControls()}
-              {renderTextureControls()}
-            </>
-          )}
+            {editMode === "material" && (
+              <Box sx={styles.sectionContainer}>
+                {renderMaterialControls()}
+                {renderTextureControls()}
+              </Box>
+            )}
 
-          {(editMode === "vertex" ||
-            editMode === "edge" ||
-            editMode === "face") && (
-            <SubObjectEditor modelId={selectedModelId} />
-          )}
+            {(editMode === "vertex" ||
+              editMode === "edge" ||
+              editMode === "face") && (
+              <Box sx={styles.sectionContainer}>
+                <SubObjectEditor modelId={selectedModelId} />
+              </Box>
+            )}
 
-          {editMode === "animation" && (
-            <Card sx={styles.card}>
-              <CardContent sx={styles.cardContent}>
-                <Typography variant="h6" sx={styles.subTitle}>
-                  Animation (Coming Soon)
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Animation controls will be available in a future update.
-                </Typography>
-              </CardContent>
-            </Card>
-          )}
+            {editMode === "animation" && (
+              <Card sx={styles.card}>
+                <CardContent sx={styles.cardContent}>
+                  <Typography variant="h6" sx={styles.subTitle}>
+                    Animation Timeline
+                  </Typography>
+                  <Typography variant="body2" sx={styles.comingSoon}>
+                    Advanced animation controls and timeline will be available
+                    soon.
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
 
-          {editMode === "hierarchy" && (
-            <Card sx={styles.card}>
-              <CardContent sx={styles.cardContent}>
-                <Typography variant="h6" sx={styles.subTitle}>
-                  Hierarchy (Coming Soon)
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Hierarchy controls will be available in a future update.
-                </Typography>
-              </CardContent>
-            </Card>
-          )}
+            {editMode === "hierarchy" && (
+              <Card sx={styles.card}>
+                <CardContent sx={styles.cardContent}>
+                  <Typography variant="h6" sx={styles.subTitle}>
+                    Scene Hierarchy
+                  </Typography>
+                  <Typography variant="body2" sx={styles.comingSoon}>
+                    Hierarchical model organization coming soon.
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+          </Box>
         </Box>
       ) : (
-        <Box sx={styles.noSelection}>
-          <Typography variant="body1" color="textSecondary">
-            Select a model to edit its properties
+        <Box sx={styles.emptyState}>
+          <Box sx={styles.emptyIcon}>
+            <Typography variant="h1" sx={{ opacity: 0.3, fontSize: "4rem" }}>
+              🎯
+            </Typography>
+          </Box>
+          <Typography variant="h6" sx={styles.emptyTitle}>
+            No Model Selected
+          </Typography>
+          <Typography variant="body2" sx={styles.emptyText}>
+            Select a model from the sidebar to start editing its properties
           </Typography>
         </Box>
       )}
@@ -641,52 +666,161 @@ const ModelEditor: React.FC = () => {
 
 const styles = {
   editor: {
-    padding: "16px",
-    background: "#f5f5f5",
-    borderRadius: "8px",
-    width: "350px",
-    height: "98vh",
-    boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
+    ...glassStyles.panel,
+    padding: "24px",
+    width: "380px",
+    height: "100vh",
+    margin: "16px 16px 16px 8px",
+    borderRadius: "20px",
     display: "flex",
     flexDirection: "column" as const,
+    position: "relative",
+    zIndex: 10,
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "24px",
   },
   title: {
-    marginBottom: "16px",
-    fontWeight: "bold",
+    fontWeight: 700,
+    background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+    color: "#ffffff",
+  },
+  selectedChip: {
+    background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+    color: "#ffffff",
+    fontWeight: 600,
+    fontSize: "0.75rem",
   },
   subTitle: {
-    marginBottom: "8px",
-    fontWeight: "bold",
-    color: "#555",
+    marginBottom: "16px",
+    fontWeight: 600,
+    color: "#ffffff",
+    fontSize: "1.125rem",
   },
   scrollContainer: {
     overflowY: "auto" as const,
     flex: 1,
-    paddingRight: "8px",
+    paddingRight: "12px",
+    "&::-webkit-scrollbar": {
+      width: "6px",
+    },
+    "&::-webkit-scrollbar-track": {
+      background: "rgba(255, 255, 255, 0.1)",
+      borderRadius: "3px",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      background: "rgba(255, 255, 255, 0.3)",
+      borderRadius: "3px",
+    },
+  },
+  tabs: {
+    marginBottom: "24px",
+    "& .MuiTabs-indicator": {
+      background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+      height: "3px",
+      borderRadius: "3px",
+    },
+    "& .MuiTabs-scrollButtons": {
+      color: "#ffffff",
+    },
+  },
+  tab: {
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: "0.875rem",
+    minHeight: "48px",
+    color: "rgba(255, 255, 255, 0.8)",
+    "&.Mui-selected": {
+      color: "#ffffff",
+    },
+  },
+  tabContent: {
+    animation: "fadeIn 0.3s ease-in-out",
+  },
+  sectionContainer: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "20px",
   },
   card: {
-    background: "#ffffff",
-    borderRadius: "8px",
-    marginBottom: "16px",
+    ...glassStyles.darkPanel,
+    marginBottom: "20px",
+    transition: "all 0.3s ease-in-out",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: "0 12px 40px rgba(0, 0, 0, 0.2)",
+    },
   },
   cardContent: {
-    paddingBottom: "16px !important",
+    padding: "20px !important",
+    "&:last-child": {
+      paddingBottom: "20px !important",
+    },
   },
   textField: {
     marginTop: "8px",
+    "& .MuiOutlinedInput-root": {
+      ...glassStyles.button,
+      "& input": {
+        color: "#ffffff",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: "rgba(255, 255, 255, 0.8)",
+    },
   },
   actionButton: {
+    ...glassStyles.button,
     width: "100%",
-    height: "40px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
+    height: "48px",
+    margin: "4px 0",
+    color: "#ffffff",
+    fontWeight: 600,
+    transition: "all 0.3s ease-in-out",
+    "&:hover": {
+      ...glassStyles.gradientButton["&:hover"],
+    },
   },
-  noSelection: {
+  actionButtonGroup: {
     display: "flex",
+    gap: "12px",
+    marginBottom: "24px",
+  },
+  emptyState: {
+    display: "flex",
+    flexDirection: "column" as const,
     alignItems: "center",
     justifyContent: "center",
-    height: "200px",
+    height: "60%",
     textAlign: "center" as const,
+    padding: "40px 20px",
+  },
+  emptyIcon: {
+    marginBottom: "20px",
+    opacity: 0.6,
+  },
+  emptyTitle: {
+    marginBottom: "12px",
+    fontWeight: 600,
+    color: "#ffffff",
+  },
+  emptyText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: "0.875rem",
+    lineHeight: 1.6,
+    maxWidth: "250px",
+  },
+  comingSoon: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontStyle: "italic",
+    textAlign: "center" as const,
+    padding: "20px",
   },
 };
 

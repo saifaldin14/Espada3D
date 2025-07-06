@@ -43,6 +43,7 @@ import {
   FolderOpen,
 } from "@mui/icons-material";
 import { ModelMetadata } from "../../types";
+import { glassStyles } from "../../config/theme";
 
 interface HierarchyPanelProps {
   isOpen: boolean;
