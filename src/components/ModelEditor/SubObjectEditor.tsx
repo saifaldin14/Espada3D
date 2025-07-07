@@ -89,28 +89,33 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
   const createGeometryFromCache = (cache: any): THREE.BufferGeometry => {
     const geometry = new THREE.BufferGeometry();
 
-    // Set position attribute
+    // Set position attribute (convert regular array back to Float32Array)
     geometry.setAttribute(
       "position",
-      new THREE.BufferAttribute(cache.positionArray, 3)
+      new THREE.BufferAttribute(new Float32Array(cache.positionArray), 3)
     );
 
     // Set normal attribute if available
     if (cache.normalArray) {
       geometry.setAttribute(
         "normal",
-        new THREE.BufferAttribute(cache.normalArray, 3)
+        new THREE.BufferAttribute(new Float32Array(cache.normalArray), 3)
       );
     }
 
     // Set UV attribute if available
     if (cache.uvArray) {
-      geometry.setAttribute("uv", new THREE.BufferAttribute(cache.uvArray, 2));
+      geometry.setAttribute(
+        "uv",
+        new THREE.BufferAttribute(new Float32Array(cache.uvArray), 2)
+      );
     }
 
     // Set index if available
     if (cache.indexArray) {
-      geometry.setIndex(new THREE.BufferAttribute(cache.indexArray, 1));
+      geometry.setIndex(
+        new THREE.BufferAttribute(new Uint32Array(cache.indexArray), 1)
+      );
     }
 
     return geometry;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -42,26 +42,14 @@ import {
 } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
-import {
-  setSubObjectSelectionMode,
-  selectSubObjects,
-} from "../../store/slices/uiSlice";
-import {
-  moveVertices,
-  scaleVertices,
-  rotateVertices,
-  mergeVertices,
-  growSelection,
-  deleteSelectedElements,
-} from "../../store/slices/modelSlice";
+import { setSubObjectSelectionMode } from "../../store/slices/uiSlice";
 import {
   Vector3Tuple,
   SelectionMode,
-  VertexData,
   TransformConstraint,
   MergeType,
 } from "../../types";
-import { MeshEditor } from "../../utils/meshEditor";
+import { useMeshEditor } from "../../hooks/useMeshEditor";
 
 interface VertexEditorProps {
   modelId: string;
@@ -69,12 +57,23 @@ interface VertexEditorProps {
 
 const VertexEditor: React.FC<VertexEditorProps> = ({ modelId }) => {
   const dispatch = useDispatch();
-  const meshEditData = useSelector(
-    (state: RootState) => state.ui.meshEditData[modelId]
-  );
   const selectionMode = useSelector(
     (state: RootState) => state.ui.subObjectSelectionMode
   );
+
+  // Use the mesh editor hook
+  const {
+    meshData,
+    moveVertices,
+    scaleVertices,
+    rotateVertices,
+    mergeVertices,
+    deleteSelectedElements,
+    selectAll,
+    deselectAll,
+    growSelection,
+    shrinkSelection,
+  } = useMeshEditor(modelId);
 
   // Transform states
   const [moveVector, setMoveVector] = useState<Vector3Tuple>([0, 0, 0]);
@@ -88,7 +87,12 @@ const VertexEditor: React.FC<VertexEditorProps> = ({ modelId }) => {
   const [proportionalEdit, setProportionalEdit] = useState(false);
   const [proportionalSize, setProportionalSize] = useState(1.0);
 
-  if (!meshEditData) {
+  // Memoize selected vertices calculation (must be before early return)
+  const selectedVertices = useMemo(() => {
+    return meshData ? meshData.vertices.filter((v) => v.selected) : [];
+  }, [meshData]);
+
+  if (!meshData) {
     return (
       <Card>
         <CardContent>
@@ -97,519 +101,638 @@ const VertexEditor: React.FC<VertexEditorProps> = ({ modelId }) => {
       </Card>
     );
   }
-
-  const selectedVertices = MeshEditor.getSelectedVertices(meshEditData);
-  const totalVertices = meshEditData.vertices.length;
+  const totalVertices = meshData.vertices.length;
 
   const handleSelectionModeChange = (mode: SelectionMode) => {
     dispatch(setSubObjectSelectionMode(mode));
   };
 
   const handleSelectAll = () => {
-    const allIndices = meshEditData.vertices.map((_, index) => index);
-    dispatch(
-      selectSubObjects({
-        modelId,
-        type: "vertex",
-        indices: allIndices,
-        mode: "set",
-      })
-    );
+    selectAll("vertex");
   };
 
   const handleDeselectAll = () => {
-    dispatch(
-      selectSubObjects({
-        modelId,
-        type: "vertex",
-        indices: [],
-        mode: "set",
-      })
-    );
+    deselectAll("vertex");
   };
 
   const handleGrowSelection = () => {
-    dispatch(growSelection({ modelId, operation: "grow" }));
+    growSelection("vertex");
   };
 
   const handleShrinkSelection = () => {
-    dispatch(growSelection({ modelId, operation: "shrink" }));
+    shrinkSelection("vertex");
   };
 
   const handleMoveVertices = () => {
     if (selectedVertices.length === 0) return;
-
-    const pivot = useCustomPivot ? customPivot : undefined;
-    dispatch(
-      moveVertices({
-        modelId,
-        delta: moveVector,
-        constraint: constraint || undefined,
-        pivot,
-      })
-    );
+    moveVertices(moveVector, constraint || undefined);
   };
 
   const handleScaleVertices = () => {
     if (selectedVertices.length === 0) return;
-
-    const pivot = useCustomPivot ? customPivot : undefined;
-    dispatch(
-      scaleVertices({
-        modelId,
-        scale: scaleVector,
-        constraint: constraint || undefined,
-        pivot,
-      })
-    );
+    scaleVertices(scaleVector, constraint || undefined);
   };
 
   const handleRotateVertices = () => {
     if (selectedVertices.length === 0) return;
-
-    const pivot = useCustomPivot ? customPivot : undefined;
     const rotationAxis =
       constraint === "x" || constraint === "y" || constraint === "z"
         ? constraint
         : undefined;
-
-    dispatch(
-      rotateVertices({
-        modelId,
-        rotation: rotationVector,
-        axis: rotationAxis,
-        pivot,
-      })
+    rotateVertices(
+      rotationVector,
+      useCustomPivot ? customPivot : undefined,
+      rotationAxis
     );
   };
 
   const handleMergeVertices = () => {
     if (selectedVertices.length < 2) return;
-
-    dispatch(
-      mergeVertices({
-        modelId,
-        mergeType,
-      })
-    );
+    mergeVertices(mergeType);
   };
 
   const handleDeleteVertices = () => {
     if (selectedVertices.length === 0) return;
-    dispatch(deleteSelectedElements({ modelId }));
+    deleteSelectedElements();
   };
 
-  const getPivotPoint = (): Vector3Tuple => {
-    if (useCustomPivot) return customPivot;
-    if (selectedVertices.length === 0) return [0, 0, 0];
+  const selectionCenter =
+    selectedVertices.length > 0
+      ? (selectedVertices
+          .reduce(
+            (acc: Vector3Tuple, v: any): Vector3Tuple => [
+              acc[0] + v.position[0],
+              acc[1] + v.position[1],
+              acc[2] + v.position[2],
+            ],
+            [0, 0, 0] as Vector3Tuple
+          )
+          .map((sum: number) => sum / selectedVertices.length) as Vector3Tuple)
+      : ([0, 0, 0] as Vector3Tuple);
 
-    // Calculate center of selection
-    const sum = selectedVertices.reduce(
-      (acc, v) =>
-        [
-          acc[0] + v.position[0],
-          acc[1] + v.position[1],
-          acc[2] + v.position[2],
-        ] as Vector3Tuple,
-      [0, 0, 0] as Vector3Tuple
-    );
-    return [
-      sum[0] / selectedVertices.length,
-      sum[1] / selectedVertices.length,
-      sum[2] / selectedVertices.length,
-    ];
+  const styles = {
+    card: {
+      background: "rgba(255, 255, 255, 0.1)",
+      backdropFilter: "blur(20px)",
+      border: "1px solid rgba(255, 255, 255, 0.2)",
+      borderRadius: "12px",
+      padding: "20px",
+      marginBottom: "16px",
+    },
+    sectionTitle: {
+      fontSize: "14px",
+      fontWeight: 600,
+      color: "#e0e0e0",
+      marginBottom: "12px",
+      textTransform: "uppercase" as const,
+      letterSpacing: "0.5px",
+    },
+    statsGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(2, 1fr)",
+      gap: "8px",
+      marginBottom: "16px",
+    },
+    statCard: {
+      background: "rgba(255, 255, 255, 0.05)",
+      padding: "8px 12px",
+      borderRadius: "6px",
+      textAlign: "center" as const,
+    },
+    operationButton: {
+      borderRadius: "8px",
+      textTransform: "none" as const,
+      padding: "8px 16px",
+      fontSize: "13px",
+    },
   };
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Vertex Editor
-        </Typography>
-
-        {/* Selection Info */}
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="body2" color="textSecondary">
-            {selectedVertices.length} of {totalVertices} vertices selected
-          </Typography>
-          {selectedVertices.length > 0 && (
-            <Box mt={1}>
-              {selectedVertices.slice(0, 8).map((vertex) => (
-                <Chip
-                  key={vertex.index}
-                  label={`V${vertex.index}`}
-                  size="small"
-                  color="primary"
-                  style={{ margin: 2 }}
-                />
-              ))}
-              {selectedVertices.length > 8 && (
-                <Chip
-                  label={`+${selectedVertices.length - 8} more`}
-                  size="small"
-                  variant="outlined"
-                  style={{ margin: 2 }}
-                />
-              )}
-            </Box>
-          )}
-        </Paper>
+    <Box>
+      {/* Vertex Statistics */}
+      <Paper sx={styles.card} elevation={0}>
+        <Typography sx={styles.sectionTitle}>Vertex Statistics</Typography>
+        <Box sx={styles.statsGrid}>
+          <Box sx={styles.statCard}>
+            <Typography variant="caption" color="textSecondary">
+              Total Vertices
+            </Typography>
+            <Typography variant="h6" color="primary">
+              {totalVertices}
+            </Typography>
+          </Box>
+          <Box sx={styles.statCard}>
+            <Typography variant="caption" color="textSecondary">
+              Selected
+            </Typography>
+            <Typography variant="h6" color="secondary">
+              {selectedVertices.length}
+            </Typography>
+          </Box>
+        </Box>
 
         {/* Selection Mode */}
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Selection Mode
-          </Typography>
-          <ButtonGroup size="small" sx={{ mb: 2 }}>
-            {(["single", "multiple", "box", "lasso"] as SelectionMode[]).map(
-              (mode) => (
-                <Button
-                  key={mode}
-                  variant={selectionMode === mode ? "contained" : "outlined"}
-                  onClick={() => handleSelectionModeChange(mode)}
-                >
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </Button>
-              )
-            )}
+        <Box sx={{ mb: 2 }}>
+          <Typography sx={styles.sectionTitle}>Selection Mode</Typography>
+          <ButtonGroup size="small" fullWidth>
+            <Button
+              variant={selectionMode === "single" ? "contained" : "outlined"}
+              onClick={() => handleSelectionModeChange("single")}
+              sx={styles.operationButton}
+            >
+              Single
+            </Button>
+            <Button
+              variant={selectionMode === "multiple" ? "contained" : "outlined"}
+              onClick={() => handleSelectionModeChange("multiple")}
+              sx={styles.operationButton}
+            >
+              Multiple
+            </Button>
+            <Button
+              variant={selectionMode === "box" ? "contained" : "outlined"}
+              onClick={() => handleSelectionModeChange("box")}
+              sx={styles.operationButton}
+            >
+              Box
+            </Button>
           </ButtonGroup>
+        </Box>
 
-          <Box display="flex" gap={1} flexWrap="wrap">
-            <Tooltip title="Select All (A)">
+        {/* Selection Operations */}
+        <Box sx={{ mb: 2 }}>
+          <Typography sx={styles.sectionTitle}>Selection Operations</Typography>
+          <Grid container spacing={1}>
+            <Grid item xs={6}>
               <Button
+                variant="outlined"
+                fullWidth
                 startIcon={<SelectAll />}
                 onClick={handleSelectAll}
-                size="small"
+                sx={styles.operationButton}
               >
-                All
+                Select All
               </Button>
-            </Tooltip>
-            <Tooltip title="Deselect All (Alt+A)">
+            </Grid>
+            <Grid item xs={6}>
               <Button
+                variant="outlined"
+                fullWidth
                 startIcon={<DeselectOutlined />}
                 onClick={handleDeselectAll}
-                size="small"
+                sx={styles.operationButton}
               >
-                None
+                Deselect
               </Button>
-            </Tooltip>
-            <Tooltip title="Grow Selection (Ctrl+NumPad+)">
+            </Grid>
+            <Grid item xs={6}>
               <Button
+                variant="outlined"
+                fullWidth
                 startIcon={<Add />}
                 onClick={handleGrowSelection}
-                size="small"
                 disabled={selectedVertices.length === 0}
+                sx={styles.operationButton}
               >
                 Grow
               </Button>
-            </Tooltip>
-            <Tooltip title="Shrink Selection (Ctrl+NumPad-)">
+            </Grid>
+            <Grid item xs={6}>
               <Button
+                variant="outlined"
+                fullWidth
                 startIcon={<Remove />}
                 onClick={handleShrinkSelection}
-                size="small"
                 disabled={selectedVertices.length === 0}
+                sx={styles.operationButton}
               >
                 Shrink
               </Button>
-            </Tooltip>
-          </Box>
-        </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
 
-        {/* Transform Constraint */}
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Transform Constraint
+      {/* Selected Vertices Info */}
+      {selectedVertices.length > 0 && (
+        <Paper sx={styles.card} elevation={0}>
+          <Typography sx={styles.sectionTitle}>Selected Vertices</Typography>
+          <List dense>
+            {selectedVertices.slice(0, 5).map((vertex: any) => (
+              <ListItem key={vertex.index}>
+                <ListItemText
+                  primary={`Vertex ${vertex.index}`}
+                  secondary={`Position: ${vertex.position
+                    .map((v: number) => v.toFixed(3))
+                    .join(", ")}`}
+                />
+              </ListItem>
+            ))}
+            {selectedVertices.length > 5 && (
+              <ListItem>
+                <ListItemText
+                  primary={`... and ${selectedVertices.length - 5} more`}
+                />
+              </ListItem>
+            )}
+          </List>
+        </Paper>
+      )}
+
+      {/* Transform Operations */}
+      <Paper sx={styles.card} elevation={0}>
+        <Typography sx={styles.sectionTitle}>Transform Operations</Typography>
+
+        {/* Constraint Selection */}
+        <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+          <InputLabel>Constraint Axis</InputLabel>
+          <Select
+            value={constraint}
+            label="Constraint Axis"
+            onChange={(e) =>
+              setConstraint(e.target.value as TransformConstraint | "")
+            }
+          >
+            <MenuItem value="">None</MenuItem>
+            <MenuItem value="x">X-Axis</MenuItem>
+            <MenuItem value="y">Y-Axis</MenuItem>
+            <MenuItem value="z">Z-Axis</MenuItem>
+            <MenuItem value="xy">XY-Plane</MenuItem>
+            <MenuItem value="xz">XZ-Plane</MenuItem>
+            <MenuItem value="yz">YZ-Plane</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Move Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: "#e0e0e0" }}>
+            Move Delta
           </Typography>
-          <FormControl size="small" sx={{ minWidth: 120, mb: 2 }}>
-            <InputLabel>Constraint</InputLabel>
+          <Grid container spacing={1}>
+            <Grid item xs={4}>
+              <TextField
+                label="X"
+                type="number"
+                size="small"
+                value={moveVector[0]}
+                onChange={(e) =>
+                  setMoveVector([
+                    parseFloat(e.target.value) || 0,
+                    moveVector[1],
+                    moveVector[2],
+                  ])
+                }
+                inputProps={{ step: 0.1 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Y"
+                type="number"
+                size="small"
+                value={moveVector[1]}
+                onChange={(e) =>
+                  setMoveVector([
+                    moveVector[0],
+                    parseFloat(e.target.value) || 0,
+                    moveVector[2],
+                  ])
+                }
+                inputProps={{ step: 0.1 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Z"
+                type="number"
+                size="small"
+                value={moveVector[2]}
+                onChange={(e) =>
+                  setMoveVector([
+                    moveVector[0],
+                    moveVector[1],
+                    parseFloat(e.target.value) || 0,
+                  ])
+                }
+                inputProps={{ step: 0.1 }}
+              />
+            </Grid>
+          </Grid>
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<OpenWith />}
+            onClick={handleMoveVertices}
+            disabled={selectedVertices.length === 0}
+            sx={{ ...styles.operationButton, mt: 1 }}
+          >
+            Move Selected
+          </Button>
+        </Box>
+
+        {/* Scale Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: "#e0e0e0" }}>
+            Scale Factor
+          </Typography>
+          <Grid container spacing={1}>
+            <Grid item xs={4}>
+              <TextField
+                label="X"
+                type="number"
+                size="small"
+                value={scaleVector[0]}
+                onChange={(e) =>
+                  setScaleVector([
+                    parseFloat(e.target.value) || 1,
+                    scaleVector[1],
+                    scaleVector[2],
+                  ])
+                }
+                inputProps={{ step: 0.1, min: 0.01 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Y"
+                type="number"
+                size="small"
+                value={scaleVector[1]}
+                onChange={(e) =>
+                  setScaleVector([
+                    scaleVector[0],
+                    parseFloat(e.target.value) || 1,
+                    scaleVector[2],
+                  ])
+                }
+                inputProps={{ step: 0.1, min: 0.01 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Z"
+                type="number"
+                size="small"
+                value={scaleVector[2]}
+                onChange={(e) =>
+                  setScaleVector([
+                    scaleVector[0],
+                    scaleVector[1],
+                    parseFloat(e.target.value) || 1,
+                  ])
+                }
+                inputProps={{ step: 0.1, min: 0.01 }}
+              />
+            </Grid>
+          </Grid>
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<ZoomOutMap />}
+            onClick={handleScaleVertices}
+            disabled={selectedVertices.length === 0}
+            sx={{ ...styles.operationButton, mt: 1 }}
+          >
+            Scale Selected
+          </Button>
+        </Box>
+
+        {/* Rotation Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: "#e0e0e0" }}>
+            Rotation (Degrees)
+          </Typography>
+          <Grid container spacing={1}>
+            <Grid item xs={4}>
+              <TextField
+                label="X"
+                type="number"
+                size="small"
+                value={(rotationVector[0] * 180) / Math.PI}
+                onChange={(e) =>
+                  setRotationVector([
+                    (parseFloat(e.target.value) || 0) * (Math.PI / 180),
+                    rotationVector[1],
+                    rotationVector[2],
+                  ])
+                }
+                inputProps={{ step: 15 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Y"
+                type="number"
+                size="small"
+                value={(rotationVector[1] * 180) / Math.PI}
+                onChange={(e) =>
+                  setRotationVector([
+                    rotationVector[0],
+                    (parseFloat(e.target.value) || 0) * (Math.PI / 180),
+                    rotationVector[2],
+                  ])
+                }
+                inputProps={{ step: 15 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Z"
+                type="number"
+                size="small"
+                value={(rotationVector[2] * 180) / Math.PI}
+                onChange={(e) =>
+                  setRotationVector([
+                    rotationVector[0],
+                    rotationVector[1],
+                    (parseFloat(e.target.value) || 0) * (Math.PI / 180),
+                  ])
+                }
+                inputProps={{ step: 15 }}
+              />
+            </Grid>
+          </Grid>
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<RotateRight />}
+            onClick={handleRotateVertices}
+            disabled={selectedVertices.length === 0}
+            sx={{ ...styles.operationButton, mt: 1 }}
+          >
+            Rotate Selected
+          </Button>
+        </Box>
+
+        {/* Custom Pivot */}
+        <FormControlLabel
+          control={
+            <Switch
+              checked={useCustomPivot}
+              onChange={(e) => setUseCustomPivot(e.target.checked)}
+            />
+          }
+          label="Use Custom Pivot"
+          sx={{ mb: 1 }}
+        />
+
+        {useCustomPivot && (
+          <Grid container spacing={1} sx={{ mb: 2 }}>
+            <Grid item xs={4}>
+              <TextField
+                label="Pivot X"
+                type="number"
+                size="small"
+                value={customPivot[0]}
+                onChange={(e) =>
+                  setCustomPivot([
+                    parseFloat(e.target.value) || 0,
+                    customPivot[1],
+                    customPivot[2],
+                  ])
+                }
+                inputProps={{ step: 0.1 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Pivot Y"
+                type="number"
+                size="small"
+                value={customPivot[1]}
+                onChange={(e) =>
+                  setCustomPivot([
+                    customPivot[0],
+                    parseFloat(e.target.value) || 0,
+                    customPivot[2],
+                  ])
+                }
+                inputProps={{ step: 0.1 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Pivot Z"
+                type="number"
+                size="small"
+                value={customPivot[2]}
+                onChange={(e) =>
+                  setCustomPivot([
+                    customPivot[0],
+                    customPivot[1],
+                    parseFloat(e.target.value) || 0,
+                  ])
+                }
+                inputProps={{ step: 0.1 }}
+              />
+            </Grid>
+          </Grid>
+        )}
+      </Paper>
+
+      {/* Merge and Delete Operations */}
+      <Paper sx={styles.card} elevation={0}>
+        <Typography sx={styles.sectionTitle}>Vertex Operations</Typography>
+
+        {/* Merge Section */}
+        <Box sx={{ mb: 2 }}>
+          <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+            <InputLabel>Merge Type</InputLabel>
             <Select
-              value={constraint}
-              label="Constraint"
-              onChange={(e) =>
-                setConstraint(e.target.value as TransformConstraint | "")
-              }
+              value={mergeType}
+              label="Merge Type"
+              onChange={(e) => setMergeType(e.target.value as MergeType)}
             >
-              <MenuItem value="">None</MenuItem>
-              <MenuItem value="x">X-Axis</MenuItem>
-              <MenuItem value="y">Y-Axis</MenuItem>
-              <MenuItem value="z">Z-Axis</MenuItem>
-              <MenuItem value="xy">XY-Plane</MenuItem>
-              <MenuItem value="xz">XZ-Plane</MenuItem>
-              <MenuItem value="yz">YZ-Plane</MenuItem>
+              <MenuItem value="center">At Center</MenuItem>
+              <MenuItem value="first">At First</MenuItem>
+              <MenuItem value="last">At Last</MenuItem>
+              <MenuItem value="cursor">At Cursor</MenuItem>
             </Select>
           </FormControl>
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<CallMerge />}
+            onClick={handleMergeVertices}
+            disabled={selectedVertices.length < 2}
+            sx={styles.operationButton}
+          >
+            Merge Selected ({selectedVertices.length})
+          </Button>
+        </Box>
 
-          <Box display="flex" flexDirection="column" gap={1}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={useCustomPivot}
-                  onChange={(e) => setUseCustomPivot(e.target.checked)}
-                />
-              }
-              label="Custom Pivot"
+        {/* Delete Section */}
+        <Button
+          variant="contained"
+          color="error"
+          fullWidth
+          startIcon={<Delete />}
+          onClick={handleDeleteVertices}
+          disabled={selectedVertices.length === 0}
+          sx={styles.operationButton}
+        >
+          Delete Selected
+        </Button>
+      </Paper>
+
+      {/* Additional Options */}
+      <Paper sx={styles.card} elevation={0}>
+        <Typography sx={styles.sectionTitle}>Additional Options</Typography>
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={snapToGrid}
+              onChange={(e) => setSnapToGrid(e.target.checked)}
             />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={snapToGrid}
-                  onChange={(e) => setSnapToGrid(e.target.checked)}
-                />
-              }
-              label="Snap to Grid"
+          }
+          label="Snap to Grid"
+          sx={{ mb: 1 }}
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={proportionalEdit}
+              onChange={(e) => setProportionalEdit(e.target.checked)}
             />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={proportionalEdit}
-                  onChange={(e) => setProportionalEdit(e.target.checked)}
-                />
+          }
+          label="Proportional Editing"
+          sx={{ mb: 1 }}
+        />
+
+        {proportionalEdit && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="caption" color="textSecondary">
+              Proportional Size: {proportionalSize.toFixed(2)}
+            </Typography>
+            <Slider
+              value={proportionalSize}
+              onChange={(_: any, newValue: number | number[]) =>
+                setProportionalSize(
+                  Array.isArray(newValue) ? newValue[0] : newValue
+                )
               }
-              label="Proportional Editing"
+              min={0.1}
+              max={5.0}
+              step={0.1}
+              valueLabelDisplay="auto"
             />
           </Box>
+        )}
+      </Paper>
 
-          {useCustomPivot && (
-            <Box mt={2}>
-              <Typography variant="body2" gutterBottom>
-                Custom Pivot Point
-              </Typography>
-              <Grid container spacing={1}>
-                {(["X", "Y", "Z"] as const).map((axis, index) => (
-                  <Grid item xs={4} key={axis}>
-                    <TextField
-                      label={axis}
-                      type="number"
-                      size="small"
-                      value={customPivot[index]}
-                      onChange={(e) => {
-                        const newPivot = [...customPivot] as Vector3Tuple;
-                        newPivot[index] = parseFloat(e.target.value) || 0;
-                        setCustomPivot(newPivot);
-                      }}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-
-          {proportionalEdit && (
-            <Box mt={2}>
-              <Typography variant="body2" gutterBottom>
-                Proportional Size: {proportionalSize.toFixed(2)}
-              </Typography>
-              <Slider
-                value={proportionalSize}
-                onChange={(event: Event, value: number | number[]) =>
-                  setProportionalSize(value as number)
-                }
-                min={0.1}
-                max={5.0}
-                step={0.1}
-                size="small"
-              />
-            </Box>
-          )}
+      {/* Selection Center Info */}
+      {selectedVertices.length > 0 && (
+        <Paper sx={styles.card} elevation={0}>
+          <Typography sx={styles.sectionTitle}>Selection Info</Typography>
+          <Typography variant="body2" color="textSecondary">
+            Selection Center: (
+            {selectionCenter.map((v) => v.toFixed(3)).join(", ")})
+          </Typography>
         </Paper>
-
-        {/* Transform Operations */}
-        {selectedVertices.length > 0 && (
-          <>
-            {/* Move */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Move Vertices (G)
-              </Typography>
-              <Grid container spacing={1} sx={{ mb: 2 }}>
-                {(["X", "Y", "Z"] as const).map((axis, index) => (
-                  <Grid item xs={4} key={axis}>
-                    <TextField
-                      label={axis}
-                      type="number"
-                      size="small"
-                      value={moveVector[index]}
-                      onChange={(e) => {
-                        const newVector = [...moveVector] as Vector3Tuple;
-                        newVector[index] = parseFloat(e.target.value) || 0;
-                        setMoveVector(newVector);
-                      }}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-              <Button
-                startIcon={<OpenWith />}
-                onClick={handleMoveVertices}
-                variant="contained"
-                size="small"
-                disabled={selectedVertices.length === 0}
-              >
-                Move
-              </Button>
-            </Paper>
-
-            {/* Scale */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Scale Vertices (S)
-              </Typography>
-              <Grid container spacing={1} sx={{ mb: 2 }}>
-                {(["X", "Y", "Z"] as const).map((axis, index) => (
-                  <Grid item xs={4} key={axis}>
-                    <TextField
-                      label={axis}
-                      type="number"
-                      size="small"
-                      value={scaleVector[index]}
-                      onChange={(e) => {
-                        const newVector = [...scaleVector] as Vector3Tuple;
-                        newVector[index] = parseFloat(e.target.value) || 1;
-                        setScaleVector(newVector);
-                      }}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-              <Button
-                startIcon={<ZoomOutMap />}
-                onClick={handleScaleVertices}
-                variant="contained"
-                size="small"
-                disabled={selectedVertices.length === 0}
-              >
-                Scale
-              </Button>
-            </Paper>
-
-            {/* Rotate */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Rotate Vertices (R)
-              </Typography>
-              <Grid container spacing={1} sx={{ mb: 2 }}>
-                {(["X", "Y", "Z"] as const).map((axis, index) => (
-                  <Grid item xs={4} key={axis}>
-                    <TextField
-                      label={`${axis} (deg)`}
-                      type="number"
-                      size="small"
-                      value={(rotationVector[index] * 180) / Math.PI}
-                      onChange={(e) => {
-                        const newVector = [...rotationVector] as Vector3Tuple;
-                        newVector[index] =
-                          ((parseFloat(e.target.value) || 0) * Math.PI) / 180;
-                        setRotationVector(newVector);
-                      }}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-              <Button
-                startIcon={<RotateRight />}
-                onClick={handleRotateVertices}
-                variant="contained"
-                size="small"
-                disabled={selectedVertices.length === 0}
-              >
-                Rotate
-              </Button>
-            </Paper>
-          </>
-        )}
-
-        {/* Vertex Operations */}
-        {selectedVertices.length >= 2 && (
-          <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Merge Vertices (Alt+M)
-            </Typography>
-            <FormControl size="small" sx={{ mb: 2, minWidth: 120 }}>
-              <InputLabel>Merge Type</InputLabel>
-              <Select
-                value={mergeType}
-                label="Merge Type"
-                onChange={(e) => setMergeType(e.target.value as MergeType)}
-              >
-                <MenuItem value="center">At Center</MenuItem>
-                <MenuItem value="first">At First</MenuItem>
-                <MenuItem value="last">At Last</MenuItem>
-                <MenuItem value="cursor">At Cursor</MenuItem>
-              </Select>
-            </FormControl>
-            <Box>
-              <Button
-                startIcon={<CallMerge />}
-                onClick={handleMergeVertices}
-                variant="contained"
-                size="small"
-                color="secondary"
-              >
-                Merge ({selectedVertices.length} vertices)
-              </Button>
-            </Box>
-          </Paper>
-        )}
-
-        {/* Current Selection Info */}
-        {selectedVertices.length > 0 && (
-          <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Selection Details
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              Pivot Point:{" "}
-              {getPivotPoint()
-                .map((v) => v.toFixed(3))
-                .join(", ")}
-            </Typography>
-            <List dense>
-              {selectedVertices.slice(0, 5).map((vertex) => (
-                <ListItem key={vertex.index} divider>
-                  <ListItemText
-                    primary={`Vertex ${vertex.index}`}
-                    secondary={`Position: (${vertex.position
-                      .map((v) => v.toFixed(3))
-                      .join(", ")})`}
-                  />
-                </ListItem>
-              ))}
-              {selectedVertices.length > 5 && (
-                <ListItem>
-                  <ListItemText
-                    primary={`... and ${
-                      selectedVertices.length - 5
-                    } more vertices`}
-                  />
-                </ListItem>
-              )}
-            </List>
-          </Paper>
-        )}
-
-        {/* Danger Zone */}
-        {selectedVertices.length > 0 && (
-          <Paper
-            elevation={1}
-            sx={{ p: 2, bgcolor: "error.light", color: "error.contrastText" }}
-          >
-            <Typography variant="subtitle2" gutterBottom>
-              Danger Zone
-            </Typography>
-            <Button
-              startIcon={<Delete />}
-              onClick={handleDeleteVertices}
-              variant="contained"
-              color="error"
-              size="small"
-            >
-              Delete Selected Vertices ({selectedVertices.length})
-            </Button>
-          </Paper>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </Box>
   );
 };
 

@@ -12,6 +12,7 @@ import { useModels } from "../../hooks/useRedux";
 import { ModelMetadata, ToolType } from "../../types";
 import SubObjectHighlight from "./SubObjectHighlight";
 import InteractiveSubObject from "./InteractiveSubObject";
+import MeshEditableModel from "./MeshEditableModel";
 
 interface SceneContentProps {
   models: { [id: string]: Group };
@@ -245,40 +246,29 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
           editMode
         );
 
-        // For sub-object editing modes, use InteractiveSubObject
+        // For sub-object editing modes, use MeshEditableModel
         if (isSelected && isSubObjectEditMode && mesh?.geometry) {
           return (
-            <React.Fragment key={modelId}>
-              <InteractiveSubObject
-                modelId={modelId}
-                geometry={mesh.geometry}
-                position={model.position.toArray() as [number, number, number]}
-                rotation={
-                  model.rotation.toArray().slice(0, 3) as [
-                    number,
-                    number,
-                    number
-                  ]
+            <MeshEditableModel
+              key={modelId}
+              modelId={modelId}
+              geometry={mesh.geometry}
+              material={
+                Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
+              }
+              position={model.position.toArray() as [number, number, number]}
+              rotation={
+                model.rotation.toArray().slice(0, 3) as [number, number, number]
+              }
+              scale={model.scale.toArray() as [number, number, number]}
+              onGeometryUpdate={(newGeometry) => {
+                // Update the original mesh geometry
+                if (mesh.geometry !== newGeometry) {
+                  mesh.geometry.dispose();
+                  mesh.geometry = newGeometry;
                 }
-                scale={model.scale.toArray() as [number, number, number]}
-              >
-                {mesh.material && Array.isArray(mesh.material)
-                  ? mesh.material.map((mat, index) => (
-                      <primitive
-                        key={index}
-                        attach={`material-${index}`}
-                        object={mat.clone()}
-                      />
-                    ))
-                  : mesh.material && (
-                      <primitive
-                        attach="material"
-                        object={(mesh.material as any).clone()}
-                      />
-                    )}
-              </InteractiveSubObject>
-              <SubObjectHighlight modelId={modelId} geometry={mesh.geometry} />
-            </React.Fragment>
+              }}
+            />
           );
         }
 

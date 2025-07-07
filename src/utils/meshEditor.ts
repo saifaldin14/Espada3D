@@ -1416,10 +1416,10 @@ export class MeshEditor {
     return {
       modelId,
       type: type,
-      positionArray: positionAttribute.array as Float32Array,
-      normalArray: normalAttribute?.array as Float32Array,
-      uvArray: uvAttribute?.array as Float32Array,
-      indexArray: indexAttribute?.array as Uint32Array,
+      positionArray: Array.from(positionAttribute.array),
+      normalArray: normalAttribute?.array ? Array.from(normalAttribute.array) : undefined,
+      uvArray: uvAttribute?.array ? Array.from(uvAttribute.array) : undefined,
+      indexArray: indexAttribute?.array ? Array.from(indexAttribute.array) : undefined,
       vertexCount: positionAttribute.count,
       faceCount: indexAttribute ? indexAttribute.count / 3 : positionAttribute.count / 3
     };

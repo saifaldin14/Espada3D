@@ -262,10 +262,10 @@ export interface MeshValidationResult {
 export interface GeometryData {
   modelId: string;
   type: GeometryType;
-  positionArray: Float32Array;
-  normalArray?: Float32Array;
-  uvArray?: Float32Array;
-  indexArray?: Uint32Array;
+  positionArray: number[];
+  normalArray?: number[];
+  uvArray?: number[];
+  indexArray?: number[];
   vertexCount: number;
   faceCount: number;
 }
@@ -303,6 +303,10 @@ export interface UIState {
 export interface RootState {
   models: ModelState;
   ui: UIState;
+  mesh: {
+    meshData: { [modelId: string]: MeshEditData };
+    pendingOperations: { [modelId: string]: any[] };
+  };
 }
 
 // Error types

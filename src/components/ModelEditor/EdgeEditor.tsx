@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -40,16 +40,9 @@ import {
   setSubObjectSelectionMode,
   selectSubObjects,
 } from "../../store/slices/uiSlice";
-import {
-  bevelEdges,
-  splitEdges,
-  loopCut,
-  selectEdgeLoop,
-  growSelection,
-  deleteSelectedElements,
-} from "../../store/slices/modelSlice";
 import { SelectionMode, BevelProfile } from "../../types";
 import { MeshEditor } from "../../utils/meshEditor";
+import { useMeshEditor } from "../../hooks/useMeshEditor";
 
 interface EdgeEditorProps {
   modelId: string;
@@ -64,6 +57,17 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
     (state: RootState) => state.ui.subObjectSelectionMode
   );
 
+  // Use mesh editor hook for operations
+  const {
+    bevelEdges,
+    splitEdges,
+    loopCut,
+    deleteSelectedElements,
+    growSelection,
+    shrinkSelection,
+    selectEdgeLoop,
+  } = useMeshEditor(modelId);
+
   // Bevel parameters
   const [bevelDistance, setBevelDistance] = useState(0.1);
   const [bevelSegments, setBevelSegments] = useState(1);
@@ -76,6 +80,29 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
   const [loopCuts, setLoopCuts] = useState(1);
   const [loopSmoothness, setLoopSmoothness] = useState(0.0);
 
+  // Memoize selected edges calculation (must be before early return)
+  const selectedEdges = useMemo(() => {
+    return meshEditData ? MeshEditor.getSelectedEdges(meshEditData) : [];
+  }, [meshEditData]);
+
+  // Memoize total length calculation
+  const totalLength = useMemo(() => {
+    return selectedEdges.reduce((total, edge) => {
+      if (!meshEditData) return total;
+      const [v1Index, v2Index] = edge.vertices;
+      const v1 = meshEditData.vertices[v1Index];
+      const v2 = meshEditData.vertices[v2Index];
+
+      if (!v1 || !v2) return total;
+
+      const dx = v2.position[0] - v1.position[0];
+      const dy = v2.position[1] - v1.position[1];
+      const dz = v2.position[2] - v1.position[2];
+
+      return total + Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }, 0);
+  }, [selectedEdges, meshEditData]);
+
   if (!meshEditData) {
     return (
       <Card>
@@ -86,8 +113,7 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
     );
   }
 
-  const selectedEdges = MeshEditor.getSelectedEdges(meshEditData);
-  const totalEdges = meshEditData.edges.length;
+  const totalEdges = meshEditData?.edges.length || 0;
 
   const handleSelectionModeChange = (mode: SelectionMode) => {
     dispatch(setSubObjectSelectionMode(mode));
@@ -117,77 +143,40 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
   };
 
   const handleGrowSelection = () => {
-    dispatch(growSelection({ modelId, operation: "grow" }));
+    growSelection("edge");
   };
 
   const handleShrinkSelection = () => {
-    dispatch(growSelection({ modelId, operation: "shrink" }));
+    shrinkSelection("edge");
   };
 
   const handleSelectEdgeLoop = () => {
     if (selectedEdges.length === 0) return;
-    dispatch(selectEdgeLoop({ modelId, edgeIndex: selectedEdges[0].index }));
+    selectEdgeLoop(selectedEdges[0].index);
   };
 
   const handleBevelEdges = () => {
     if (selectedEdges.length === 0) return;
-
-    dispatch(
-      bevelEdges({
-        modelId,
-        edgeIndices: selectedEdges.map((e) => e.index),
-        distance: bevelDistance,
-        segments: bevelSegments,
-        profile: bevelProfile,
-      })
-    );
+    bevelEdges(bevelDistance, bevelSegments, bevelProfile);
   };
 
   const handleSplitEdges = () => {
     if (selectedEdges.length === 0) return;
-
-    dispatch(
-      splitEdges({
-        modelId,
-        edgeIndices: selectedEdges.map((e) => e.index),
-        splits: splitCount,
-      })
-    );
+    splitEdges(splitCount);
   };
 
   const handleLoopCut = () => {
     if (selectedEdges.length === 0) return;
-
-    dispatch(
-      loopCut({
-        modelId,
-        edgeIndex: selectedEdges[0].index,
-        cuts: loopCuts,
-        smoothness: loopSmoothness,
-      })
-    );
+    loopCut(selectedEdges[0].index, loopCuts, loopSmoothness);
   };
 
   const handleDeleteEdges = () => {
     if (selectedEdges.length === 0) return;
-    dispatch(deleteSelectedElements({ modelId }));
+    deleteSelectedElements();
   };
 
   const calculateTotalLength = (): number => {
-    return selectedEdges.reduce((total, edge) => {
-      if (!meshEditData) return total;
-      const [v1Index, v2Index] = edge.vertices;
-      const v1 = meshEditData.vertices[v1Index];
-      const v2 = meshEditData.vertices[v2Index];
-
-      if (!v1 || !v2) return total;
-
-      const dx = v2.position[0] - v1.position[0];
-      const dy = v2.position[1] - v1.position[1];
-      const dz = v2.position[2] - v1.position[2];
-
-      return total + Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }, 0);
+    return totalLength;
   };
 
   const getBevelProfileName = (profile: number): string => {
@@ -275,34 +264,40 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
               </Button>
             </Tooltip>
             <Tooltip title="Grow Selection (Ctrl+NumPad+)">
-              <Button
-                startIcon={<Add />}
-                onClick={handleGrowSelection}
-                size="small"
-                disabled={selectedEdges.length === 0}
-              >
-                Grow
-              </Button>
+              <span>
+                <Button
+                  startIcon={<Add />}
+                  onClick={handleGrowSelection}
+                  size="small"
+                  disabled={selectedEdges.length === 0}
+                >
+                  Grow
+                </Button>
+              </span>
             </Tooltip>
             <Tooltip title="Shrink Selection (Ctrl+NumPad-)">
-              <Button
-                startIcon={<Remove />}
-                onClick={handleShrinkSelection}
-                size="small"
-                disabled={selectedEdges.length === 0}
-              >
-                Shrink
-              </Button>
+              <span>
+                <Button
+                  startIcon={<Remove />}
+                  onClick={handleShrinkSelection}
+                  size="small"
+                  disabled={selectedEdges.length === 0}
+                >
+                  Shrink
+                </Button>
+              </span>
             </Tooltip>
             <Tooltip title="Select Edge Loop (Alt+Click)">
-              <Button
-                startIcon={<Loop />}
-                onClick={handleSelectEdgeLoop}
-                size="small"
-                disabled={selectedEdges.length === 0}
-              >
-                Edge Loop
-              </Button>
+              <span>
+                <Button
+                  startIcon={<Loop />}
+                  onClick={handleSelectEdgeLoop}
+                  size="small"
+                  disabled={selectedEdges.length === 0}
+                >
+                  Edge Loop
+                </Button>
+              </span>
             </Tooltip>
           </Box>
         </Paper>

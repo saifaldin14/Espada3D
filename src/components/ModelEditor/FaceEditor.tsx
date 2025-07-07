@@ -42,19 +42,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
 import {
   setSubObjectSelectionMode,
-  selectSubObjects,
 } from "../../store/slices/uiSlice";
-import { 
-  extrudeFaces, 
-  insetFaces,
-  subdivideFaces,
-  flipNormals,
-  selectFaceLoop,
-  growSelection,
-  deleteSelectedElements
-} from "../../store/slices/modelSlice";
 import { SelectionMode } from "../../types";
-import { MeshEditor } from "../../utils/meshEditor";
+import { useMeshEditor } from "../../hooks/useMeshEditor";
 
 interface FaceEditorProps {
   modelId: string;
@@ -62,12 +52,23 @@ interface FaceEditorProps {
 
 const FaceEditor: React.FC<FaceEditorProps> = ({ modelId }) => {
   const dispatch = useDispatch();
-  const meshEditData = useSelector(
-    (state: RootState) => state.ui.meshEditData[modelId]
-  );
   const selectionMode = useSelector(
     (state: RootState) => state.ui.subObjectSelectionMode
   );
+
+  // Use the mesh editor hook
+  const {
+    meshData,
+    extrudeFaces,
+    insetFaces,
+    subdivideFaces,
+    deleteSelectedElements,
+    selectAll,
+    deselectAll,
+    growSelection,
+    shrinkSelection,
+    selectFaceLoop,
+  } = useMeshEditor(modelId);
 
   // Operation parameters
   const [extrudeDistance, setExtrudeDistance] = useState(0.5);
@@ -81,7 +82,7 @@ const FaceEditor: React.FC<FaceEditorProps> = ({ modelId }) => {
   const [subdivisionCuts, setSubdivisionCuts] = useState(1);
   const [subdivisionSmooth, setSubdivisionSmooth] = useState(0.0);
 
-  if (!meshEditData) {
+  if (!meshData) {
     return (
       <Card>
         <CardContent>
@@ -91,452 +92,436 @@ const FaceEditor: React.FC<FaceEditorProps> = ({ modelId }) => {
     );
   }
 
-  const selectedFaces = MeshEditor.getSelectedFaces(meshEditData);
-  const totalFaces = meshEditData.faces.length;
+  const selectedFaces = meshData.faces.filter(f => f.selected);
+  const totalFaces = meshData.faces.length;
 
   const handleSelectionModeChange = (mode: SelectionMode) => {
     dispatch(setSubObjectSelectionMode(mode));
   };
 
   const handleSelectAll = () => {
-    const allIndices = meshEditData.faces.map((_, index) => index);
-    dispatch(
-      selectSubObjects({
-        modelId,
-        type: "face",
-        indices: allIndices,
-        mode: "set",
-      })
-    );
+    selectAll('face');
   };
 
   const handleDeselectAll = () => {
-    dispatch(
-      selectSubObjects({
-        modelId,
-        type: "face",
-        indices: [],
-        mode: "set",
-      })
-    );
+    deselectAll('face');
   };
 
   const handleGrowSelection = () => {
-    dispatch(growSelection({ modelId, operation: 'grow' }));
+    growSelection('face');
   };
 
   const handleShrinkSelection = () => {
-    dispatch(growSelection({ modelId, operation: 'shrink' }));
-  };
-
-  const handleSelectFaceLoop = () => {
-    if (selectedFaces.length === 0) return;
-    dispatch(selectFaceLoop({ modelId, faceIndex: selectedFaces[0].index }));
+    shrinkSelection('face');
   };
 
   const handleExtrudeFaces = () => {
     if (selectedFaces.length === 0) return;
-
     const direction = extrudeDirection === 'custom' ? customDirection : undefined;
-    
-    dispatch(
-      extrudeFaces({
-        modelId,
-        faceIndices: selectedFaces.map((f) => f.index),
-        distance: extrudeDistance,
-        direction,
-        individualFaces,
-      })
-    );
+    extrudeFaces(extrudeDistance, direction, individualFaces);
   };
 
   const handleInsetFaces = () => {
     if (selectedFaces.length === 0) return;
-
-    dispatch(
-      insetFaces({
-        modelId,
-        faceIndices: selectedFaces.map((f) => f.index),
-        distance: insetDistance,
-        depth: insetDepth,
-        individualFaces,
-      })
-    );
+    insetFaces(insetDistance, insetDepth, individualFaces);
   };
 
   const handleSubdivideFaces = () => {
     if (selectedFaces.length === 0) return;
-
-    dispatch(
-      subdivideFaces({
-        modelId,
-        faceIndices: selectedFaces.map((f) => f.index),
-        cuts: subdivisionCuts,
-        smoothness: subdivisionSmooth,
-      })
-    );
-  };
-
-  const handleFlipNormals = () => {
-    if (selectedFaces.length === 0) return;
-    dispatch(flipNormals({ modelId }));
+    subdivideFaces(subdivisionCuts, subdivisionSmooth);
   };
 
   const handleDeleteFaces = () => {
     if (selectedFaces.length === 0) return;
-    dispatch(deleteSelectedElements({ modelId }));
+    deleteSelectedElements();
   };
 
-  const calculateTotalArea = (): number => {
-    return selectedFaces.reduce((total, face) => {
-      // Simplified area calculation - would need proper implementation
-      return total + 1.0;
-    }, 0);
+  const styles = {
+    card: {
+      background: 'rgba(255, 255, 255, 0.1)',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      borderRadius: '12px',
+      padding: '20px',
+      marginBottom: '16px',
+    },
+    sectionTitle: {
+      fontSize: '14px',
+      fontWeight: 600,
+      color: '#e0e0e0',
+      marginBottom: '12px',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.5px',
+    },
+    statsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '8px',
+      marginBottom: '16px',
+    },
+    statCard: {
+      background: 'rgba(255, 255, 255, 0.05)',
+      padding: '8px 12px',
+      borderRadius: '6px',
+      textAlign: 'center' as const,
+    },
+    operationButton: {
+      borderRadius: '8px',
+      textTransform: 'none' as const,
+      padding: '8px 16px',
+      fontSize: '13px',
+    },
   };
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Face Editor
-        </Typography>
-
-        {/* Selection Info */}
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="body2" color="textSecondary">
-            {selectedFaces.length} of {totalFaces} faces selected
-          </Typography>
-          {selectedFaces.length > 0 && (
-            <>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                Total Area: {calculateTotalArea().toFixed(3)} units²
-              </Typography>
-              <Box mt={1}>
-                {selectedFaces.slice(0, 8).map((face) => (
-                  <Chip
-                    key={face.index}
-                    label={`F${face.index}`}
-                    size="small"
-                    color="primary"
-                    style={{ margin: 2 }}
-                  />
-                ))}
-                {selectedFaces.length > 8 && (
-                  <Chip
-                    label={`+${selectedFaces.length - 8} more`}
-                    size="small"
-                    variant="outlined"
-                    style={{ margin: 2 }}
-                  />
-                )}
-              </Box>
-            </>
-          )}
-        </Paper>
+    <Box>
+      {/* Face Statistics */}
+      <Paper sx={styles.card} elevation={0}>
+        <Typography sx={styles.sectionTitle}>Face Statistics</Typography>
+        <Box sx={styles.statsGrid}>
+          <Box sx={styles.statCard}>
+            <Typography variant="caption" color="textSecondary">
+              Total Faces
+            </Typography>
+            <Typography variant="h6" color="primary">
+              {totalFaces}
+            </Typography>
+          </Box>
+          <Box sx={styles.statCard}>
+            <Typography variant="caption" color="textSecondary">
+              Selected
+            </Typography>
+            <Typography variant="h6" color="secondary">
+              {selectedFaces.length}
+            </Typography>
+          </Box>
+        </Box>
 
         {/* Selection Mode */}
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Selection Mode
-          </Typography>
-          <ButtonGroup size="small" sx={{ mb: 2 }}>
-            {(['single', 'multiple', 'box', 'lasso'] as SelectionMode[]).map((mode) => (
-              <Button
-                key={mode}
-                variant={selectionMode === mode ? 'contained' : 'outlined'}
-                onClick={() => handleSelectionModeChange(mode)}
-              >
-                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-              </Button>
-            ))}
+        <Box sx={{ mb: 2 }}>
+          <Typography sx={styles.sectionTitle}>Selection Mode</Typography>
+          <ButtonGroup size="small" fullWidth>
+            <Button
+              variant={selectionMode === "single" ? "contained" : "outlined"}
+              onClick={() => handleSelectionModeChange("single")}
+              sx={styles.operationButton}
+            >
+              Single
+            </Button>
+            <Button
+              variant={selectionMode === "multiple" ? "contained" : "outlined"}
+              onClick={() => handleSelectionModeChange("multiple")}
+              sx={styles.operationButton}
+            >
+              Multiple
+            </Button>
+            <Button
+              variant={selectionMode === "box" ? "contained" : "outlined"}
+              onClick={() => handleSelectionModeChange("box")}
+              sx={styles.operationButton}
+            >
+              Box
+            </Button>
           </ButtonGroup>
+        </Box>
 
-          <Box display="flex" gap={1} flexWrap="wrap">
-            <Tooltip title="Select All (A)">
+        {/* Selection Operations */}
+        <Box sx={{ mb: 2 }}>
+          <Typography sx={styles.sectionTitle}>Selection Operations</Typography>
+          <Grid container spacing={1}>
+            <Grid item xs={6}>
               <Button
+                variant="outlined"
+                fullWidth
                 startIcon={<SelectAll />}
                 onClick={handleSelectAll}
-                size="small"
+                sx={styles.operationButton}
               >
-                All
+                Select All
               </Button>
-            </Tooltip>
-            <Tooltip title="Deselect All (Alt+A)">
+            </Grid>
+            <Grid item xs={6}>
               <Button
+                variant="outlined"
+                fullWidth
                 startIcon={<DeselectOutlined />}
                 onClick={handleDeselectAll}
-                size="small"
+                sx={styles.operationButton}
               >
-                None
+                Deselect
               </Button>
-            </Tooltip>
-            <Tooltip title="Grow Selection (Ctrl+NumPad+)">
+            </Grid>
+            <Grid item xs={6}>
               <Button
+                variant="outlined"
+                fullWidth
                 startIcon={<Add />}
                 onClick={handleGrowSelection}
-                size="small"
                 disabled={selectedFaces.length === 0}
+                sx={styles.operationButton}
               >
                 Grow
               </Button>
-            </Tooltip>
-            <Tooltip title="Shrink Selection (Ctrl+NumPad-)">
+            </Grid>
+            <Grid item xs={6}>
               <Button
+                variant="outlined"
+                fullWidth
                 startIcon={<Remove />}
                 onClick={handleShrinkSelection}
-                size="small"
                 disabled={selectedFaces.length === 0}
+                sx={styles.operationButton}
               >
                 Shrink
               </Button>
-            </Tooltip>
-            <Tooltip title="Select Face Loop (Alt+Click)">
-              <Button
-                startIcon={<Loop />}
-                onClick={handleSelectFaceLoop}
-                size="small"
-                disabled={selectedFaces.length === 0}
-              >
-                Loop
-              </Button>
-            </Tooltip>
-          </Box>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
+
+      {/* Selected Faces Info */}
+      {selectedFaces.length > 0 && (
+        <Paper sx={styles.card} elevation={0}>
+          <Typography sx={styles.sectionTitle}>Selected Faces</Typography>
+          <List dense>
+            {selectedFaces.slice(0, 5).map((face: any) => (
+              <ListItem key={face.index}>
+                <ListItemText
+                  primary={`Face ${face.index}`}
+                  secondary={`Vertices: ${face.vertices.length} | Normal: ${face.normal
+                    .map((v: number) => v.toFixed(2))
+                    .join(", ")}`}
+                />
+              </ListItem>
+            ))}
+            {selectedFaces.length > 5 && (
+              <ListItem>
+                <ListItemText primary={`... and ${selectedFaces.length - 5} more`} />
+              </ListItem>
+            )}
+          </List>
         </Paper>
+      )}
 
-        {/* Face Operations */}
-        {selectedFaces.length > 0 && (
-          <>
-            {/* Extrude */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Extrude Faces (E)
-              </Typography>
-              
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" gutterBottom>
-                  Distance: {extrudeDistance.toFixed(3)}
-                </Typography>
-                <Slider
-                  value={extrudeDistance}
-                  onChange={(event: Event, value: number | number[]) => setExtrudeDistance(value as number)}
-                  min={-2.0}
-                  max={2.0}
-                  step={0.01}
-                  size="small"
-                />
-              </Box>
-
-              <FormControl size="small" sx={{ mb: 2, minWidth: 120 }}>
-                <InputLabel>Direction</InputLabel>
-                <Select
-                  value={extrudeDirection}
-                  label="Direction"
-                  onChange={(e) => setExtrudeDirection(e.target.value as 'normal' | 'custom')}
-                >
-                  <MenuItem value="normal">Face Normal</MenuItem>
-                  <MenuItem value="custom">Custom Direction</MenuItem>
-                </Select>
-              </FormControl>
-
-              {extrudeDirection === 'custom' && (
-                <Grid container spacing={1} sx={{ mb: 2 }}>
-                  {(['X', 'Y', 'Z'] as const).map((axis, index) => (
-                    <Grid item xs={4} key={axis}>
-                      <TextField
-                        label={axis}
-                        type="number"
-                        size="small"
-                        value={customDirection[index]}
-                        onChange={(e) => {
-                          const newDir = [...customDirection] as [number, number, number];
-                          newDir[index] = parseFloat(e.target.value) || 0;
-                          setCustomDirection(newDir);
-                        }}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
-
-              <Box sx={{ mb: 2 }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={individualFaces}
-                      onChange={(e) => setIndividualFaces(e.target.checked)}
-                    />
-                  }
-                  label="Individual Faces"
-                />
-              </Box>
-
-              <Button
-                startIcon={<OpenInFull />}
-                onClick={handleExtrudeFaces}
-                variant="contained"
-                size="small"
-                color="primary"
-              >
-                Extrude ({selectedFaces.length} faces)
-              </Button>
-            </Paper>
-
-            {/* Inset */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Inset Faces (I)
-              </Typography>
-              
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" gutterBottom>
-                  Inset Distance: {insetDistance.toFixed(3)}
-                </Typography>
-                <Slider
-                  value={insetDistance}
-                  onChange={(event: Event, value: number | number[]) => setInsetDistance(value as number)}
-                  min={0.0}
-                  max={1.0}
-                  step={0.01}
-                  size="small"
-                />
-              </Box>
-
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" gutterBottom>
-                  Depth: {insetDepth.toFixed(3)}
-                </Typography>
-                <Slider
-                  value={insetDepth}
-                  onChange={(event: Event, value: number | number[]) => setInsetDepth(value as number)}
-                  min={-1.0}
-                  max={1.0}
-                  step={0.01}
-                  size="small"
-                />
-              </Box>
-
-              <Button
-                startIcon={<ZoomOut />}
-                onClick={handleInsetFaces}
-                variant="contained"
-                size="small"
-                color="primary"
-              >
-                Inset ({selectedFaces.length} faces)
-              </Button>
-            </Paper>
-
-            {/* Subdivide */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Subdivide Faces (Ctrl+R)
-              </Typography>
-              
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" gutterBottom>
-                  Cuts: {subdivisionCuts}
-                </Typography>
-                <Slider
-                  value={subdivisionCuts}
-                  onChange={(event: Event, value: number | number[]) => setSubdivisionCuts(value as number)}
-                  min={1}
-                  max={5}
-                  step={1}
-                  marks
-                  size="small"
-                />
-              </Box>
-
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" gutterBottom>
-                  Smoothness: {subdivisionSmooth.toFixed(2)}
-                </Typography>
-                <Slider
-                  value={subdivisionSmooth}
-                  onChange={(event: Event, value: number | number[]) => setSubdivisionSmooth(value as number)}
-                  min={0.0}
-                  max={1.0}
-                  step={0.1}
-                  size="small"
-                />
-              </Box>
-
-              <Button
-                startIcon={<CallSplit />}
-                onClick={handleSubdivideFaces}
-                variant="contained"
-                size="small"
-                color="secondary"
-              >
-                Subdivide ({selectedFaces.length} faces)
-              </Button>
-            </Paper>
-
-            {/* Utilities */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Face Utilities
-              </Typography>
-              
-              <Box display="flex" gap={1} flexWrap="wrap">
-                <Tooltip title="Flip Normals (Ctrl+F)">
-                  <Button
-                    startIcon={<Flip />}
-                    onClick={handleFlipNormals}
-                    size="small"
-                    variant="outlined"
-                  >
-                    Flip Normals
-                  </Button>
-                </Tooltip>
-              </Box>
-            </Paper>
-
-            {/* Selection Details */}
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Selection Details
-              </Typography>
-              <List dense>
-                {selectedFaces.slice(0, 5).map((face) => (
-                  <ListItem key={face.index} divider>
-                    <ListItemText
-                      primary={`Face ${face.index}`}
-                      secondary={`Vertices: ${face.vertices.length}, Normal: (${face.normal.map(n => n.toFixed(2)).join(', ')})`}
-                    />
-                  </ListItem>
-                ))}
-                {selectedFaces.length > 5 && (
-                  <ListItem>
-                    <ListItemText
-                      primary={`... and ${selectedFaces.length - 5} more faces`}
-                    />
-                  </ListItem>
-                )}
-              </List>
-            </Paper>
-          </>
-        )}
-
-        {/* Danger Zone */}
-        {selectedFaces.length > 0 && (
-          <Paper elevation={1} sx={{ p: 2, bgcolor: 'error.light', color: 'error.contrastText' }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Danger Zone
-            </Typography>
-            <Button
-              startIcon={<Delete />}
-              onClick={handleDeleteFaces}
-              variant="contained"
-              color="error"
-              size="small"
+      {/* Face Operations */}
+      <Paper sx={styles.card} elevation={0}>
+        <Typography sx={styles.sectionTitle}>Face Operations</Typography>
+        
+        {/* Extrude Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: '#e0e0e0' }}>
+            Extrude
+          </Typography>
+          
+          <TextField
+            label="Distance"
+            type="number"
+            size="small"
+            fullWidth
+            value={extrudeDistance}
+            onChange={(e) => setExtrudeDistance(parseFloat(e.target.value) || 0)}
+            inputProps={{ step: 0.1 }}
+            sx={{ mb: 1 }}
+          />
+          
+          <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+            <InputLabel>Direction</InputLabel>
+            <Select
+              value={extrudeDirection}
+              label="Direction"
+              onChange={(e) => setExtrudeDirection(e.target.value as 'normal' | 'custom')}
             >
-              Delete Selected Faces ({selectedFaces.length})
-            </Button>
-          </Paper>
-        )}
-      </CardContent>
-    </Card>
+              <MenuItem value="normal">Face Normal</MenuItem>
+              <MenuItem value="custom">Custom Direction</MenuItem>
+            </Select>
+          </FormControl>
+          
+          {extrudeDirection === 'custom' && (
+            <Grid container spacing={1} sx={{ mb: 1 }}>
+              <Grid item xs={4}>
+                <TextField
+                  label="X"
+                  type="number"
+                  size="small"
+                  value={customDirection[0]}
+                  onChange={(e) =>
+                    setCustomDirection([parseFloat(e.target.value) || 0, customDirection[1], customDirection[2]])
+                  }
+                  inputProps={{ step: 0.1 }}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  label="Y"
+                  type="number"
+                  size="small"
+                  value={customDirection[1]}
+                  onChange={(e) =>
+                    setCustomDirection([customDirection[0], parseFloat(e.target.value) || 0, customDirection[2]])
+                  }
+                  inputProps={{ step: 0.1 }}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  label="Z"
+                  type="number"
+                  size="small"
+                  value={customDirection[2]}
+                  onChange={(e) =>
+                    setCustomDirection([customDirection[0], customDirection[1], parseFloat(e.target.value) || 0])
+                  }
+                  inputProps={{ step: 0.1 }}
+                />
+              </Grid>
+            </Grid>
+          )}
+          
+          <FormControlLabel
+            control={
+              <Switch
+                checked={individualFaces}
+                onChange={(e) => setIndividualFaces(e.target.checked)}
+              />
+            }
+            label="Individual Faces"
+            sx={{ mb: 1 }}
+          />
+          
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<OpenInFull />}
+            onClick={handleExtrudeFaces}
+            disabled={selectedFaces.length === 0}
+            sx={styles.operationButton}
+          >
+            Extrude Selected (E)
+          </Button>
+        </Box>
+
+        <Divider sx={{ mb: 2 }} />
+
+        {/* Inset Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: '#e0e0e0' }}>
+            Inset
+          </Typography>
+          
+          <Grid container spacing={1} sx={{ mb: 1 }}>
+            <Grid item xs={6}>
+              <TextField
+                label="Distance"
+                type="number"
+                size="small"
+                value={insetDistance}
+                onChange={(e) => setInsetDistance(parseFloat(e.target.value) || 0)}
+                inputProps={{ step: 0.01, min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Depth"
+                type="number"
+                size="small"
+                value={insetDepth}
+                onChange={(e) => setInsetDepth(parseFloat(e.target.value) || 0)}
+                inputProps={{ step: 0.01 }}
+              />
+            </Grid>
+          </Grid>
+          
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<ZoomOut />}
+            onClick={handleInsetFaces}
+            disabled={selectedFaces.length === 0}
+            sx={styles.operationButton}
+          >
+            Inset Selected (I)
+          </Button>
+        </Box>
+
+        <Divider sx={{ mb: 2 }} />
+
+        {/* Subdivide Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: '#e0e0e0' }}>
+            Subdivide
+          </Typography>
+          
+          <Typography variant="caption" color="textSecondary">
+            Cuts: {subdivisionCuts}
+          </Typography>
+          <Slider
+            value={subdivisionCuts}
+            onChange={(_, newValue) => setSubdivisionCuts(newValue as number)}
+            min={1}
+            max={5}
+            step={1}
+            marks
+            valueLabelDisplay="auto"
+            sx={{ mb: 1 }}
+          />
+          
+          <Typography variant="caption" color="textSecondary">
+            Smoothness: {subdivisionSmooth.toFixed(2)}
+          </Typography>
+          <Slider
+            value={subdivisionSmooth}
+            onChange={(_, newValue) => setSubdivisionSmooth(newValue as number)}
+            min={0}
+            max={1}
+            step={0.1}
+            valueLabelDisplay="auto"
+            sx={{ mb: 2 }}
+          />
+          
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<CallSplit />}
+            onClick={handleSubdivideFaces}
+            disabled={selectedFaces.length === 0}
+            sx={styles.operationButton}
+          >
+            Subdivide Selected
+          </Button>
+        </Box>
+
+        <Divider sx={{ mb: 2 }} />
+
+        {/* Delete Section */}
+        <Button
+          variant="contained"
+          color="error"
+          fullWidth
+          startIcon={<Delete />}
+          onClick={handleDeleteFaces}
+          disabled={selectedFaces.length === 0}
+          sx={styles.operationButton}
+        >
+          Delete Selected (X)
+        </Button>
+      </Paper>
+
+      {/* Quick Actions */}
+      <Paper sx={styles.card} elevation={0}>
+        <Typography sx={styles.sectionTitle}>Quick Actions</Typography>
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+          Keyboard shortcuts for faster workflow
+        </Typography>
+        
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Chip label="E - Extrude" size="small" variant="outlined" />
+          <Chip label="I - Inset" size="small" variant="outlined" />
+          <Chip label="X - Delete" size="small" variant="outlined" />
+          <Chip label="Ctrl+A - Select All" size="small" variant="outlined" />
+          <Chip label="Alt+A - Deselect" size="small" variant="outlined" />
+        </Box>
+      </Paper>
+    </Box>
   );
 };
 

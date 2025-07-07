@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import createSagaMiddleware from 'redux-saga';
 import modelReducer from './slices/modelSlice';
 import uiReducer from './slices/uiSlice';
+import meshReducer from './slices/meshSlice';
 import rootSaga from './sagas/modelSagas';
 import { RootState } from '../types';
 
@@ -13,6 +14,7 @@ const store = configureStore({
   reducer: {
     models: modelReducer,
     ui: uiReducer,
+    mesh: meshReducer,
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware({

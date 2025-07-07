@@ -108,7 +108,7 @@ const EditorToolbar: React.FC = () => {
           break;
         case "v":
           event.preventDefault();
-          dispatch(pasteModels());
+          dispatch(pasteModels([0, 0, 0]));
           break;
         case "s":
           event.preventDefault();
@@ -212,20 +212,22 @@ const EditorToolbar: React.FC = () => {
         </Typography>
         <Box sx={styles.buttonGroup}>
           <Tooltip title="Copy (Ctrl+C)">
-            <IconButton
-              size="small"
-              onClick={() => dispatch(copyModels(selectedModelIds))}
-              disabled={selectedModelIds.length === 0}
-              sx={styles.iconButton}
-              className="hover-lift"
-            >
-              <ContentCopy fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => dispatch(copyModels(selectedModelIds))}
+                disabled={selectedModelIds.length === 0}
+                sx={styles.iconButton}
+                className="hover-lift"
+              >
+                <ContentCopy fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
           <Tooltip title="Paste (Ctrl+V)">
             <IconButton
               size="small"
-              onClick={() => dispatch(pasteModels())}
+              onClick={() => dispatch(pasteModels([0, 0, 0]))}
               sx={styles.iconButton}
               className="hover-lift"
             >

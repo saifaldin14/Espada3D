@@ -44,7 +44,7 @@ export const useModels = () => {
   }, [dispatch]);
   
   const duplicateModelById = useCallback((id: string) => {
-    dispatch(duplicateModel(id));
+    dispatch(duplicateModel({ id }));
   }, [dispatch]);
   
   const selectModelById = useCallback((id: string | null) => {

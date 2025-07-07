@@ -513,7 +513,7 @@ const ModelEditor: React.FC = () => {
             <Grid item xs={6}>
               <Tooltip title="Paste (Ctrl+V)">
                 <IconButton
-                  onClick={() => dispatch(pasteModels())}
+                  onClick={() => dispatch(pasteModels([0, 0, 0]))}
                   size="small"
                   sx={styles.actionButton}
                 >
@@ -523,26 +523,32 @@ const ModelEditor: React.FC = () => {
             </Grid>
             <Grid item xs={6}>
               <Tooltip title="Duplicate">
-                <IconButton
-                  onClick={() => dispatch(duplicateModel(selectedModelId))}
-                  size="small"
-                  sx={styles.actionButton}
-                  disabled={locked}
-                >
-                  <FileCopy />
-                </IconButton>
+                <span>
+                  <IconButton
+                    onClick={() =>
+                      dispatch(duplicateModel({ id: selectedModelId }))
+                    }
+                    size="small"
+                    sx={styles.actionButton}
+                    disabled={locked}
+                  >
+                    <FileCopy />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Grid>
             <Grid item xs={6}>
               <Tooltip title="Delete">
-                <IconButton
-                  onClick={() => dispatch(removeModel(selectedModelId))}
-                  size="small"
-                  sx={{ ...styles.actionButton, color: "error.main" }}
-                  disabled={locked}
-                >
-                  <Delete />
-                </IconButton>
+                <span>
+                  <IconButton
+                    onClick={() => dispatch(removeModel(selectedModelId))}
+                    size="small"
+                    sx={{ ...styles.actionButton, color: "error.main" }}
+                    disabled={locked}
+                  >
+                    <Delete />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Grid>
           </Grid>
