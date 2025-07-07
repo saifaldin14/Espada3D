@@ -162,7 +162,7 @@ const Canvas3D: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div style={{ position: "relative", width: "100%", height: "100%" }}>
         <Canvas
           camera={{
             position: [...APP_CONFIG.SCENE.DEFAULT_CAMERA_POSITION],
@@ -193,7 +193,7 @@ const Canvas3D: React.FC = () => {
             </GizmoHelper>
           </ModelProvider>
         </Canvas>
-        
+
         {/* Selection Mode Indicator */}
         <SelectionModeIndicator />
       </div>

@@ -1,10 +1,19 @@
-import React, { useRef, useEffect, useCallback, useMemo, useState } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useSelector } from "react-redux";
 import * as THREE from "three";
 import { RootState } from "../../store";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
-import { SelectionMaterialManager, getSelectionMaterial } from "../../utils/selectionMaterials";
+import {
+  SelectionMaterialManager,
+  getSelectionMaterial,
+} from "../../utils/selectionMaterials";
 import { SelectionUtils } from "../../utils/selectionUtils";
 import BoxSelection from "./BoxSelection";
 
@@ -30,7 +39,10 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   const meshRef = useRef<THREE.Mesh>(null);
   const geometryRef = useRef<THREE.BufferGeometry>(originalGeometry.clone());
   const helperGroupRef = useRef<THREE.Group>(null);
-  const [hoveredElement, setHoveredElement] = useState<{ type: string; index: number } | null>(null);
+  const [hoveredElement, setHoveredElement] = useState<{
+    type: string;
+    index: number;
+  } | null>(null);
 
   const { camera, scene } = useThree();
 
@@ -52,20 +64,20 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
 
   // Initialize mesh data from geometry on first load
   useEffect(() => {
-    console.log('MeshEditableModel: Checking initialization', {
+    console.log("MeshEditableModel: Checking initialization", {
       hasEditMode: ["vertex", "edge", "face"].includes(editMode),
       editMode,
       hasMeshData: !!meshData,
       modelId,
-      geometryUuid: geometryRef.current.uuid
+      geometryUuid: geometryRef.current.uuid,
     });
 
     if (!meshData && ["vertex", "edge", "face"].includes(editMode)) {
-      console.log('MeshEditableModel: Initializing mesh data for', modelId);
+      console.log("MeshEditableModel: Initializing mesh data for", modelId);
       try {
         initializeMesh(geometryRef.current);
       } catch (error) {
-        console.error('MeshEditableModel: Failed to initialize mesh:', error);
+        console.error("MeshEditableModel: Failed to initialize mesh:", error);
       }
     }
   }, [editMode, meshData, initializeMesh, modelId]);
@@ -82,7 +94,7 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
 
   // Create helper geometries for visualization with improved materials
   const helpers = useMemo(() => {
-    console.log('MeshEditableModel: Creating helpers', {
+    console.log("MeshEditableModel: Creating helpers", {
       hasMeshData: !!meshData,
       editMode,
       currentSubObjectType,
@@ -104,14 +116,24 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
     if (currentSubObjectType === "vertex" || editMode === "vertex") {
       meshData.vertices.forEach((vertex) => {
         const sphereGeometry = new THREE.SphereGeometry(0.03, 8, 6);
-        const isHovered = hoveredElement?.type === "vertex" && hoveredElement.index === vertex.index;
-        const materialType = getSelectionMaterial('vertex', { 
-          selected: vertex.selected, 
-          hover: isHovered 
-        }, materials);
-        
+        const isHovered =
+          hoveredElement?.type === "vertex" &&
+          hoveredElement.index === vertex.index;
+        const materialType = getSelectionMaterial(
+          "vertex",
+          {
+            selected: vertex.selected,
+            hover: isHovered,
+          },
+          materials
+        );
+
         const sphere = new THREE.Mesh(sphereGeometry, materialType);
-        sphere.position.set(vertex.position[0], vertex.position[1], vertex.position[2]);
+        sphere.position.set(
+          vertex.position[0],
+          vertex.position[1],
+          vertex.position[2]
+        );
         sphere.userData = { type: "vertex", index: vertex.index };
         sphere.renderOrder = 1000;
         vertexHelpers.push(sphere);
@@ -125,19 +147,37 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
         const v2 = meshData.vertices[edge.vertices[1]];
 
         if (v1 && v2) {
-          const start = new THREE.Vector3(v1.position[0], v1.position[1], v1.position[2]);
-          const end = new THREE.Vector3(v2.position[0], v2.position[1], v2.position[2]);
+          const start = new THREE.Vector3(
+            v1.position[0],
+            v1.position[1],
+            v1.position[2]
+          );
+          const end = new THREE.Vector3(
+            v2.position[0],
+            v2.position[1],
+            v2.position[2]
+          );
           const direction = end.clone().sub(start);
           const length = direction.length();
           const center = start.clone().add(end).multiplyScalar(0.5);
 
-          const cylinderGeometry = new THREE.CylinderGeometry(0.01, 0.01, length);
-          const isHovered = hoveredElement?.type === "edge" && hoveredElement.index === edge.index;
-          const materialType = getSelectionMaterial('edge', { 
-            selected: edge.selected, 
-            hover: isHovered 
-          }, materials);
-          
+          const cylinderGeometry = new THREE.CylinderGeometry(
+            0.01,
+            0.01,
+            length
+          );
+          const isHovered =
+            hoveredElement?.type === "edge" &&
+            hoveredElement.index === edge.index;
+          const materialType = getSelectionMaterial(
+            "edge",
+            {
+              selected: edge.selected,
+              hover: isHovered,
+            },
+            materials
+          );
+
           const cylinder = new THREE.Mesh(cylinderGeometry, materialType);
 
           // Align cylinder with edge direction
@@ -162,7 +202,11 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
         // Create face vertices
         face.vertices.forEach((vertexIndex, i) => {
           const vertex = meshData.vertices[vertexIndex];
-          positions.push(vertex.position[0], vertex.position[1], vertex.position[2]);
+          positions.push(
+            vertex.position[0],
+            vertex.position[1],
+            vertex.position[2]
+          );
           if (i > 1) {
             // Create triangles for face (fan triangulation)
             indices.push(0, i - 1, i);
@@ -175,14 +219,20 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
         );
         faceGeometry.setIndex(indices);
 
-        const isHovered = hoveredElement?.type === "face" && hoveredElement.index === face.index;
+        const isHovered =
+          hoveredElement?.type === "face" &&
+          hoveredElement.index === face.index;
 
         // Show face highlight if selected
         if (face.selected) {
-          const faceMaterial = getSelectionMaterial('face', { 
-            selected: true, 
-            hover: isHovered 
-          }, materials);
+          const faceMaterial = getSelectionMaterial(
+            "face",
+            {
+              selected: true,
+              hover: isHovered,
+            },
+            materials
+          );
 
           const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
           faceMesh.userData = { type: "face", index: face.index };
@@ -192,9 +242,14 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
 
         // Always show wireframe edge for visibility
         const wireframeGeometry = new THREE.WireframeGeometry(faceGeometry);
-        const wireframeMaterial = face.selected ? materials.face.wireframeSelected : materials.face.wireframe;
-        
-        const wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+        const wireframeMaterial = face.selected
+          ? materials.face.wireframeSelected
+          : materials.face.wireframe;
+
+        const wireframe = new THREE.LineSegments(
+          wireframeGeometry,
+          wireframeMaterial
+        );
         wireframe.userData = { type: "face", index: face.index };
         wireframe.renderOrder = 1000;
         faceHelpers.push(wireframe);
@@ -229,8 +284,14 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
           mode = "add";
         } else if (isCtrlPressed) {
           // Ctrl/Cmd for toggle
-          const currentElement = meshData[userData.type === 'vertex' ? 'vertices' : 
-                                          userData.type === 'edge' ? 'edges' : 'faces']?.[userData.index];
+          const currentElement =
+            meshData[
+              userData.type === "vertex"
+                ? "vertices"
+                : userData.type === "edge"
+                ? "edges"
+                : "faces"
+            ]?.[userData.index];
           mode = currentElement?.selected ? "remove" : "add";
         }
 
@@ -244,7 +305,7 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   const handlePointerOver = useCallback(
     (event: any) => {
       if (!meshData || !["vertex", "edge", "face"].includes(editMode)) return;
-      
+
       const intersectedObject = event.object;
       const userData = intersectedObject?.userData;
 
@@ -256,16 +317,17 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
     [meshData, editMode, currentSubObjectType]
   );
 
-  const handlePointerOut = useCallback(
-    (event: any) => {
-      setHoveredElement(null);
-    },
-    []
-  );
+  const handlePointerOut = useCallback((event: any) => {
+    setHoveredElement(null);
+  }, []);
 
   // Box selection handler
   const handleBoxSelect = useCallback(
-    (startNDC: THREE.Vector2, endNDC: THREE.Vector2, mode: 'set' | 'add' | 'remove' = 'set') => {
+    (
+      startNDC: THREE.Vector2,
+      endNDC: THREE.Vector2,
+      mode: "set" | "add" | "remove" = "set"
+    ) => {
       if (!meshData || !meshRef.current) return;
 
       const modelMatrix = meshRef.current.matrixWorld;
@@ -277,9 +339,15 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
         modelMatrix
       );
 
-      const indices = result[currentSubObjectType === 'vertex' ? 'vertices' : 
-                            currentSubObjectType === 'edge' ? 'edges' : 'faces'];
-      
+      const indices =
+        result[
+          currentSubObjectType === "vertex"
+            ? "vertices"
+            : currentSubObjectType === "edge"
+            ? "edges"
+            : "faces"
+        ];
+
       if (indices.length > 0) {
         selectElements(currentSubObjectType, indices, mode);
       }
@@ -297,48 +365,51 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       />
-      
+
       {/* Box Selection Component */}
-      <BoxSelection 
+      <BoxSelection
         onBoxSelect={handleBoxSelect}
         isActive={["vertex", "edge", "face"].includes(editMode)}
       />
-      
+
       {/* Helper geometries for sub-object visualization */}
       {["vertex", "edge", "face"].includes(editMode) && (
         <group ref={helperGroupRef}>
           {/* Render vertex helpers */}
-          {currentSubObjectType === "vertex" && helpers.vertices.map((helper, index) => (
-            <primitive
-              key={`vertex-${helper.userData.index}`}
-              object={helper}
-              onPointerDown={handlePointerDown}
-              onPointerOver={handlePointerOver}
-              onPointerOut={handlePointerOut}
-            />
-          ))}
-          
+          {currentSubObjectType === "vertex" &&
+            helpers.vertices.map((helper, index) => (
+              <primitive
+                key={`vertex-${helper.userData.index}`}
+                object={helper}
+                onPointerDown={handlePointerDown}
+                onPointerOver={handlePointerOver}
+                onPointerOut={handlePointerOut}
+              />
+            ))}
+
           {/* Render edge helpers */}
-          {currentSubObjectType === "edge" && helpers.edges.map((helper, index) => (
-            <primitive
-              key={`edge-${helper.userData.index}`}
-              object={helper}
-              onPointerDown={handlePointerDown}
-              onPointerOver={handlePointerOver}
-              onPointerOut={handlePointerOut}
-            />
-          ))}
-          
+          {currentSubObjectType === "edge" &&
+            helpers.edges.map((helper, index) => (
+              <primitive
+                key={`edge-${helper.userData.index}`}
+                object={helper}
+                onPointerDown={handlePointerDown}
+                onPointerOver={handlePointerOver}
+                onPointerOut={handlePointerOut}
+              />
+            ))}
+
           {/* Render face helpers */}
-          {currentSubObjectType === "face" && helpers.faces.map((helper, index) => (
-            <primitive
-              key={`face-${helper.userData.index}-${index}`}
-              object={helper}
-              onPointerDown={handlePointerDown}
-              onPointerOver={handlePointerOver}
-              onPointerOut={handlePointerOut}
-            />
-          ))}
+          {currentSubObjectType === "face" &&
+            helpers.faces.map((helper, index) => (
+              <primitive
+                key={`face-${helper.userData.index}-${index}`}
+                object={helper}
+                onPointerDown={handlePointerDown}
+                onPointerOver={handlePointerOver}
+                onPointerOut={handlePointerOut}
+              />
+            ))}
         </group>
       )}
     </group>

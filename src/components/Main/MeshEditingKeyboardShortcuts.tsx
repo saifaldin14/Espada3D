@@ -1,7 +1,11 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { setEditMode, setCurrentSubObjectType, setSubObjectSelectionMode } from "../../store/slices/uiSlice";
+import {
+  setEditMode,
+  setCurrentSubObjectType,
+  setSubObjectSelectionMode,
+} from "../../store/slices/uiSlice";
 import { selectSubObjects } from "../../store/slices/uiSlice";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
 
@@ -24,7 +28,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
     growSelection,
     shrinkSelection,
     deleteSelectedElements,
-  } = useMeshEditor(selectedModelId || '');
+  } = useMeshEditor(selectedModelId || "");
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -80,28 +84,28 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       // Tab cycling through edit modes
       if (event.key === "Tab" && !event.ctrlKey && !event.altKey) {
         event.preventDefault();
-        if (editMode === 'model') {
-          dispatch(setEditMode('vertex'));
-          dispatch(setCurrentSubObjectType('vertex'));
-        } else if (editMode === 'vertex') {
-          dispatch(setEditMode('edge'));
-          dispatch(setCurrentSubObjectType('edge'));
-        } else if (editMode === 'edge') {
-          dispatch(setEditMode('face'));
-          dispatch(setCurrentSubObjectType('face'));
-        } else if (editMode === 'face') {
-          dispatch(setEditMode('model'));
+        if (editMode === "model") {
+          dispatch(setEditMode("vertex"));
+          dispatch(setCurrentSubObjectType("vertex"));
+        } else if (editMode === "vertex") {
+          dispatch(setEditMode("edge"));
+          dispatch(setCurrentSubObjectType("edge"));
+        } else if (editMode === "edge") {
+          dispatch(setEditMode("face"));
+          dispatch(setCurrentSubObjectType("face"));
+        } else if (editMode === "face") {
+          dispatch(setEditMode("model"));
         }
         return;
       }
 
       // Only handle mesh editing shortcuts when in mesh editing mode
-      if (!['vertex', 'edge', 'face'].includes(editMode)) {
+      if (!["vertex", "edge", "face"].includes(editMode)) {
         return;
       }
 
       // Selection shortcuts
-      if (event.key === 'a' && (event.ctrlKey || event.metaKey)) {
+      if (event.key === "a" && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         if (event.shiftKey) {
           // Ctrl+Shift+A: Deselect all
@@ -114,64 +118,103 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // Alt+A: Deselect all (alternative)
-      if (event.key === 'a' && event.altKey && !event.ctrlKey && !event.metaKey) {
+      if (
+        event.key === "a" &&
+        event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey
+      ) {
         event.preventDefault();
         deselectAll(currentSubObjectType);
         return;
       }
 
       // Selection growing/shrinking
-      if ((event.key === '+' || event.key === '=' || event.key === 'NumpadAdd') && event.shiftKey) {
+      if (
+        (event.key === "+" || event.key === "=" || event.key === "NumpadAdd") &&
+        event.shiftKey
+      ) {
         event.preventDefault();
         growSelection(currentSubObjectType);
         return;
       }
 
-      if ((event.key === '-' || event.key === '_' || event.key === 'NumpadSubtract') && event.shiftKey) {
+      if (
+        (event.key === "-" ||
+          event.key === "_" ||
+          event.key === "NumpadSubtract") &&
+        event.shiftKey
+      ) {
         event.preventDefault();
         shrinkSelection(currentSubObjectType);
         return;
       }
 
       // Delete selected elements
-      if ((event.key === 'Delete' || event.key === 'Backspace') && (event.ctrlKey || event.metaKey)) {
+      if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        (event.ctrlKey || event.metaKey)
+      ) {
         event.preventDefault();
         deleteSelectedElements();
         return;
       }
 
       // Selection mode toggles
-      if (event.key === 'b' && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+      if (
+        event.key === "b" &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
         event.preventDefault();
-        dispatch(setSubObjectSelectionMode('box'));
+        dispatch(setSubObjectSelectionMode("box"));
         return;
       }
 
       // Invert selection (Ctrl+Shift+I)
-      if (event.key === 'i' && (event.ctrlKey || event.metaKey) && event.shiftKey) {
+      if (
+        event.key === "i" &&
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey
+      ) {
         event.preventDefault();
         if (meshEditData) {
-          const elements = meshEditData[currentSubObjectType === 'vertex' ? 'vertices' :
-                                       currentSubObjectType === 'edge' ? 'edges' : 'faces'] || [];
+          const elements =
+            meshEditData[
+              currentSubObjectType === "vertex"
+                ? "vertices"
+                : currentSubObjectType === "edge"
+                ? "edges"
+                : "faces"
+            ] || [];
           const invertedIndices = elements
-            .map((element: any, index: number) => element.selected ? -1 : index)
+            .map((element: any, index: number) =>
+              element.selected ? -1 : index
+            )
             .filter((index: number) => index >= 0);
-          
-          dispatch(selectSubObjects({
-            modelId: selectedModelId,
-            type: currentSubObjectType,
-            indices: invertedIndices,
-            mode: 'set',
-          }));
+
+          dispatch(
+            selectSubObjects({
+              modelId: selectedModelId,
+              type: currentSubObjectType,
+              indices: invertedIndices,
+              mode: "set",
+            })
+          );
         }
         return;
       }
 
       // Select linked/connected (Ctrl+L)
-      if (event.key === 'l' && (event.ctrlKey || event.metaKey) && !event.shiftKey) {
+      if (
+        event.key === "l" &&
+        (event.ctrlKey || event.metaKey) &&
+        !event.shiftKey
+      ) {
         event.preventDefault();
         // TODO: Implement select linked/connected functionality
-        console.log('Select linked not yet implemented');
+        console.log("Select linked not yet implemented");
         return;
       }
 
@@ -238,8 +281,18 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [dispatch, editMode, selectedModelId, meshEditData, currentSubObjectType,
-      selectAll, deselectAll, growSelection, shrinkSelection, deleteSelectedElements]);
+  }, [
+    dispatch,
+    editMode,
+    selectedModelId,
+    meshEditData,
+    currentSubObjectType,
+    selectAll,
+    deselectAll,
+    growSelection,
+    shrinkSelection,
+    deleteSelectedElements,
+  ]);
 
   return null; // This component doesn't render anything
 };
