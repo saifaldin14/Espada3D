@@ -48,10 +48,23 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
 
   // Initialize mesh data from geometry on first load
   useEffect(() => {
+    console.log("MeshEditableModel: Checking initialization", {
+      hasEditMode: ["vertex", "edge", "face"].includes(editMode),
+      editMode,
+      hasMeshData: !!meshData,
+      modelId,
+      geometryUuid: geometryRef.current.uuid,
+    });
+
     if (!meshData && ["vertex", "edge", "face"].includes(editMode)) {
-      initializeMesh(geometryRef.current);
+      console.log("MeshEditableModel: Initializing mesh data for", modelId);
+      try {
+        initializeMesh(geometryRef.current);
+      } catch (error) {
+        console.error("MeshEditableModel: Failed to initialize mesh:", error);
+      }
     }
-  }, [editMode, meshData, initializeMesh]);
+  }, [editMode, meshData, initializeMesh, modelId]);
 
   // Apply pending operations to geometry
   useEffect(() => {
@@ -65,6 +78,15 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
 
   // Create helper geometries for visualization
   const helpers = useMemo(() => {
+    console.log("MeshEditableModel: Creating helpers", {
+      hasMeshData: !!meshData,
+      editMode,
+      currentSubObjectType,
+      vertexCount: meshData?.vertices?.length || 0,
+      edgeCount: meshData?.edges?.length || 0,
+      faceCount: meshData?.faces?.length || 0,
+    });
+
     if (!meshData || !["vertex", "edge", "face"].includes(editMode)) {
       return { vertices: [], edges: [], faces: [] };
     }
@@ -80,11 +102,14 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
         const material = new THREE.MeshBasicMaterial({
           color: vertex.selected ? 0xff4444 : 0x888888,
           transparent: true,
-          opacity: vertex.selected ? 1.0 : 0.6,
+          opacity: vertex.selected ? 1.0 : 0.8,
+          depthTest: false,
+          depthWrite: false,
         });
         const sphere = new THREE.Mesh(sphereGeometry, material);
         sphere.position.set(...vertex.position);
         sphere.userData = { type: "vertex", index: vertex.index };
+        sphere.renderOrder = 1000; // Render on top
         vertexHelpers.push(sphere);
       });
     }
@@ -110,7 +135,9 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
           const material = new THREE.MeshBasicMaterial({
             color: edge.selected ? 0x44ff44 : 0x666666,
             transparent: true,
-            opacity: edge.selected ? 1.0 : 0.6,
+            opacity: edge.selected ? 1.0 : 0.8,
+            depthTest: false,
+            depthWrite: false,
           });
           const cylinder = new THREE.Mesh(cylinderGeometry, material);
 
@@ -118,6 +145,7 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
           cylinder.position.copy(center);
           cylinder.lookAt(end);
           cylinder.rotateX(Math.PI / 2);
+          cylinder.renderOrder = 1000; // Render on top
 
           cylinder.userData = { type: "edge", index: edge.index };
           edgeHelpers.push(cylinder);
@@ -128,51 +156,60 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
     // Face helpers (wireframe outlines)
     if (currentSubObjectType === "face" || editMode === "face") {
       meshData.faces.forEach((face) => {
+        const faceGeometry = new THREE.BufferGeometry();
+        const positions: number[] = [];
+        const indices: number[] = [];
+
+        // Create face vertices
+        face.vertices.forEach((vertexIndex, i) => {
+          const vertex = meshData.vertices[vertexIndex];
+          positions.push(...vertex.position);
+          if (i > 1) {
+            // Create triangles for face (fan triangulation)
+            indices.push(0, i - 1, i);
+          }
+        });
+
+        faceGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(positions, 3)
+        );
+        faceGeometry.setIndex(indices);
+
+        // Show face highlight if selected
         if (face.selected) {
-          const faceGeometry = new THREE.BufferGeometry();
-          const positions: number[] = [];
-          const indices: number[] = [];
-
-          // Create face vertices
-          face.vertices.forEach((vertexIndex, i) => {
-            const vertex = meshData.vertices[vertexIndex];
-            positions.push(...vertex.position);
-            if (i > 1) {
-              // Create triangles for face (fan triangulation)
-              indices.push(0, i - 1, i);
-            }
-          });
-
-          faceGeometry.setAttribute(
-            "position",
-            new THREE.Float32BufferAttribute(positions, 3)
-          );
-          faceGeometry.setIndex(indices);
-
           const faceMaterial = new THREE.MeshBasicMaterial({
             color: 0x4444ff,
             transparent: true,
             opacity: 0.3,
             side: THREE.DoubleSide,
+            depthTest: false,
+            depthWrite: false,
           });
 
           const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
           faceMesh.userData = { type: "face", index: face.index };
+          faceMesh.renderOrder = 999; // Render slightly below edges/vertices
           faceHelpers.push(faceMesh);
-
-          // Also create wireframe edge
-          const wireframeGeometry = new THREE.WireframeGeometry(faceGeometry);
-          const wireframeMaterial = new THREE.LineBasicMaterial({
-            color: 0x6666ff,
-            linewidth: 2,
-          });
-          const wireframe = new THREE.LineSegments(
-            wireframeGeometry,
-            wireframeMaterial
-          );
-          wireframe.userData = { type: "face", index: face.index };
-          faceHelpers.push(wireframe);
         }
+
+        // Always show wireframe edge for visibility
+        const wireframeGeometry = new THREE.WireframeGeometry(faceGeometry);
+        const wireframeMaterial = new THREE.LineBasicMaterial({
+          color: face.selected ? 0x6666ff : 0x444444,
+          linewidth: face.selected ? 3 : 1,
+          transparent: true,
+          opacity: face.selected ? 1.0 : 0.6,
+          depthTest: false,
+          depthWrite: false,
+        });
+        const wireframe = new THREE.LineSegments(
+          wireframeGeometry,
+          wireframeMaterial
+        );
+        wireframe.userData = { type: "face", index: face.index };
+        wireframe.renderOrder = 1000;
+        faceHelpers.push(wireframe);
       });
     }
 
@@ -186,37 +223,26 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
 
       event.stopPropagation();
 
-      // Use event intersections instead of manual raycasting
-      const intersects = event.intersections;
+      // Get the intersected object from the event
+      const intersectedObject = event.object;
+      const userData = intersectedObject?.userData;
 
-      if (intersects.length > 0) {
-        const intersectedObject = intersects[0].object;
-        const userData = intersectedObject.userData;
+      if (userData && userData.type === currentSubObjectType) {
+        const isShiftPressed = event.shiftKey;
+        const isCtrlPressed = event.ctrlKey;
 
-        if (userData && userData.type === currentSubObjectType) {
-          const isShiftPressed = event.shiftKey;
-          const isCtrlPressed = event.ctrlKey;
+        let mode: "set" | "add" | "remove" = "set";
 
-          let mode: "set" | "add" | "remove" = "set";
-
-          if (selectionMode === "multiple" || isShiftPressed) {
-            mode = "add";
-          } else if (isCtrlPressed) {
-            mode = "remove";
-          }
-
-          selectElements(currentSubObjectType, [userData.index], mode);
+        if (selectionMode === "multiple" || isShiftPressed) {
+          mode = "add";
+        } else if (isCtrlPressed) {
+          mode = "remove";
         }
+
+        selectElements(currentSubObjectType, [userData.index], mode);
       }
     },
-    [
-      meshData,
-      editMode,
-      currentSubObjectType,
-      selectionMode,
-      selectElements,
-      helpers,
-    ]
+    [meshData, editMode, currentSubObjectType, selectionMode, selectElements]
   );
 
   // Update helper group
@@ -225,14 +251,37 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
       // Clear existing helpers
       helperGroupRef.current.clear();
 
-      // Add new helpers
+      // Add new helpers with proper event handling
       [...helpers.vertices, ...helpers.edges, ...helpers.faces].forEach(
         (helper) => {
-          helperGroupRef.current!.add(helper);
+          // Ensure the helper has proper event handlers
+          if (helper.userData && helper.userData.type) {
+            helperGroupRef.current!.add(helper);
+          }
         }
       );
     }
   }, [helpers]);
+
+  // Create event handlers for helper objects
+  const createHelperWithEvents = useCallback(
+    (helper: THREE.Object3D) => {
+      // Clone the helper to avoid modifying the original
+      const helperWithEvents = helper.clone();
+
+      // Add pointer event handlers
+      const handleHelperPointerDown = (event: any) => {
+        event.stopPropagation();
+        handlePointerDown(event);
+      };
+
+      // Store the event handler reference
+      (helperWithEvents as any).onPointerDown = handleHelperPointerDown;
+
+      return helperWithEvents;
+    },
+    [handlePointerDown]
+  );
 
   return (
     <group position={position} rotation={rotation} scale={scale}>
@@ -244,7 +293,37 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
       />
       {/* Helper geometries for sub-object visualization */}
       {["vertex", "edge", "face"].includes(editMode) && (
-        <group ref={helperGroupRef} />
+        <group ref={helperGroupRef}>
+          {/* Render vertex helpers */}
+          {currentSubObjectType === "vertex" &&
+            helpers.vertices.map((helper, index) => (
+              <primitive
+                key={`vertex-${helper.userData.index}`}
+                object={helper}
+                onPointerDown={handlePointerDown}
+              />
+            ))}
+
+          {/* Render edge helpers */}
+          {currentSubObjectType === "edge" &&
+            helpers.edges.map((helper, index) => (
+              <primitive
+                key={`edge-${helper.userData.index}`}
+                object={helper}
+                onPointerDown={handlePointerDown}
+              />
+            ))}
+
+          {/* Render face helpers */}
+          {currentSubObjectType === "face" &&
+            helpers.faces.map((helper, index) => (
+              <primitive
+                key={`face-${helper.userData.index}-${index}`}
+                object={helper}
+                onPointerDown={handlePointerDown}
+              />
+            ))}
+        </group>
       )}
     </group>
   );

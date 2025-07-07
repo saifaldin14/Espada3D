@@ -3,26 +3,24 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as THREE from 'three';
 import { RootState } from '../store';
 import { 
-  initializeMeshData, 
-  updateMeshData, 
   addMeshOperation, 
   clearPendingOperations 
 } from '../store/slices/meshSlice';
-import { selectSubObjects } from '../store/slices/uiSlice';
+import { selectSubObjects, initializeMeshEditData } from '../store/slices/uiSlice';
 import { triggerMeshUpdate } from '../store/slices/modelSlice';
 import { MeshEditor } from '../utils/meshEditor';
 import { MeshEditData, Vector3Tuple, SubObjectType } from '../types';
 
 export const useMeshEditor = (modelId: string) => {
   const dispatch = useDispatch();
-  const meshData = useSelector((state: RootState) => state.mesh.meshData[modelId]);
+  const meshData = useSelector((state: RootState) => state.ui.meshEditData[modelId]);
   const pendingOperations = useSelector((state: RootState) => state.mesh.pendingOperations[modelId] || []);
 
   // Initialize mesh data from geometry
   const initializeMesh = useCallback((geometry: THREE.BufferGeometry) => {
     try {
       const extractedData = MeshEditor.extractMeshData(geometry, modelId);
-      dispatch(initializeMeshData(extractedData));
+      dispatch(initializeMeshEditData(extractedData));
       return extractedData;
     } catch (error) {
       console.error('Failed to initialize mesh data:', error);
@@ -128,8 +126,8 @@ export const useMeshEditor = (modelId: string) => {
     // Update the geometry with the modified mesh data
     MeshEditor.updateGeometryFromMeshData(geometry, currentMeshData);
     
-    // Update the mesh data in the store
-    dispatch(updateMeshData(currentMeshData));
+    // Update the mesh data in the store - using UI slice for consistency
+    dispatch(initializeMeshEditData(currentMeshData));
     
     // Clear processed operations
     dispatch(clearPendingOperations(modelId));
@@ -262,6 +260,7 @@ export const useMeshEditor = (modelId: string) => {
 
   // Selection operations
   const selectElements = useCallback((type: SubObjectType, indices: number[], mode: 'set' | 'add' | 'remove' = 'set') => {
+    // Update selection in UI store (which also updates mesh edit data)
     dispatch(selectSubObjects({ modelId, type, indices, mode }));
   }, [dispatch, modelId]);
 

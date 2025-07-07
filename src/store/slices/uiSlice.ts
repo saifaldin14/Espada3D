@@ -67,35 +67,48 @@ const uiSlice = createSlice({
     },
     selectSubObjects: (state, action: PayloadAction<SelectSubObjectPayload>) => {
       const { modelId, type, indices, mode } = action.payload;
+      
+      // Update selection in mesh data if it exists
       const meshData = state.meshEditData[modelId];
-      
-      if (!meshData) return;
-      
-      const targetArray = type === 'vertex' ? meshData.vertices : 
-                         type === 'edge' ? meshData.edges : 
-                         meshData.faces;
-      
-      if (mode === 'set') {
-        // Clear all selections first
-        targetArray.forEach(item => item.selected = false);
-        // Then select specified indices
-        indices.forEach(index => {
-          if (targetArray[index]) {
-            targetArray[index].selected = true;
-          }
-        });
-      } else if (mode === 'add') {
-        indices.forEach(index => {
-          if (targetArray[index]) {
-            targetArray[index].selected = true;
-          }
-        });
-      } else if (mode === 'remove') {
-        indices.forEach(index => {
-          if (targetArray[index]) {
-            targetArray[index].selected = false;
-          }
-        });
+      if (meshData) {
+        // Create new arrays with updated selection states instead of mutating
+        if (type === 'vertex') {
+          meshData.vertices = meshData.vertices.map((vertex, index) => {
+            const shouldSelect = indices.includes(index);
+            if (mode === 'set') {
+              return { ...vertex, selected: shouldSelect };
+            } else if (mode === 'add' && shouldSelect) {
+              return { ...vertex, selected: true };
+            } else if (mode === 'remove' && shouldSelect) {
+              return { ...vertex, selected: false };
+            }
+            return vertex;
+          });
+        } else if (type === 'edge') {
+          meshData.edges = meshData.edges.map((edge, index) => {
+            const shouldSelect = indices.includes(index);
+            if (mode === 'set') {
+              return { ...edge, selected: shouldSelect };
+            } else if (mode === 'add' && shouldSelect) {
+              return { ...edge, selected: true };
+            } else if (mode === 'remove' && shouldSelect) {
+              return { ...edge, selected: false };
+            }
+            return edge;
+          });
+        } else if (type === 'face') {
+          meshData.faces = meshData.faces.map((face, index) => {
+            const shouldSelect = indices.includes(index);
+            if (mode === 'set') {
+              return { ...face, selected: shouldSelect };
+            } else if (mode === 'add' && shouldSelect) {
+              return { ...face, selected: true };
+            } else if (mode === 'remove' && shouldSelect) {
+              return { ...face, selected: false };
+            }
+            return face;
+          });
+        }
       }
     },
     clearMeshEditData: (state, action: PayloadAction<string>) => {
