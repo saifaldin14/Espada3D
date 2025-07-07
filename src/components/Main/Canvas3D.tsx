@@ -14,6 +14,7 @@ import {
 } from "three";
 import { ModelProvider } from "./ModelContext";
 import SceneContent from "./SceneContent";
+import SelectionModeIndicator from "./SelectionModeIndicator";
 import ErrorBoundary from "../ErrorBoundary";
 import { useAppSelector } from "../../hooks/useRedux";
 import { setGeometryCache } from "../../store/slices/uiSlice";
@@ -161,36 +162,41 @@ const Canvas3D: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <Canvas
-        camera={{
-          position: [...APP_CONFIG.SCENE.DEFAULT_CAMERA_POSITION],
-          fov: 75,
-        }}
-        onCreated={({ gl }) => {
-          gl.setClearColor("#f0f0f0");
-        }}
-      >
-        <ModelProvider selectedModel={null}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} />
-          <directionalLight position={[-10, 10, 5]} intensity={0.3} />
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <Canvas
+          camera={{
+            position: [...APP_CONFIG.SCENE.DEFAULT_CAMERA_POSITION],
+            fov: 75,
+          }}
+          onCreated={({ gl }) => {
+            gl.setClearColor("#f0f0f0");
+          }}
+        >
+          <ModelProvider selectedModel={null}>
+            <ambientLight intensity={0.5} />
+            <pointLight position={[10, 10, 10]} />
+            <directionalLight position={[-10, 10, 5]} intensity={0.3} />
 
-          {showGrid && (
-            <gridHelper
-              args={[
-                APP_CONFIG.SCENE.DEFAULT_GRID_SIZE,
-                APP_CONFIG.SCENE.DEFAULT_GRID_SIZE,
-              ]}
-            />
-          )}
+            {showGrid && (
+              <gridHelper
+                args={[
+                  APP_CONFIG.SCENE.DEFAULT_GRID_SIZE,
+                  APP_CONFIG.SCENE.DEFAULT_GRID_SIZE,
+                ]}
+              />
+            )}
 
-          <SceneContent models={models} activeTool={activeTool} />
+            <SceneContent models={models} activeTool={activeTool} />
 
-          <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
-            <GizmoViewcube />
-          </GizmoHelper>
-        </ModelProvider>
-      </Canvas>
+            <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
+              <GizmoViewcube />
+            </GizmoHelper>
+          </ModelProvider>
+        </Canvas>
+        
+        {/* Selection Mode Indicator */}
+        <SelectionModeIndicator />
+      </div>
     </ErrorBoundary>
   );
 };
