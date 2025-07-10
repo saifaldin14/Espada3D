@@ -13,6 +13,7 @@ export class MeshEditor {
 
   /**
    * Extract mesh data from a Three.js geometry with full topology information
+   * Includes vertex welding to merge vertices at the same position
    */
   static extractMeshData(geometry: THREE.BufferGeometry, modelId: string): MeshEditData {
     const positionAttribute = geometry.getAttribute('position');
@@ -24,57 +25,86 @@ export class MeshEditor {
       throw new Error('Geometry has no position attribute');
     }
 
-    const vertices: VertexData[] = [];
-    const edges: EdgeData[] = [];
-    const faces: FaceData[] = [];
-
     // Clear topology maps
     this.vertexToEdges.clear();
     this.vertexToFaces.clear();
     this.edgeToFaces.clear();
     this.faceAdjacency.clear();
 
-    // Extract vertices with all attributes
+    // Step 1: Weld vertices by position (merge vertices at the same location)
+    const tolerance = 1e-6;
+    const positionToWeldedIndex = new Map<string, number>();
+    const originalToWeldedIndex = new Map<number, number>();
+    const vertices: VertexData[] = [];
+
     for (let i = 0; i < positionAttribute.count; i++) {
-      const vertex: VertexData = {
-        index: i, // IMPORTANT: Use the original geometry index
-        position: [
-          positionAttribute.getX(i),
-          positionAttribute.getY(i),
-          positionAttribute.getZ(i)
-        ],
-        selected: false
-      };
+      const x = positionAttribute.getX(i);
+      const y = positionAttribute.getY(i);
+      const z = positionAttribute.getZ(i);
+      
+      // Create a position key for welding (rounded to tolerance)
+      const posKey = `${Math.round(x / tolerance) * tolerance},${Math.round(y / tolerance) * tolerance},${Math.round(z / tolerance) * tolerance}`;
+      
+      let weldedIndex = positionToWeldedIndex.get(posKey);
+      
+      if (weldedIndex === undefined) {
+        // Create new welded vertex
+        weldedIndex = vertices.length;
+        const vertex: VertexData = {
+          index: weldedIndex,
+          position: [x, y, z],
+          selected: false
+        };
 
-      // Add normal if available
-      if (normalAttribute) {
-        vertex.normal = [
-          normalAttribute.getX(i),
-          normalAttribute.getY(i),
-          normalAttribute.getZ(i)
-        ];
+        // Add normal if available (use first occurrence)
+        if (normalAttribute) {
+          vertex.normal = [
+            normalAttribute.getX(i),
+            normalAttribute.getY(i),
+            normalAttribute.getZ(i)
+          ];
+        }
+
+        // Add UV if available (use first occurrence)
+        if (uvAttribute) {
+          vertex.uv = [uvAttribute.getX(i), uvAttribute.getY(i)];
+        }
+
+        vertices.push(vertex);
+        positionToWeldedIndex.set(posKey, weldedIndex);
+        
+        // Initialize topology maps for welded vertex
+        this.vertexToEdges.set(weldedIndex, new Set());
+        this.vertexToFaces.set(weldedIndex, new Set());
       }
-
-      // Add UV if available
-      if (uvAttribute) {
-        vertex.uv = [uvAttribute.getX(i), uvAttribute.getY(i)];
-      }
-
-      vertices.push(vertex);
-      this.vertexToEdges.set(i, new Set());
-      this.vertexToFaces.set(i, new Set());
+      
+      // Map original vertex index to welded vertex index
+      originalToWeldedIndex.set(i, weldedIndex);
     }
 
-    // Extract faces and build topology
+    const edges: EdgeData[] = [];
+    const faces: FaceData[] = [];
+
+    // Step 2: Extract faces using welded vertex indices and build topology
     if (indexAttribute) {
       const edgeMap = new Map<string, EdgeData>();
       
       for (let i = 0; i < indexAttribute.count; i += 3) {
-        const a = indexAttribute.getX(i);
-        const b = indexAttribute.getX(i + 1);
-        const c = indexAttribute.getX(i + 2);
+        const originalA = indexAttribute.getX(i);
+        const originalB = indexAttribute.getX(i + 1);
+        const originalC = indexAttribute.getX(i + 2);
         
-        // Calculate face normal
+        // Map to welded vertex indices
+        const a = originalToWeldedIndex.get(originalA)!;
+        const b = originalToWeldedIndex.get(originalB)!;
+        const c = originalToWeldedIndex.get(originalC)!;
+        
+        // Skip degenerate faces (where vertices are the same after welding)
+        if (a === b || b === c || c === a) {
+          continue;
+        }
+        
+        // Calculate face normal using welded vertex positions
         const va = new THREE.Vector3().fromArray(vertices[a].position);
         const vb = new THREE.Vector3().fromArray(vertices[b].position);
         const vc = new THREE.Vector3().fromArray(vertices[c].position);
@@ -164,65 +194,71 @@ export class MeshEditor {
 
   /**
    * Apply mesh data changes back to Three.js geometry with proper attribute updates
+   * Rebuilds the geometry to match the welded vertex structure
    */
   static updateGeometryFromMeshData(geometry: THREE.BufferGeometry, meshData: MeshEditData): void {
-    const positionAttribute = geometry.getAttribute('position');
-    const normalAttribute = geometry.getAttribute('normal');
-    const uvAttribute = geometry.getAttribute('uv');
-    
-    if (!positionAttribute) {
+    if (meshData.vertices.length === 0 || meshData.faces.length === 0) {
       return;
     }
 
-    // Clear any existing position data to prevent duplication
-    const newPositions = new Float32Array(positionAttribute.count * 3);
-    
-    // Update vertex positions from mesh data
-    meshData.vertices.forEach((vertex) => {
-      if (vertex.index < positionAttribute.count) {
-        const i = vertex.index * 3;
-        newPositions[i] = vertex.position[0];
-        newPositions[i + 1] = vertex.position[1];
-        newPositions[i + 2] = vertex.position[2];
+    // Create new geometry data based on the welded mesh structure
+    const vertexCount = meshData.faces.length * 3; // Each face has 3 vertices
+    const positions = new Float32Array(vertexCount * 3);
+    const normals = new Float32Array(vertexCount * 3);
+    const uvs = new Float32Array(vertexCount * 2);
+    const indices = new Uint16Array(vertexCount);
+
+    let vertexIndex = 0;
+
+    // Rebuild geometry from mesh data faces
+    meshData.faces.forEach((face) => {
+      face.vertices.forEach((weldedVertexIndex) => {
+        const vertex = meshData.vertices[weldedVertexIndex];
         
-        if (normalAttribute && vertex.normal && vertex.index < normalAttribute.count) {
-          normalAttribute.setXYZ(vertex.index, ...vertex.normal);
+        // Set position
+        const posIndex = vertexIndex * 3;
+        positions[posIndex] = vertex.position[0];
+        positions[posIndex + 1] = vertex.position[1];
+        positions[posIndex + 2] = vertex.position[2];
+        
+        // Set normal (use face normal if vertex normal not available)
+        const normalToUse = vertex.normal || face.normal;
+        normals[posIndex] = normalToUse[0];
+        normals[posIndex + 1] = normalToUse[1];
+        normals[posIndex + 2] = normalToUse[2];
+        
+        // Set UV (default to [0, 0] if not available)
+        const uvIndex = vertexIndex * 2;
+        if (vertex.uv) {
+          uvs[uvIndex] = vertex.uv[0];
+          uvs[uvIndex + 1] = vertex.uv[1];
+        } else {
+          uvs[uvIndex] = 0;
+          uvs[uvIndex + 1] = 0;
         }
         
-        if (uvAttribute && vertex.uv && vertex.index < uvAttribute.count) {
-          uvAttribute.setXY(vertex.index, ...vertex.uv);
-        }
-      }
+        // Set index
+        indices[vertexIndex] = vertexIndex;
+        
+        vertexIndex++;
+      });
     });
 
-    // Replace the entire position array to ensure no duplicates
-    positionAttribute.array.set(newPositions);
-    positionAttribute.needsUpdate = true;
-    
-    if (normalAttribute) {
-      normalAttribute.needsUpdate = true;
-    }
-    if (uvAttribute) {
-      uvAttribute.needsUpdate = true;
+    // Update geometry attributes
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+    // Mark all attributes as needing update
+    geometry.attributes.position.needsUpdate = true;
+    geometry.attributes.normal.needsUpdate = true;
+    geometry.attributes.uv.needsUpdate = true;
+    if (geometry.index) {
+      geometry.index.needsUpdate = true;
     }
 
-    const currentIndexCount = geometry.getIndex()?.count || 0;
-    const expectedIndexCount = meshData.faces.length * 3;
-    
-    if (currentIndexCount !== expectedIndexCount) {
-      const indexArray = new Uint32Array(meshData.faces.length * 3);
-      let indexOffset = 0;
-      
-      meshData.faces.forEach(face => {
-        face.vertices.forEach(vertexIndex => {
-          indexArray[indexOffset++] = vertexIndex;
-        });
-      });
-      
-      geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
-    }
-
-    geometry.computeVertexNormals();
+    // Recompute bounding box and sphere
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
   }
