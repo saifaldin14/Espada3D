@@ -20,7 +20,13 @@ export const useMeshEditor = (modelId: string) => {
   // Initialize mesh data from geometry
   const initializeMesh = useCallback((geometry: THREE.BufferGeometry) => {
     try {
+      console.log('useMeshEditor: Initializing mesh data for model', modelId);
       const extractedData = MeshEditor.extractMeshData(geometry, modelId);
+      console.log('useMeshEditor: Extracted mesh data:', {
+        vertices: extractedData.vertices.length,
+        edges: extractedData.edges.length,
+        faces: extractedData.faces.length
+      });
       dispatch(initializeMeshData(extractedData));
       return extractedData;
     } catch (error) {
@@ -33,11 +39,13 @@ export const useMeshEditor = (modelId: string) => {
   const applyOperations = useCallback((geometry: THREE.BufferGeometry) => {
     if (!meshData || pendingOperations.length === 0) return;
 
+    console.log('useMeshEditor: Applying', pendingOperations.length, 'operations');
     let currentMeshData = { ...meshData };
 
     // Apply each operation in sequence
     for (const operation of pendingOperations) {
       try {
+        console.log('useMeshEditor: Applying operation', operation.type);
         switch (operation.type) {
           case 'moveVertices':
             currentMeshData = MeshEditor.moveVertices(
@@ -124,9 +132,11 @@ export const useMeshEditor = (modelId: string) => {
       }
     }
 
+    console.log('useMeshEditor: Updating geometry from mesh data');
     // Update the geometry with the modified mesh data
     MeshEditor.updateGeometryFromMeshData(geometry, currentMeshData);
     
+    console.log('useMeshEditor: Updating mesh data in store');
     // Update the mesh data in the store - using UI slice for consistency
     dispatch(initializeMeshData(currentMeshData));
     
@@ -139,6 +149,7 @@ export const useMeshEditor = (modelId: string) => {
 
   // Mesh editing operations
   const moveVertices = useCallback((delta: Vector3Tuple, constraint?: string, pivot?: Vector3Tuple) => {
+    console.log('useMeshEditor: Move vertices operation', { delta, constraint, pivot });
     dispatch(addMeshOperation({
       modelId,
       operation: {

@@ -87,7 +87,19 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   // Apply pending operations to geometry
   useEffect(() => {
     if (meshData && pendingOperations.length > 0) {
+      console.log('MeshEditableModel: Applying operations', pendingOperations.length);
       applyOperations(geometryRef.current);
+      
+      // Force geometry update
+      if (meshRef.current) {
+        meshRef.current.geometry = geometryRef.current;
+        // Mark geometry attributes as needing update
+        const position = geometryRef.current.getAttribute('position');
+        const normal = geometryRef.current.getAttribute('normal');
+        if (position) position.needsUpdate = true;
+        if (normal) normal.needsUpdate = true;
+      }
+      
       if (onGeometryUpdate) {
         onGeometryUpdate(geometryRef.current);
       }
