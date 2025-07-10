@@ -5,6 +5,7 @@ import {
   setEditMode,
   setCurrentSubObjectType,
   setSubObjectSelectionMode,
+  setActiveTool,
 } from "../../store/slices/uiSlice";
 import { selectSubObjects } from "../../store/slices/uiSlice";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
@@ -12,6 +13,7 @@ import { useMeshEditor } from "../../hooks/useMeshEditor";
 const MeshEditingKeyboardShortcuts: React.FC = () => {
   const dispatch = useDispatch();
   const editMode = useSelector((state: RootState) => state.ui.editMode);
+  const activeTool = useSelector((state: RootState) => state.ui.activeTool);
   const selectedModelId = useSelector(
     (state: RootState) => state.models.selectedModelId
   );
@@ -28,6 +30,12 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
     growSelection,
     shrinkSelection,
     deleteSelectedElements,
+    extrudeFaces,
+    insetFaces,
+    bevelEdges,
+    loopCut,
+    subdivideFaces,
+    mergeVertices,
   } = useMeshEditor(selectedModelId || "");
 
   useEffect(() => {
@@ -44,7 +52,9 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
         return;
       }
 
-      // Mode switching shortcuts
+      // ====================== MODE SWITCHING ======================
+      
+      // Switch to vertex mode (1 key)
       if (
         event.key === "1" &&
         !event.ctrlKey &&
@@ -57,6 +67,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
         return;
       }
 
+      // Switch to edge mode (2 key)
       if (
         event.key === "2" &&
         !event.ctrlKey &&
@@ -69,6 +80,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
         return;
       }
 
+      // Switch to face mode (3 key)
       if (
         event.key === "3" &&
         !event.ctrlKey &&
@@ -99,202 +111,214 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
         return;
       }
 
-      // Only handle mesh editing shortcuts when in mesh editing mode
-      if (!["vertex", "edge", "face"].includes(editMode)) {
+      // ====================== TOOL SWITCHING ======================
+      
+      // Switch to translate tool (G key - Blender convention)
+      if (event.key === "g" || event.key === "G") {
+        event.preventDefault();
+        dispatch(setActiveTool("translate"));
         return;
       }
 
-      // Selection shortcuts
-      if (event.key === "a" && (event.ctrlKey || event.metaKey)) {
+      // Switch to rotate tool (R key - Blender convention)
+      if (event.key === "r" || event.key === "R") {
+        event.preventDefault();
+        dispatch(setActiveTool("rotate"));
+        return;
+      }
+
+      // Switch to scale tool (S key - Blender convention)
+      if (event.key === "s" || event.key === "S") {
+        event.preventDefault();
+        dispatch(setActiveTool("scale"));
+        return;
+      }
+
+      // ====================== SELECTION OPERATIONS ======================
+      
+      // Only handle selection shortcuts in mesh edit modes
+      if (!["vertex", "edge", "face"].includes(editMode)) return;
+
+      // Select all (A key - Blender convention)
+      if (event.key === "a" || event.key === "A") {
         event.preventDefault();
         if (event.shiftKey) {
-          // Ctrl+Shift+A: Deselect all
+          // Shift+A: Deselect all
           deselectAll(currentSubObjectType);
         } else {
-          // Ctrl+A: Select all
+          // A: Select all
           selectAll(currentSubObjectType);
         }
         return;
       }
 
       // Alt+A: Deselect all (alternative)
-      if (
-        event.key === "a" &&
-        event.altKey &&
-        !event.ctrlKey &&
-        !event.metaKey
-      ) {
+      if ((event.key === "a" || event.key === "A") && event.altKey) {
         event.preventDefault();
         deselectAll(currentSubObjectType);
         return;
       }
 
-      // Selection growing/shrinking
+      // Grow selection (Ctrl+NumPad+ or Ctrl+= - Blender convention)
       if (
-        (event.key === "+" || event.key === "=" || event.key === "NumpadAdd") &&
-        event.shiftKey
+        (event.key === "=" || event.key === "+") &&
+        event.ctrlKey &&
+        !event.shiftKey
       ) {
         event.preventDefault();
         growSelection(currentSubObjectType);
         return;
       }
 
+      // Shrink selection (Ctrl+NumPad- or Ctrl+- - Blender convention)
       if (
-        (event.key === "-" ||
-          event.key === "_" ||
-          event.key === "NumpadSubtract") &&
-        event.shiftKey
+        (event.key === "-" || event.key === "_") &&
+        event.ctrlKey &&
+        !event.shiftKey
       ) {
         event.preventDefault();
         shrinkSelection(currentSubObjectType);
         return;
       }
 
-      // Delete selected elements
-      if (
-        (event.key === "Delete" || event.key === "Backspace") &&
-        (event.ctrlKey || event.metaKey)
-      ) {
+      // ====================== MESH OPERATIONS ======================
+      
+      // Delete selected elements (X or Delete key - Blender convention)
+      if (event.key === "x" || event.key === "X" || event.key === "Delete") {
         event.preventDefault();
         deleteSelectedElements();
         return;
       }
 
-      // Selection mode toggles
-      if (
-        event.key === "b" &&
-        !event.ctrlKey &&
-        !event.shiftKey &&
-        !event.altKey
-      ) {
-        event.preventDefault();
-        dispatch(setSubObjectSelectionMode("box"));
-        return;
-      }
-
-      // Invert selection (Ctrl+Shift+I)
-      if (
-        event.key === "i" &&
-        (event.ctrlKey || event.metaKey) &&
-        event.shiftKey
-      ) {
-        event.preventDefault();
-        if (meshEditData) {
-          const elements =
-            meshEditData[
-              currentSubObjectType === "vertex"
-                ? "vertices"
-                : currentSubObjectType === "edge"
-                ? "edges"
-                : "faces"
-            ] || [];
-          const invertedIndices = elements
-            .map((element: any, index: number) =>
-              element.selected ? -1 : index
-            )
-            .filter((index: number) => index >= 0);
-
-          dispatch(
-            selectSubObjects({
-              modelId: selectedModelId,
-              type: currentSubObjectType,
-              indices: invertedIndices,
-              mode: "set",
-            })
-          );
-        }
-        return;
-      }
-
-      // Select linked/connected (Ctrl+L)
-      if (
-        event.key === "l" &&
-        (event.ctrlKey || event.metaKey) &&
-        !event.shiftKey
-      ) {
-        event.preventDefault();
-        // TODO: Implement select linked/connected functionality
-        console.log("Select linked not yet implemented");
-        return;
-      }
-
-      // Face-specific shortcuts
-      if (editMode === "face") {
-        // Extrude (E)
-        if (
-          event.key === "e" &&
-          !event.ctrlKey &&
-          !event.shiftKey &&
-          !event.altKey
-        ) {
+      // Face operations
+      if (editMode === "face" || currentSubObjectType === "face") {
+        // Extrude faces (E key - Blender convention)
+        if (event.key === "e" || event.key === "E") {
           event.preventDefault();
-          console.log("Extrude shortcut pressed");
+          extrudeFaces(0.5); // Default extrude distance
           return;
         }
 
-        // Inset (I) - only when not Ctrl+Shift+I for invert selection
-        if (
-          event.key === "i" &&
-          !event.ctrlKey &&
-          !event.shiftKey &&
-          !event.altKey
-        ) {
+        // Inset faces (I key - Blender convention)
+        if (event.key === "i" || event.key === "I") {
           event.preventDefault();
-          console.log("Inset shortcut pressed");
+          insetFaces(0.1); // Default inset distance
+          return;
+        }
+
+        // Subdivide (Ctrl+R for loop cut, W for subdivide in Blender)
+        if (event.key === "w" || event.key === "W") {
+          event.preventDefault();
+          subdivideFaces(1, 0);
           return;
         }
       }
 
-      // Edge-specific shortcuts
-      if (editMode === "edge") {
-        // Bevel (Ctrl+B)
-        if (
-          event.key === "b" &&
-          event.ctrlKey &&
-          !event.shiftKey &&
-          !event.altKey
-        ) {
+      // Edge operations
+      if (editMode === "edge" || currentSubObjectType === "edge") {
+        // Bevel edges (Ctrl+B - Blender convention)
+        if ((event.key === "b" || event.key === "B") && event.ctrlKey) {
           event.preventDefault();
-          console.log("Bevel shortcut pressed");
+          bevelEdges(0.1, 1, 0.5); // Default bevel parameters
+          return;
+        }
+
+        // Loop cut (Ctrl+R - Blender convention)
+        if ((event.key === "r" || event.key === "R") && event.ctrlKey) {
+          event.preventDefault();
+          if (meshEditData && meshEditData.edges.length > 0) {
+            const firstSelectedEdge = meshEditData.edges.find(e => e.selected);
+            if (firstSelectedEdge) {
+              loopCut(firstSelectedEdge.index, 1, 0);
+            }
+          }
           return;
         }
       }
 
-      // Vertex-specific shortcuts
-      if (editMode === "vertex") {
-        // Merge vertices (M)
-        if (
-          event.key === "m" &&
-          !event.ctrlKey &&
-          !event.shiftKey &&
-          !event.altKey
-        ) {
+      // Vertex operations
+      if (editMode === "vertex" || currentSubObjectType === "vertex") {
+        // Merge vertices (Alt+M - Blender convention)
+        if ((event.key === "m" || event.key === "M") && event.altKey) {
           event.preventDefault();
-          console.log("Merge vertices shortcut pressed");
+          mergeVertices("center");
+          return;
+        }
+      }
+
+      // ====================== VIEW OPERATIONS ======================
+      
+      // Toggle wireframe (Z key in many 3D apps)
+      if (event.key === "z" || event.key === "Z") {
+        event.preventDefault();
+        // This would need to be implemented in the UI slice
+        // dispatch(toggleWireframe());
+        return;
+      }
+
+      // ====================== TRANSFORM CONSTRAINTS ======================
+      
+      // These would be used during active transform operations
+      // X, Y, Z keys for axis constraints during transform
+      if (activeTool !== "select") {
+        if (event.key === "x") {
+          event.preventDefault();
+          // Constrain to X-axis - would need to be handled by active transform
+          return;
+        }
+        if (event.key === "y") {
+          event.preventDefault();
+          // Constrain to Y-axis
+          return;
+        }
+        if (event.key === "z") {
+          event.preventDefault();
+          // Constrain to Z-axis
           return;
         }
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    const handleKeyUp = (event: KeyboardEvent) => {
+      // Handle key releases for transform operations
+      if (!selectedModelId) return;
 
+      // Reset transform constraints on key release
+      if (["x", "y", "z"].includes(event.key.toLowerCase())) {
+        // Reset constraint
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    // Cleanup
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
   }, [
-    dispatch,
-    editMode,
     selectedModelId,
-    meshEditData,
+    editMode,
     currentSubObjectType,
+    activeTool,
+    meshEditData,
+    dispatch,
     selectAll,
     deselectAll,
     growSelection,
     shrinkSelection,
     deleteSelectedElements,
+    extrudeFaces,
+    insetFaces,
+    bevelEdges,
+    loopCut,
+    subdivideFaces,
+    mergeVertices,
   ]);
 
-  return null; // This component doesn't render anything
+  return null; // This component only handles keyboard events
 };
 
 export default MeshEditingKeyboardShortcuts;

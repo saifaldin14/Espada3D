@@ -51,6 +51,7 @@ import { SketchPicker } from "react-color";
 import { MaterialProperties, Vector3Tuple, EditMode } from "../../types";
 import TextureManager from "./TextureManager";
 import SubObjectEditor from "./SubObjectEditor";
+import MeshOperationsPanel from "./MeshOperationsPanel";
 import { glassStyles } from "../../config/theme";
 
 const ModelEditor: React.FC = () => {
@@ -620,6 +621,7 @@ const ModelEditor: React.FC = () => {
               editMode === "face") && (
               <Box sx={styles.sectionContainer}>
                 <SubObjectEditor modelId={selectedModelId} />
+                <MeshOperationsPanel modelId={selectedModelId} />
               </Box>
             )}
 

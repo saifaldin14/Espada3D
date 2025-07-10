@@ -16,6 +16,7 @@ import {
 } from "../../utils/selectionMaterials";
 import { SelectionUtils } from "../../utils/selectionUtils";
 import BoxSelection from "./BoxSelection";
+import TransformGizmo from "./TransformGizmo";
 
 interface MeshEditableModelProps {
   modelId: string;
@@ -53,6 +54,7 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   const selectionMode = useSelector(
     (state: RootState) => state.ui.subObjectSelectionMode
   );
+  const activeTool = useSelector((state: RootState) => state.ui.activeTool);
 
   const {
     meshData,
@@ -364,6 +366,13 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
         onPointerDown={handlePointerDown}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
+      />
+
+      {/* Transform Gizmo */}
+      <TransformGizmo
+        modelId={modelId}
+        visible={['vertex', 'edge', 'face'].includes(editMode)}
+        mode={activeTool === 'translate' ? 'translate' : activeTool === 'rotate' ? 'rotate' : activeTool === 'scale' ? 'scale' : 'translate'}
       />
 
       {/* Box Selection Component */}

@@ -1424,4 +1424,380 @@ export class MeshEditor {
       faceCount: indexAttribute ? indexAttribute.count / 3 : positionAttribute.count / 3
     };
   }
+
+  // ====================== HELPER METHODS FOR COMPLEX OPERATIONS ======================
+
+  /**
+   * Extrude a single face
+   */
+  private static extrudeSingleFace(
+    meshData: MeshEditData,
+    face: FaceData,
+    distance: number,
+    direction?: Vector3Tuple
+  ): MeshEditData {
+    const newVertices = [...meshData.vertices];
+    const newFaces = [...meshData.faces];
+    const newEdges = [...meshData.edges];
+
+    // Calculate extrude direction
+    let extrudeDirection: THREE.Vector3;
+    if (direction) {
+      extrudeDirection = new THREE.Vector3().fromArray(direction);
+    } else {
+      extrudeDirection = new THREE.Vector3().fromArray(face.normal);
+    }
+    
+    const extrudeVector = extrudeDirection.multiplyScalar(distance);
+
+    // Create new vertices for extruded face
+    const newVertexIndices: number[] = [];
+    face.vertices.forEach(vertexIndex => {
+      const originalVertex = meshData.vertices[vertexIndex];
+      const newPosition = new THREE.Vector3()
+        .fromArray(originalVertex.position)
+        .add(extrudeVector);
+
+      const newVertex: VertexData = {
+        index: newVertices.length,
+        position: [newPosition.x, newPosition.y, newPosition.z],
+        selected: true,
+        normal: originalVertex.normal,
+        uv: originalVertex.uv
+      };
+
+      newVertices.push(newVertex);
+      newVertexIndices.push(newVertex.index);
+    });
+
+    // Update original face to use new vertices
+    const faceIndex = newFaces.findIndex(f => f.index === face.index);
+    if (faceIndex !== -1) {
+      newFaces[faceIndex] = {
+        ...newFaces[faceIndex],
+        vertices: newVertexIndices,
+        selected: true
+      };
+    }
+
+    // Create side faces
+    for (let i = 0; i < face.vertices.length; i++) {
+      const current = face.vertices[i];
+      const next = face.vertices[(i + 1) % face.vertices.length];
+      const currentNew = newVertexIndices[i];
+      const nextNew = newVertexIndices[(i + 1) % newVertexIndices.length];
+
+      // Create two triangular faces for the quad
+      newFaces.push({
+        index: newFaces.length,
+        vertices: [current, next, nextNew],
+        normal: [0, 0, 1], // Would need proper calculation
+        selected: false
+      });
+
+      newFaces.push({
+        index: newFaces.length,
+        vertices: [current, nextNew, currentNew],
+        normal: [0, 0, 1], // Would need proper calculation
+        selected: false
+      });
+    }
+
+    return {
+      ...meshData,
+      vertices: newVertices,
+      faces: newFaces,
+      edges: newEdges
+    };
+  }
+
+  /**
+   * Extrude a group of faces together
+   */
+  private static extrudeFaceGroup(
+    meshData: MeshEditData,
+    faces: FaceData[],
+    distance: number,
+    direction?: Vector3Tuple
+  ): MeshEditData {
+    // For now, just extrude each face individually
+    // A proper implementation would merge connected faces
+    let result = meshData;
+    faces.forEach(face => {
+      result = this.extrudeSingleFace(result, face, distance, direction);
+    });
+    return result;
+  }
+
+  /**
+   * Inset a single face
+   */
+  private static insetSingleFace(
+    meshData: MeshEditData,
+    face: FaceData,
+    distance: number,
+    depth: number
+  ): MeshEditData {
+    const newVertices = [...meshData.vertices];
+    const newFaces = [...meshData.faces];
+
+    // Calculate face center
+    const center = this.calculateFaceCenter(face, meshData.vertices);
+    const normal = new THREE.Vector3().fromArray(face.normal);
+
+    // Create inset vertices
+    const insetVertexIndices: number[] = [];
+    face.vertices.forEach(vertexIndex => {
+      const originalVertex = meshData.vertices[vertexIndex];
+      const vertexPos = new THREE.Vector3().fromArray(originalVertex.position);
+      
+      // Move vertex towards face center
+      const toCenter = center.clone().sub(vertexPos).normalize();
+      const insetPosition = vertexPos.clone().add(toCenter.multiplyScalar(distance));
+      
+      // Apply depth
+      if (depth !== 0) {
+        insetPosition.add(normal.clone().multiplyScalar(depth));
+      }
+
+      const newVertex: VertexData = {
+        index: newVertices.length,
+        position: [insetPosition.x, insetPosition.y, insetPosition.z],
+        selected: true,
+        normal: originalVertex.normal,
+        uv: originalVertex.uv
+      };
+
+      newVertices.push(newVertex);
+      insetVertexIndices.push(newVertex.index);
+    });
+
+    // Update original face
+    const faceIndex = newFaces.findIndex(f => f.index === face.index);
+    if (faceIndex !== -1) {
+      newFaces[faceIndex] = {
+        ...newFaces[faceIndex],
+        vertices: insetVertexIndices,
+        selected: true
+      };
+    }
+
+    return {
+      ...meshData,
+      vertices: newVertices,
+      faces: newFaces
+    };
+  }
+
+  /**
+   * Inset a group of faces
+   */
+  private static insetFaceGroup(
+    meshData: MeshEditData,
+    faces: FaceData[],
+    distance: number,
+    depth: number
+  ): MeshEditData {
+    let result = meshData;
+    faces.forEach(face => {
+      result = this.insetSingleFace(result, face, distance, depth);
+    });
+    return result;
+  }
+
+  /**
+   * Subdivide a single face
+   */
+  private static subdivideSingleFace(
+    meshData: MeshEditData,
+    face: FaceData,
+    cuts: number,
+    smoothness: number
+  ): MeshEditData {
+    // Simple triangular subdivision for now
+    if (face.vertices.length === 3 && cuts === 1) {
+      const newVertices = [...meshData.vertices];
+      const newFaces = [...meshData.faces];
+
+      const [v0, v1, v2] = face.vertices;
+      
+      // Create midpoint vertices
+      const mid01 = this.createMidpointVertex(newVertices[v0], newVertices[v1], newVertices.length);
+      const mid12 = this.createMidpointVertex(newVertices[v1], newVertices[v2], newVertices.length + 1);
+      const mid20 = this.createMidpointVertex(newVertices[v2], newVertices[v0], newVertices.length + 2);
+      
+      newVertices.push(mid01, mid12, mid20);
+      
+      // Remove original face and add 4 new triangular faces
+      const faceIndex = newFaces.findIndex(f => f.index === face.index);
+      if (faceIndex !== -1) {
+        newFaces.splice(faceIndex, 1);
+      }
+      
+      const baseIndex = newFaces.length;
+      newFaces.push(
+        {
+          index: baseIndex,
+          vertices: [v0, mid01.index, mid20.index],
+          normal: face.normal,
+          selected: true
+        },
+        {
+          index: baseIndex + 1,
+          vertices: [v1, mid12.index, mid01.index],
+          normal: face.normal,
+          selected: true
+        },
+        {
+          index: baseIndex + 2,
+          vertices: [v2, mid20.index, mid12.index],
+          normal: face.normal,
+          selected: true
+        },
+        {
+          index: baseIndex + 3,
+          vertices: [mid01.index, mid12.index, mid20.index],
+          normal: face.normal,
+          selected: true
+        }
+      );
+
+      return {
+        ...meshData,
+        vertices: newVertices,
+        faces: newFaces
+      };
+    }
+
+    return meshData;
+  }
+
+  /**
+   * Bevel a single edge
+   */
+  private static bevelSingleEdge(
+    meshData: MeshEditData,
+    edge: EdgeData,
+    distance: number,
+    segments: number,
+    profile: number
+  ): MeshEditData {
+    // Simplified bevel implementation
+    const newVertices = [...meshData.vertices];
+    const newFaces = [...meshData.faces];
+    const newEdges = [...meshData.edges];
+
+    const [v1Index, v2Index] = edge.vertices;
+    const v1 = new THREE.Vector3().fromArray(meshData.vertices[v1Index].position);
+    const v2 = new THREE.Vector3().fromArray(meshData.vertices[v2Index].position);
+    
+    // Create bevel vertices
+    for (let i = 1; i <= segments; i++) {
+      const t = i / (segments + 1);
+      const bevelPos = v1.clone().lerp(v2, t);
+      
+      // Apply some offset (simplified)
+      const offset = new THREE.Vector3(0, distance, 0);
+      bevelPos.add(offset);
+      
+      const bevelVertex: VertexData = {
+        index: newVertices.length,
+        position: [bevelPos.x, bevelPos.y, bevelPos.z],
+        selected: true
+      };
+      
+      newVertices.push(bevelVertex);
+    }
+
+    return {
+      ...meshData,
+      vertices: newVertices,
+      faces: newFaces,
+      edges: newEdges
+    };
+  }
+
+  /**
+   * Split a single edge
+   */
+  private static splitSingleEdge(
+    meshData: MeshEditData,
+    edge: EdgeData,
+    splits: number
+  ): MeshEditData {
+    const newVertices = [...meshData.vertices];
+    const newEdges = [...meshData.edges];
+
+    const [v1Index, v2Index] = edge.vertices;
+    const v1 = newVertices[v1Index];
+    const v2 = newVertices[v2Index];
+
+    // Create split vertices
+    const splitVertices: number[] = [v1Index];
+    
+    for (let i = 1; i <= splits; i++) {
+      const t = i / (splits + 1);
+      const splitPos = new THREE.Vector3()
+        .fromArray(v1.position)
+        .lerp(new THREE.Vector3().fromArray(v2.position), t);
+
+      const splitVertex: VertexData = {
+        index: newVertices.length,
+        position: [splitPos.x, splitPos.y, splitPos.z],
+        selected: true
+      };
+
+      newVertices.push(splitVertex);
+      splitVertices.push(splitVertex.index);
+    }
+    
+    splitVertices.push(v2Index);
+
+    // Remove original edge and create new edges
+    const originalEdgeIndex = newEdges.findIndex(e => e.index === edge.index);
+    if (originalEdgeIndex !== -1) {
+      newEdges.splice(originalEdgeIndex, 1);
+    }
+
+    for (let i = 0; i < splitVertices.length - 1; i++) {
+      newEdges.push({
+        index: newEdges.length,
+        vertices: [splitVertices[i], splitVertices[i + 1]],
+        selected: false
+      });
+    }
+
+    return {
+      ...meshData,
+      vertices: newVertices,
+      edges: newEdges
+    };
+  }
+
+  /**
+   * Find edge loop starting from a given edge
+   */
+  private static findEdgeLoop(meshData: MeshEditData, startEdgeIndex: number): number[] {
+    // Simplified implementation - return just the starting edge
+    // A proper implementation would trace through connected quad topology
+    return [startEdgeIndex];
+  }
+
+  /**
+   * Create loop cuts
+   */
+  private static createLoopCuts(
+    meshData: MeshEditData,
+    edgeLoop: number[],
+    cuts: number,
+    smoothness: number
+  ): MeshEditData {
+    let result = meshData;
+    
+    edgeLoop.forEach(edgeIndex => {
+      result = this.splitSingleEdge(result, result.edges[edgeIndex], cuts);
+    });
+
+    return result;
+  }
 }
