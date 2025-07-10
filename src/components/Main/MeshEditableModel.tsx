@@ -87,21 +87,29 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   // Apply pending operations to geometry
   useEffect(() => {
     if (meshData && pendingOperations.length > 0) {
-      console.log('MeshEditableModel: Applying operations', pendingOperations.length);
+      console.log(
+        "MeshEditableModel: Applying operations",
+        pendingOperations.length
+      );
       applyOperations(geometryRef.current);
-      
+
       // Force geometry update
       if (meshRef.current) {
         meshRef.current.geometry = geometryRef.current;
         // Mark geometry attributes as needing update
-        const position = geometryRef.current.getAttribute('position');
-        const normal = geometryRef.current.getAttribute('normal');
+        const position = geometryRef.current.getAttribute("position");
+        const normal = geometryRef.current.getAttribute("normal");
         if (position) position.needsUpdate = true;
         if (normal) normal.needsUpdate = true;
       }
-      
+
       if (onGeometryUpdate) {
         onGeometryUpdate(geometryRef.current);
+      }
+
+      // Update the material in the parent mesh to ensure double-sided rendering
+      if (meshRef.current && meshRef.current.material !== meshEditingMaterial) {
+        meshRef.current.material = meshEditingMaterial;
       }
     }
   }, [meshData, pendingOperations, applyOperations, onGeometryUpdate]);
@@ -369,12 +377,48 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
     [meshData, currentSubObjectType, selectElements, camera]
   );
 
+  // Create a double-sided material for mesh editing
+  const meshEditingMaterial = useMemo(() => {
+    if (!["vertex", "edge", "face"].includes(editMode)) {
+      return material;
+    }
+
+    // Clone the material to avoid modifying the original
+    let editMaterial: THREE.Material;
+
+    if (Array.isArray(material)) {
+      // Handle material arrays by cloning each material
+      editMaterial = material.map((mat) => {
+        const cloned = mat.clone();
+        cloned.side = THREE.DoubleSide;
+        return cloned;
+      })[0]; // Use first material for simplicity
+    } else {
+      editMaterial = material.clone();
+      editMaterial.side = THREE.DoubleSide;
+    }
+
+    return editMaterial;
+  }, [material, editMode]);
+
+  // Clean up cloned materials when component unmounts or material changes
+  useEffect(() => {
+    return () => {
+      if (
+        meshEditingMaterial !== material &&
+        !Array.isArray(meshEditingMaterial)
+      ) {
+        meshEditingMaterial.dispose();
+      }
+    };
+  }, [meshEditingMaterial, material]);
+
   return (
     <group position={position} rotation={rotation} scale={scale}>
       <mesh
         ref={meshRef}
         geometry={geometryRef.current}
-        material={material}
+        material={meshEditingMaterial}
         onPointerDown={handlePointerDown}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}

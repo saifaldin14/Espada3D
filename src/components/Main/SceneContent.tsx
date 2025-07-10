@@ -6,6 +6,7 @@ import {
   MeshStandardMaterial,
   Object3D,
   Object3DEventMap,
+  DoubleSide,
 } from "three";
 import { useAppSelector } from "../../hooks/useRedux";
 import { useModels } from "../../hooks/useRedux";
@@ -172,7 +173,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         .map((n) => (typeof n === "number" ? n : 0)) as [
         number,
         number,
-        number
+        number,
       ];
       const scale = selectedMeshRef.current.scale
         .toArray()
@@ -236,7 +237,9 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       <OrbitControls ref={orbitControlsRef} makeDefault />
       <TransformControls
         ref={transformControlsRef}
-        mode={activeTool === "select" ? "translate" : activeTool ?? "translate"}
+        mode={
+          activeTool === "select" ? "translate" : (activeTool ?? "translate")
+        }
         onObjectChange={handleTransformChange}
       />
       {Object.entries(renderedModels).map(([modelId, model]) => {
@@ -266,6 +269,27 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
                 if (mesh.geometry !== newGeometry) {
                   mesh.geometry.dispose();
                   mesh.geometry = newGeometry;
+                }
+
+                // Ensure the material is double-sided for mesh editing
+                const currentMaterial = Array.isArray(mesh.material)
+                  ? mesh.material[0]
+                  : mesh.material;
+                if (
+                  currentMaterial &&
+                  (currentMaterial as any).side !== DoubleSide
+                ) {
+                  if (Array.isArray(mesh.material)) {
+                    mesh.material.forEach((mat) => {
+                      if (mat.side !== undefined) {
+                        (mat as any).side = DoubleSide;
+                        mat.needsUpdate = true;
+                      }
+                    });
+                  } else {
+                    (currentMaterial as any).side = DoubleSide;
+                    currentMaterial.needsUpdate = true;
+                  }
                 }
               }}
             />
