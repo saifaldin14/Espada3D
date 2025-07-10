@@ -4,23 +4,24 @@ import * as THREE from 'three';
 import { RootState } from '../store';
 import { 
   addMeshOperation, 
-  clearPendingOperations 
+  clearPendingOperations,
+  selectSubObjects,
+  initializeMeshData
 } from '../store/slices/meshSlice';
-import { selectSubObjects, initializeMeshEditData } from '../store/slices/uiSlice';
 import { triggerMeshUpdate } from '../store/slices/modelSlice';
 import { MeshEditor } from '../utils/meshEditor';
 import { MeshEditData, Vector3Tuple, SubObjectType } from '../types';
 
 export const useMeshEditor = (modelId: string) => {
   const dispatch = useDispatch();
-  const meshData = useSelector((state: RootState) => state.ui.meshEditData[modelId]);
+  const meshData = useSelector((state: RootState) => state.mesh.meshData[modelId]);
   const pendingOperations = useSelector((state: RootState) => state.mesh.pendingOperations[modelId] || []);
 
   // Initialize mesh data from geometry
   const initializeMesh = useCallback((geometry: THREE.BufferGeometry) => {
     try {
       const extractedData = MeshEditor.extractMeshData(geometry, modelId);
-      dispatch(initializeMeshEditData(extractedData));
+      dispatch(initializeMeshData(extractedData));
       return extractedData;
     } catch (error) {
       console.error('Failed to initialize mesh data:', error);
@@ -127,7 +128,7 @@ export const useMeshEditor = (modelId: string) => {
     MeshEditor.updateGeometryFromMeshData(geometry, currentMeshData);
     
     // Update the mesh data in the store - using UI slice for consistency
-    dispatch(initializeMeshEditData(currentMeshData));
+    dispatch(initializeMeshData(currentMeshData));
     
     // Clear processed operations
     dispatch(clearPendingOperations(modelId));

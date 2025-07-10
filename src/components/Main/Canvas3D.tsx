@@ -17,10 +17,10 @@ import SceneContent from "./SceneContent";
 import SelectionModeIndicator from "./SelectionModeIndicator";
 import ErrorBoundary from "../ErrorBoundary";
 import { useAppSelector } from "../../hooks/useRedux";
-import { setGeometryCache } from "../../store/slices/uiSlice";
 import { MeshEditor } from "../../utils/meshEditor";
 import { APP_CONFIG } from "../../config/constants";
 import { GeometryType } from "../../types";
+import { setGeometryCache } from "../../store/slices/meshSlice";
 
 const Canvas3D: React.FC = () => {
   const dispatch = useDispatch();

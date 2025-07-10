@@ -14,7 +14,7 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
   geometry,
 }) => {
   const meshEditData = useSelector(
-    (state: RootState) => state.ui.meshEditData[modelId]
+    (state: RootState) => state.mesh.meshData[modelId]
   );
   const currentSubObjectType = useSelector(
     (state: RootState) => state.ui.currentSubObjectType

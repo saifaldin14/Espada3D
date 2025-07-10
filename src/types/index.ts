@@ -294,8 +294,6 @@ export interface UIState {
   isAnimationPanelOpen: boolean;
   snap: boolean;
   snapSize: number;
-  meshEditData: { [modelId: string]: MeshEditData };
-  geometryCache: { [modelId: string]: GeometryData };
   subObjectSelectionMode: SelectionMode;
   currentSubObjectType: SubObjectType;
 }
@@ -305,6 +303,7 @@ export interface RootState {
   ui: UIState;
   mesh: {
     meshData: { [modelId: string]: MeshEditData };
+    geometryCache: { [modelId: string]: GeometryData };
     pendingOperations: { [modelId: string]: any[] };
   };
 }

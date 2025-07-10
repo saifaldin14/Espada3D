@@ -11,11 +11,11 @@ import {
 import { CropFree, LinearScale, Crop } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
+import { setCurrentSubObjectType } from "../../store/slices/uiSlice";
 import {
-  setCurrentSubObjectType,
-  initializeMeshEditData,
-  clearMeshEditData,
-} from "../../store/slices/uiSlice";
+  initializeMeshData,
+  clearMeshData,
+} from "../../store/slices/meshSlice";
 import { SubObjectType } from "../../types";
 import { MeshEditor } from "../../utils/meshEditor";
 import VertexEditor from "./VertexEditor";
@@ -36,10 +36,10 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
     (state: RootState) => state.ui.currentSubObjectType
   );
   const meshEditData = useSelector(
-    (state: RootState) => state.ui.meshEditData[modelId]
+    (state: RootState) => state.mesh.meshData[modelId]
   );
   const geometryCache = useSelector(
-    (state: RootState) => state.ui.geometryCache[modelId]
+    (state: RootState) => state.mesh.geometryCache[modelId]
   );
   const editMode = useSelector((state: RootState) => state.ui.editMode);
 
@@ -55,19 +55,19 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
         // Extract real mesh data from cached geometry
         const geometry = createGeometryFromCache(geometryCache);
         const realMeshData = MeshEditor.extractMeshData(geometry, modelId);
-        dispatch(initializeMeshEditData(realMeshData));
+        dispatch(initializeMeshData(realMeshData));
       } catch (error) {
         console.warn("Failed to extract mesh data, using fallback:", error);
         // Fallback to mock data if real extraction fails
         const mockMeshData = createMockMeshData(selectedModel.type, modelId);
-        dispatch(initializeMeshEditData(mockMeshData));
+        dispatch(initializeMeshData(mockMeshData));
       }
     }
 
     // Clean up mesh edit data when leaving sub-object editing mode
     return () => {
       if (editMode !== "vertex" && editMode !== "edge" && editMode !== "face") {
-        dispatch(clearMeshEditData(modelId));
+        dispatch(clearMeshData(modelId));
       }
     };
   }, [editMode, modelId, meshEditData, selectedModel, geometryCache, dispatch]);

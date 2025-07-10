@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -22,7 +22,7 @@ import {
   AccordionDetails,
   Alert,
   Chip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   ExpandMore,
   OpenWith,
@@ -39,23 +39,25 @@ import {
   Redo,
   FlipToFront,
   Tune,
-} from '@mui/icons-material';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
-import { useMeshEditor } from '../../hooks/useMeshEditor';
-import { Vector3Tuple, TransformConstraint, MergeType } from '../../types';
+} from "@mui/icons-material";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { useMeshEditor } from "../../hooks/useMeshEditor";
+import { Vector3Tuple, TransformConstraint, MergeType } from "../../types";
 
 interface MeshOperationsPanelProps {
   modelId: string;
 }
 
-const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) => {
+const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({
+  modelId,
+}) => {
   const editMode = useSelector((state: RootState) => state.ui.editMode);
   const currentSubObjectType = useSelector(
     (state: RootState) => state.ui.currentSubObjectType
   );
   const meshData = useSelector(
-    (state: RootState) => state.ui.meshEditData[modelId]
+    (state: RootState) => state.mesh.meshData[modelId]
   );
 
   const {
@@ -76,7 +78,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
   const [moveVector, setMoveVector] = useState<Vector3Tuple>([0, 0, 0]);
   const [scaleVector, setScaleVector] = useState<Vector3Tuple>([1, 1, 1]);
   const [rotationVector, setRotationVector] = useState<Vector3Tuple>([0, 0, 0]);
-  const [constraint, setConstraint] = useState<TransformConstraint | ''>('');
+  const [constraint, setConstraint] = useState<TransformConstraint | "">("");
   const [useCustomPivot, setUseCustomPivot] = useState(false);
   const [customPivot, setCustomPivot] = useState<Vector3Tuple>([0, 0, 0]);
 
@@ -92,33 +94,33 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
   const [bevelProfile, setBevelProfile] = useState(0.5);
   const [splitCount, setSplitCount] = useState(1);
   const [loopCuts, setLoopCuts] = useState(1);
-  const [mergeType, setMergeType] = useState<MergeType>('center');
+  const [mergeType, setMergeType] = useState<MergeType>("center");
 
   // Get selection info
   const getSelectionInfo = useCallback(() => {
-    if (!meshData) return { count: 0, type: 'none' };
-    
+    if (!meshData) return { count: 0, type: "none" };
+
     switch (currentSubObjectType) {
-      case 'vertex':
+      case "vertex":
         return {
-          count: meshData.vertices.filter(v => v.selected).length,
-          type: 'vertex',
-          total: meshData.vertices.length
+          count: meshData.vertices.filter((v) => v.selected).length,
+          type: "vertex",
+          total: meshData.vertices.length,
         };
-      case 'edge':
+      case "edge":
         return {
-          count: meshData.edges.filter(e => e.selected).length,
-          type: 'edge',
-          total: meshData.edges.length
+          count: meshData.edges.filter((e) => e.selected).length,
+          type: "edge",
+          total: meshData.edges.length,
         };
-      case 'face':
+      case "face":
         return {
-          count: meshData.faces.filter(f => f.selected).length,
-          type: 'face',
-          total: meshData.faces.length
+          count: meshData.faces.filter((f) => f.selected).length,
+          type: "face",
+          total: meshData.faces.length,
         };
       default:
-        return { count: 0, type: 'none', total: 0 };
+        return { count: 0, type: "none", total: 0 };
     }
   }, [meshData, currentSubObjectType]);
 
@@ -166,7 +168,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
 
   const handleLoopCut = useCallback(() => {
     if (meshData && meshData.edges.length > 0) {
-      const firstSelectedEdge = meshData.edges.find(e => e.selected);
+      const firstSelectedEdge = meshData.edges.find((e) => e.selected);
       if (firstSelectedEdge) {
         loopCut(firstSelectedEdge.index, loopCuts, subdivisionSmooth);
       }
@@ -181,7 +183,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
     deleteSelectedElements();
   }, [deleteSelectedElements]);
 
-  if (!['vertex', 'edge', 'face'].includes(editMode)) {
+  if (!["vertex", "edge", "face"].includes(editMode)) {
     return (
       <Card>
         <CardContent>
@@ -194,15 +196,17 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
   }
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: "100%" }}>
       {/* Selection Info */}
       <Card sx={{ mb: 2 }}>
         <CardContent sx={{ p: 2 }}>
           <Box display="flex" alignItems="center" gap={1} mb={1}>
             <Typography variant="h6">
-              {currentSubObjectType.charAt(0).toUpperCase() + currentSubObjectType.slice(1)} Mode
+              {currentSubObjectType.charAt(0).toUpperCase() +
+                currentSubObjectType.slice(1)}{" "}
+              Mode
             </Typography>
-            <Chip 
+            <Chip
               label={`${selectionInfo.count}/${selectionInfo.total}`}
               color={selectionInfo.count > 0 ? "primary" : "default"}
               size="small"
@@ -232,7 +236,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                 <InputLabel>Constraint</InputLabel>
                 <Select
                   value={constraint}
-                  onChange={(e) => setConstraint(e.target.value as TransformConstraint | '')}
+                  onChange={(e) =>
+                    setConstraint(e.target.value as TransformConstraint | "")
+                  }
                   label="Constraint"
                 >
                   <MenuItem value="">None</MenuItem>
@@ -248,7 +254,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
 
             {/* Move */}
             <Grid item xs={12}>
-              <Typography variant="body2" gutterBottom>Move</Typography>
+              <Typography variant="body2" gutterBottom>
+                Move
+              </Typography>
               <Grid container spacing={1}>
                 <Grid item xs={4}>
                   <TextField
@@ -256,7 +264,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                     type="number"
                     size="small"
                     value={moveVector[0]}
-                    onChange={(e) => setMoveVector([parseFloat(e.target.value) || 0, moveVector[1], moveVector[2]])}
+                    onChange={(e) =>
+                      setMoveVector([
+                        parseFloat(e.target.value) || 0,
+                        moveVector[1],
+                        moveVector[2],
+                      ])
+                    }
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -265,7 +279,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                     type="number"
                     size="small"
                     value={moveVector[1]}
-                    onChange={(e) => setMoveVector([moveVector[0], parseFloat(e.target.value) || 0, moveVector[2]])}
+                    onChange={(e) =>
+                      setMoveVector([
+                        moveVector[0],
+                        parseFloat(e.target.value) || 0,
+                        moveVector[2],
+                      ])
+                    }
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -274,7 +294,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                     type="number"
                     size="small"
                     value={moveVector[2]}
-                    onChange={(e) => setMoveVector([moveVector[0], moveVector[1], parseFloat(e.target.value) || 0])}
+                    onChange={(e) =>
+                      setMoveVector([
+                        moveVector[0],
+                        moveVector[1],
+                        parseFloat(e.target.value) || 0,
+                      ])
+                    }
                   />
                 </Grid>
               </Grid>
@@ -292,7 +318,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
 
             {/* Scale */}
             <Grid item xs={12}>
-              <Typography variant="body2" gutterBottom>Scale</Typography>
+              <Typography variant="body2" gutterBottom>
+                Scale
+              </Typography>
               <Grid container spacing={1}>
                 <Grid item xs={4}>
                   <TextField
@@ -300,7 +328,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                     type="number"
                     size="small"
                     value={scaleVector[0]}
-                    onChange={(e) => setScaleVector([parseFloat(e.target.value) || 1, scaleVector[1], scaleVector[2]])}
+                    onChange={(e) =>
+                      setScaleVector([
+                        parseFloat(e.target.value) || 1,
+                        scaleVector[1],
+                        scaleVector[2],
+                      ])
+                    }
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -309,7 +343,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                     type="number"
                     size="small"
                     value={scaleVector[1]}
-                    onChange={(e) => setScaleVector([scaleVector[0], parseFloat(e.target.value) || 1, scaleVector[2]])}
+                    onChange={(e) =>
+                      setScaleVector([
+                        scaleVector[0],
+                        parseFloat(e.target.value) || 1,
+                        scaleVector[2],
+                      ])
+                    }
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -318,7 +358,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                     type="number"
                     size="small"
                     value={scaleVector[2]}
-                    onChange={(e) => setScaleVector([scaleVector[0], scaleVector[1], parseFloat(e.target.value) || 1])}
+                    onChange={(e) =>
+                      setScaleVector([
+                        scaleVector[0],
+                        scaleVector[1],
+                        parseFloat(e.target.value) || 1,
+                      ])
+                    }
                   />
                 </Grid>
               </Grid>
@@ -336,15 +382,23 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
 
             {/* Rotate */}
             <Grid item xs={12}>
-              <Typography variant="body2" gutterBottom>Rotate (degrees)</Typography>
+              <Typography variant="body2" gutterBottom>
+                Rotate (degrees)
+              </Typography>
               <Grid container spacing={1}>
                 <Grid item xs={4}>
                   <TextField
                     label="X"
                     type="number"
                     size="small"
-                    value={rotationVector[0] * 180 / Math.PI}
-                    onChange={(e) => setRotationVector([parseFloat(e.target.value) * Math.PI / 180 || 0, rotationVector[1], rotationVector[2]])}
+                    value={(rotationVector[0] * 180) / Math.PI}
+                    onChange={(e) =>
+                      setRotationVector([
+                        (parseFloat(e.target.value) * Math.PI) / 180 || 0,
+                        rotationVector[1],
+                        rotationVector[2],
+                      ])
+                    }
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -352,8 +406,14 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                     label="Y"
                     type="number"
                     size="small"
-                    value={rotationVector[1] * 180 / Math.PI}
-                    onChange={(e) => setRotationVector([rotationVector[0], parseFloat(e.target.value) * Math.PI / 180 || 0, rotationVector[2]])}
+                    value={(rotationVector[1] * 180) / Math.PI}
+                    onChange={(e) =>
+                      setRotationVector([
+                        rotationVector[0],
+                        (parseFloat(e.target.value) * Math.PI) / 180 || 0,
+                        rotationVector[2],
+                      ])
+                    }
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -361,8 +421,14 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                     label="Z"
                     type="number"
                     size="small"
-                    value={rotationVector[2] * 180 / Math.PI}
-                    onChange={(e) => setRotationVector([rotationVector[0], rotationVector[1], parseFloat(e.target.value) * Math.PI / 180 || 0])}
+                    value={(rotationVector[2] * 180) / Math.PI}
+                    onChange={(e) =>
+                      setRotationVector([
+                        rotationVector[0],
+                        rotationVector[1],
+                        (parseFloat(e.target.value) * Math.PI) / 180 || 0,
+                      ])
+                    }
                   />
                 </Grid>
               </Grid>
@@ -397,7 +463,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                       type="number"
                       size="small"
                       value={customPivot[0]}
-                      onChange={(e) => setCustomPivot([parseFloat(e.target.value) || 0, customPivot[1], customPivot[2]])}
+                      onChange={(e) =>
+                        setCustomPivot([
+                          parseFloat(e.target.value) || 0,
+                          customPivot[1],
+                          customPivot[2],
+                        ])
+                      }
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -406,7 +478,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                       type="number"
                       size="small"
                       value={customPivot[1]}
-                      onChange={(e) => setCustomPivot([customPivot[0], parseFloat(e.target.value) || 0, customPivot[2]])}
+                      onChange={(e) =>
+                        setCustomPivot([
+                          customPivot[0],
+                          parseFloat(e.target.value) || 0,
+                          customPivot[2],
+                        ])
+                      }
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -415,7 +493,13 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                       type="number"
                       size="small"
                       value={customPivot[2]}
-                      onChange={(e) => setCustomPivot([customPivot[0], customPivot[1], parseFloat(e.target.value) || 0])}
+                      onChange={(e) =>
+                        setCustomPivot([
+                          customPivot[0],
+                          customPivot[1],
+                          parseFloat(e.target.value) || 0,
+                        ])
+                      }
                     />
                   </Grid>
                 </Grid>
@@ -426,7 +510,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
       </Accordion>
 
       {/* Face Operations */}
-      {currentSubObjectType === 'face' && (
+      {currentSubObjectType === "face" && (
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center" gap={1}>
@@ -438,14 +522,18 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
             <Grid container spacing={2}>
               {/* Extrude */}
               <Grid item xs={12}>
-                <Typography variant="body2" gutterBottom>Extrude</Typography>
+                <Typography variant="body2" gutterBottom>
+                  Extrude
+                </Typography>
                 <TextField
                   fullWidth
                   label="Distance"
                   type="number"
                   size="small"
                   value={extrudeDistance}
-                  onChange={(e) => setExtrudeDistance(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setExtrudeDistance(parseFloat(e.target.value) || 0)
+                  }
                   sx={{ mb: 1 }}
                 />
                 <FormControlLabel
@@ -471,14 +559,18 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
 
               {/* Inset */}
               <Grid item xs={12}>
-                <Typography variant="body2" gutterBottom>Inset</Typography>
+                <Typography variant="body2" gutterBottom>
+                  Inset
+                </Typography>
                 <TextField
                   fullWidth
                   label="Distance"
                   type="number"
                   size="small"
                   value={insetDistance}
-                  onChange={(e) => setInsetDistance(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setInsetDistance(parseFloat(e.target.value) || 0)
+                  }
                   sx={{ mb: 1 }}
                 />
                 <TextField
@@ -487,7 +579,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                   type="number"
                   size="small"
                   value={insetDepth}
-                  onChange={(e) => setInsetDepth(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setInsetDepth(parseFloat(e.target.value) || 0)
+                  }
                   sx={{ mb: 1 }}
                 />
                 <Button
@@ -503,14 +597,18 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
 
               {/* Subdivide */}
               <Grid item xs={12}>
-                <Typography variant="body2" gutterBottom>Subdivide</Typography>
+                <Typography variant="body2" gutterBottom>
+                  Subdivide
+                </Typography>
                 <TextField
                   fullWidth
                   label="Cuts"
                   type="number"
                   size="small"
                   value={subdivisionCuts}
-                  onChange={(e) => setSubdivisionCuts(parseInt(e.target.value) || 1)}
+                  onChange={(e) =>
+                    setSubdivisionCuts(parseInt(e.target.value) || 1)
+                  }
                   inputProps={{ min: 1, max: 10 }}
                   sx={{ mb: 1 }}
                 />
@@ -519,7 +617,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                 </Typography>
                 <Slider
                   value={subdivisionSmooth}
-                  onChange={(event: Event, value: number | number[]) => setSubdivisionSmooth(value as number)}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setSubdivisionSmooth(value as number)
+                  }
                   min={0}
                   max={1}
                   step={0.1}
@@ -541,7 +641,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
       )}
 
       {/* Edge Operations */}
-      {currentSubObjectType === 'edge' && (
+      {currentSubObjectType === "edge" && (
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center" gap={1}>
@@ -553,14 +653,18 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
             <Grid container spacing={2}>
               {/* Bevel */}
               <Grid item xs={12}>
-                <Typography variant="body2" gutterBottom>Bevel</Typography>
+                <Typography variant="body2" gutterBottom>
+                  Bevel
+                </Typography>
                 <TextField
                   fullWidth
                   label="Distance"
                   type="number"
                   size="small"
                   value={bevelDistance}
-                  onChange={(e) => setBevelDistance(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setBevelDistance(parseFloat(e.target.value) || 0)
+                  }
                   sx={{ mb: 1 }}
                 />
                 <TextField
@@ -569,7 +673,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                   type="number"
                   size="small"
                   value={bevelSegments}
-                  onChange={(e) => setBevelSegments(parseInt(e.target.value) || 1)}
+                  onChange={(e) =>
+                    setBevelSegments(parseInt(e.target.value) || 1)
+                  }
                   inputProps={{ min: 1, max: 10 }}
                   sx={{ mb: 1 }}
                 />
@@ -578,7 +684,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
                 </Typography>
                 <Slider
                   value={bevelProfile}
-                  onChange={(event: Event, value: number | number[]) => setBevelProfile(value as number)}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setBevelProfile(value as number)
+                  }
                   min={0}
                   max={1}
                   step={0.1}
@@ -597,7 +705,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
 
               {/* Split */}
               <Grid item xs={12}>
-                <Typography variant="body2" gutterBottom>Split</Typography>
+                <Typography variant="body2" gutterBottom>
+                  Split
+                </Typography>
                 <TextField
                   fullWidth
                   label="Splits"
@@ -621,7 +731,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
 
               {/* Loop Cut */}
               <Grid item xs={12}>
-                <Typography variant="body2" gutterBottom>Loop Cut</Typography>
+                <Typography variant="body2" gutterBottom>
+                  Loop Cut
+                </Typography>
                 <TextField
                   fullWidth
                   label="Cuts"
@@ -648,7 +760,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
       )}
 
       {/* Vertex Operations */}
-      {currentSubObjectType === 'vertex' && (
+      {currentSubObjectType === "vertex" && (
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center" gap={1}>
@@ -660,7 +772,9 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({ modelId }) =>
             <Grid container spacing={2}>
               {/* Merge */}
               <Grid item xs={12}>
-                <Typography variant="body2" gutterBottom>Merge</Typography>
+                <Typography variant="body2" gutterBottom>
+                  Merge
+                </Typography>
                 <FormControl fullWidth size="small" sx={{ mb: 1 }}>
                   <InputLabel>Merge Type</InputLabel>
                   <Select

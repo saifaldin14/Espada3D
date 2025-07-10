@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useFrame, useThree } from "@react-three/fiber";
 import { RootState } from "../../store";
-import { selectSubObjects } from "../../store/slices/uiSlice";
+import { selectSubObjects } from "../../store/slices/meshSlice";
 import { MeshEditor } from "../../utils/meshEditor";
 import * as THREE from "three";
 
@@ -28,7 +28,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
   const meshRef = useRef<THREE.Mesh>(null);
 
   const meshEditData = useSelector(
-    (state: RootState) => state.ui.meshEditData[modelId]
+    (state: RootState) => state.mesh.meshData[modelId]
   );
   const editMode = useSelector((state: RootState) => state.ui.editMode);
   const currentSubObjectType = useSelector(

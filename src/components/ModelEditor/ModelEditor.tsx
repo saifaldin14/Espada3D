@@ -238,8 +238,8 @@ const ModelEditor: React.FC = () => {
                   activeTool === "translate"
                     ? position[i]
                     : activeTool === "rotate"
-                    ? rotation[i]
-                    : scale[i]
+                      ? rotation[i]
+                      : scale[i]
                 }
                 type="number"
                 fullWidth

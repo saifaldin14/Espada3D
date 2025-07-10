@@ -36,10 +36,8 @@ import {
 } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
-import {
-  setSubObjectSelectionMode,
-  selectSubObjects,
-} from "../../store/slices/uiSlice";
+import { setSubObjectSelectionMode } from "../../store/slices/uiSlice";
+import { selectSubObjects } from "../../store/slices/meshSlice";
 import { SelectionMode, BevelProfile } from "../../types";
 import { MeshEditor } from "../../utils/meshEditor";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
@@ -51,7 +49,7 @@ interface EdgeEditorProps {
 const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
   const dispatch = useDispatch();
   const meshEditData = useSelector(
-    (state: RootState) => state.ui.meshEditData[modelId]
+    (state: RootState) => state.mesh.meshData[modelId]
   );
   const selectionMode = useSelector(
     (state: RootState) => state.ui.subObjectSelectionMode

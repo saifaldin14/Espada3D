@@ -7,7 +7,7 @@ import {
   setSubObjectSelectionMode,
   setActiveTool,
 } from "../../store/slices/uiSlice";
-import { selectSubObjects } from "../../store/slices/uiSlice";
+import { selectSubObjects } from "../../store/slices/meshSlice";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
 
 const MeshEditingKeyboardShortcuts: React.FC = () => {
@@ -21,7 +21,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
     (state: RootState) => state.ui.currentSubObjectType
   );
   const meshEditData = useSelector((state: RootState) =>
-    selectedModelId ? state.ui.meshEditData[selectedModelId] : null
+    selectedModelId ? state.mesh.meshData[selectedModelId] : null
   );
 
   const {
@@ -53,7 +53,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // ====================== MODE SWITCHING ======================
-      
+
       // Switch to vertex mode (1 key)
       if (
         event.key === "1" &&
@@ -112,7 +112,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // ====================== TOOL SWITCHING ======================
-      
+
       // Switch to translate tool (G key - Blender convention)
       if (event.key === "g" || event.key === "G") {
         event.preventDefault();
@@ -135,7 +135,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // ====================== SELECTION OPERATIONS ======================
-      
+
       // Only handle selection shortcuts in mesh edit modes
       if (!["vertex", "edge", "face"].includes(editMode)) return;
 
@@ -182,7 +182,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // ====================== MESH OPERATIONS ======================
-      
+
       // Delete selected elements (X or Delete key - Blender convention)
       if (event.key === "x" || event.key === "X" || event.key === "Delete") {
         event.preventDefault();
@@ -227,7 +227,9 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
         if ((event.key === "r" || event.key === "R") && event.ctrlKey) {
           event.preventDefault();
           if (meshEditData && meshEditData.edges.length > 0) {
-            const firstSelectedEdge = meshEditData.edges.find(e => e.selected);
+            const firstSelectedEdge = meshEditData.edges.find(
+              (e) => e.selected
+            );
             if (firstSelectedEdge) {
               loopCut(firstSelectedEdge.index, 1, 0);
             }
@@ -247,7 +249,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // ====================== VIEW OPERATIONS ======================
-      
+
       // Toggle wireframe (Z key in many 3D apps)
       if (event.key === "z" || event.key === "Z") {
         event.preventDefault();
@@ -257,7 +259,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // ====================== TRANSFORM CONSTRAINTS ======================
-      
+
       // These would be used during active transform operations
       // X, Y, Z keys for axis constraints during transform
       if (activeTool !== "select") {

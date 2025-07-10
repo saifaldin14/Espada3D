@@ -291,8 +291,8 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
               userData.type === "vertex"
                 ? "vertices"
                 : userData.type === "edge"
-                ? "edges"
-                : "faces"
+                  ? "edges"
+                  : "faces"
             ]?.[userData.index];
           mode = currentElement?.selected ? "remove" : "add";
         }
@@ -346,8 +346,8 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
           currentSubObjectType === "vertex"
             ? "vertices"
             : currentSubObjectType === "edge"
-            ? "edges"
-            : "faces"
+              ? "edges"
+              : "faces"
         ];
 
       if (indices.length > 0) {
@@ -371,8 +371,16 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
       {/* Transform Gizmo */}
       <TransformGizmo
         modelId={modelId}
-        visible={['vertex', 'edge', 'face'].includes(editMode)}
-        mode={activeTool === 'translate' ? 'translate' : activeTool === 'rotate' ? 'rotate' : activeTool === 'scale' ? 'scale' : 'translate'}
+        visible={["vertex", "edge", "face"].includes(editMode)}
+        mode={
+          activeTool === "translate"
+            ? "translate"
+            : activeTool === "rotate"
+              ? "rotate"
+              : activeTool === "scale"
+                ? "scale"
+                : "translate"
+        }
       />
 
       {/* Box Selection Component */}
