@@ -170,35 +170,31 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     // Find edge based on face intersection and closest edge
     if (!intersect.face) return;
 
-    const faceIndex = intersect.faceIndex;
+    const geometryFaceIndex = intersect.faceIndex;
     const point = intersect.point;
 
-    // Find edges of the intersected face
-    let closestEdgeIndex = -1;
-    let closestDistance = Infinity;
+    // Map geometry face index to mesh data face index
+    const meshFaceIndex = MeshEditor.getMeshFaceIndex(
+      geometry!,
+      geometryFaceIndex
+    );
+    if (meshFaceIndex === null) {
+      console.warn(
+        "Could not find mesh face index for geometry face:",
+        geometryFaceIndex
+      );
+      return;
+    }
 
-    meshEditData!.edges.forEach((edge, index) => {
-      const v1 = meshEditData!.vertices[edge.vertices[0]];
-      const v2 = meshEditData!.vertices[edge.vertices[1]];
+    // Find the closest edge within this face
+    const closestEdgeIndex = MeshEditor.findClosestEdgeInFace(
+      meshEditData!,
+      meshFaceIndex,
+      point,
+      0.1
+    );
 
-      if (v1 && v2) {
-        const start = new THREE.Vector3(...v1.position);
-        const end = new THREE.Vector3(...v2.position);
-
-        // Calculate distance from point to line segment
-        const line = new THREE.Line3(start, end);
-        const closestPoint = new THREE.Vector3();
-        line.closestPointToPoint(point, true, closestPoint);
-        const distance = point.distanceTo(closestPoint);
-
-        if (distance < closestDistance && distance < 0.1) {
-          closestDistance = distance;
-          closestEdgeIndex = index;
-        }
-      }
-    });
-
-    if (closestEdgeIndex !== -1) {
+    if (closestEdgeIndex !== null) {
       const isShiftPressed = event.shiftKey;
       const isCtrlPressed = event.ctrlKey || event.metaKey;
 
@@ -224,7 +220,20 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
   const handleFaceSelection = (intersect: any, event: any) => {
     if (!intersect.face) return;
 
-    const faceIndex = Math.floor(intersect.faceIndex! / 2); // Assuming triangulated faces
+    const geometryFaceIndex = intersect.faceIndex;
+
+    // Map geometry face index to mesh data face index
+    const meshFaceIndex = MeshEditor.getMeshFaceIndex(
+      geometry!,
+      geometryFaceIndex
+    );
+    if (meshFaceIndex === null) {
+      console.warn(
+        "Could not find mesh face index for geometry face:",
+        geometryFaceIndex
+      );
+      return;
+    }
 
     const isShiftPressed = event.shiftKey;
     const isCtrlPressed = event.ctrlKey || event.metaKey;
@@ -241,7 +250,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
       selectSubObjects({
         modelId,
         type: "face",
-        indices: [faceIndex],
+        indices: [meshFaceIndex],
         mode,
       })
     );

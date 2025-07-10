@@ -121,6 +121,13 @@ export const useMeshEditor = (modelId: string) => {
           case 'deleteSelectedElements':
             currentMeshData = MeshEditor.deleteSelected(currentMeshData);
             break;
+          case 'moveEdges':
+            currentMeshData = MeshEditor.moveEdges(
+              currentMeshData,
+              operation.params.delta,
+              operation.params.constraint
+            );
+            break;
           default:
             console.warn('Unknown mesh operation:', operation.type);
         }
@@ -257,6 +264,17 @@ export const useMeshEditor = (modelId: string) => {
     }));
   }, [dispatch, modelId]);
 
+  const moveEdges = useCallback((delta: Vector3Tuple, constraint?: string, pivot?: Vector3Tuple) => {
+    dispatch(addMeshOperation({
+      modelId,
+      operation: {
+        type: 'moveEdges',
+        params: { delta, constraint, pivot },
+        timestamp: Date.now()
+      }
+    }));
+  }, [dispatch, modelId]);
+
   // Selection operations
   const selectElements = useCallback((type: SubObjectType, indices: number[], mode: 'set' | 'add' | 'remove' = 'set') => {
     // Update selection in UI store (which also updates mesh edit data)
@@ -332,6 +350,7 @@ export const useMeshEditor = (modelId: string) => {
     subdivideFaces,
     
     // Edge operations
+    moveEdges,
     bevelEdges,
     splitEdges,
     loopCut,

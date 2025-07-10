@@ -136,17 +136,12 @@ export class MeshEditor {
           const edgeKey = v1 < v2 ? `${v1}-${v2}` : `${v2}-${v1}`;
           
           if (!edgeMap.has(edgeKey)) {
-            const edgeIndex = edgeMap.size;
             const edge: EdgeData = {
-              index: edgeIndex,
+              index: -1, // Will be set later
               vertices: v1 < v2 ? [v1, v2] : [v2, v1],
               selected: false
             };
             edgeMap.set(edgeKey, edge);
-            
-            // Update vertex-to-edge mapping
-            this.vertexToEdges.get(v1)?.add(edgeIndex);
-            this.vertexToEdges.get(v2)?.add(edgeIndex);
             
             // Initialize edge-to-face mapping
             this.edgeToFaces.set(edgeKey, new Set());
@@ -157,8 +152,17 @@ export class MeshEditor {
         });
       }
 
-      // Convert edge map to array
-      edges.push(...Array.from(edgeMap.values()));
+      // Convert edge map to array and assign proper indices
+      const edgeArray = Array.from(edgeMap.values());
+      edgeArray.forEach((edge, index) => {
+        edge.index = index;
+        edges.push(edge);
+        
+        // Update vertex-to-edge mapping with correct index
+        const [v1, v2] = edge.vertices;
+        this.vertexToEdges.get(v1)?.add(index);
+        this.vertexToEdges.get(v2)?.add(index);
+      });
 
       // Build face adjacency (faces sharing edges)
       this.edgeToFaces.forEach((faceSet) => {
@@ -209,9 +213,18 @@ export class MeshEditor {
     const indices = new Uint16Array(vertexCount);
 
     let vertexIndex = 0;
+    
+    // Store mapping from geometry face index to mesh data face index
+    const geometryToMeshFaceMap = new Map<number, number>();
+    
+    // Store mapping from geometry edge to mesh data edge index
+    const geometryToMeshEdgeMap = new Map<string, number>();
 
     // Rebuild geometry from mesh data faces
-    meshData.faces.forEach((face) => {
+    meshData.faces.forEach((face, meshFaceIndex) => {
+      const geometryFaceIndex = Math.floor(vertexIndex / 3);
+      geometryToMeshFaceMap.set(geometryFaceIndex, meshFaceIndex);
+      
       face.vertices.forEach((weldedVertexIndex) => {
         const vertex = meshData.vertices[weldedVertexIndex];
         
@@ -242,6 +255,24 @@ export class MeshEditor {
         
         vertexIndex++;
       });
+      
+      // Map face edges to mesh data edges
+      for (let i = 0; i < face.vertices.length; i++) {
+        const v1 = face.vertices[i];
+        const v2 = face.vertices[(i + 1) % face.vertices.length];
+        const edgeKey = v1 < v2 ? `${v1}-${v2}` : `${v2}-${v1}`;
+        
+        // Find the corresponding edge in mesh data
+        const meshEdgeIndex = meshData.edges.findIndex(edge => {
+          const [ev1, ev2] = edge.vertices;
+          const meshEdgeKey = ev1 < ev2 ? `${ev1}-${ev2}` : `${ev2}-${ev1}`;
+          return meshEdgeKey === edgeKey;
+        });
+        
+        if (meshEdgeIndex !== -1) {
+          geometryToMeshEdgeMap.set(edgeKey, meshEdgeIndex);
+        }
+      }
     });
 
     // Update geometry attributes
@@ -249,6 +280,13 @@ export class MeshEditor {
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+    // Store the mapping on the geometry for use in raycasting
+    (geometry as any).meshDataMapping = {
+      faceMap: geometryToMeshFaceMap,
+      edgeMap: geometryToMeshEdgeMap,
+      meshData: meshData
+    };
 
     // Mark all attributes as needing update
     geometry.attributes.position.needsUpdate = true;
@@ -261,6 +299,89 @@ export class MeshEditor {
     // Recompute bounding box and sphere
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
+  }
+
+  // ====================== GEOMETRY MAPPING UTILITIES ======================
+
+  /**
+   * Get mesh data mapping from geometry
+   */
+  static getMeshDataMapping(geometry: THREE.BufferGeometry): {
+    faceMap: Map<number, number>;
+    edgeMap: Map<string, number>;
+    meshData: MeshEditData;
+  } | null {
+    return (geometry as any)?.meshDataMapping || null;
+  }
+
+  /**
+   * Get mesh face index from geometry face index
+   */
+  static getMeshFaceIndex(geometry: THREE.BufferGeometry, geometryFaceIndex: number): number | null {
+    const mapping = this.getMeshDataMapping(geometry);
+    return mapping?.faceMap.get(geometryFaceIndex) ?? null;
+  }
+
+  /**
+   * Get mesh edge index from two vertex indices
+   */
+  static getMeshEdgeIndex(geometry: THREE.BufferGeometry, v1Index: number, v2Index: number): number | null {
+    const mapping = this.getMeshDataMapping(geometry);
+    if (!mapping) return null;
+    
+    const edgeKey = v1Index < v2Index ? `${v1Index}-${v2Index}` : `${v2Index}-${v1Index}`;
+    return mapping.edgeMap.get(edgeKey) ?? null;
+  }
+
+  /**
+   * Find closest edge to a point within a specific face
+   */
+  static findClosestEdgeInFace(
+    meshData: MeshEditData, 
+    faceIndex: number, 
+    point: THREE.Vector3, 
+    maxDistance: number = 0.1
+  ): number | null {
+    const face = meshData.faces[faceIndex];
+    if (!face) return null;
+
+    let closestEdgeIndex = -1;
+    let closestDistance = Infinity;
+
+    // Check edges that belong to this face
+    for (let i = 0; i < face.vertices.length; i++) {
+      const v1Index = face.vertices[i];
+      const v2Index = face.vertices[(i + 1) % face.vertices.length];
+      
+      // Find the edge in mesh data that connects these vertices
+      const edgeIndex = meshData.edges.findIndex(edge => {
+        const [ev1, ev2] = edge.vertices;
+        return (ev1 === v1Index && ev2 === v2Index) || (ev1 === v2Index && ev2 === v1Index);
+      });
+
+      if (edgeIndex !== -1) {
+        const v1 = meshData.vertices[v1Index];
+        const v2 = meshData.vertices[v2Index];
+
+        if (v1 && v2) {
+          const start = new THREE.Vector3(...v1.position);
+          const end = new THREE.Vector3(...v2.position);
+
+          // Calculate distance from point to line segment
+          const line = new THREE.Line3(start, end);
+          const closestPoint = new THREE.Vector3();
+          line.closestPointToPoint(point, true, closestPoint);
+          const distance = point.distanceTo(closestPoint);
+
+          if (distance < closestDistance && distance < maxDistance) {
+            closestDistance = distance;
+            closestEdgeIndex = edgeIndex;
+          }
+        }
+      }
+    }
+
+    return closestEdgeIndex !== -1 ? closestEdgeIndex : null;
   }
 
   // ====================== SELECTION UTILITIES ======================
@@ -978,9 +1099,9 @@ export class MeshEditor {
     const selectedEdges = this.getSelectedEdges(meshData);
     if (selectedEdges.length === 0) return meshData;
 
-    const newVertices = [...meshData.vertices];
-    const newEdges = [...meshData.edges];
-    const newFaces = [...meshData.faces];
+    let newVertices = [...meshData.vertices];
+    let newEdges = [...meshData.edges];
+    let newFaces = [...meshData.faces];
 
     selectedEdges.forEach(edge => {
       const [v1Index, v2Index] = edge.vertices;
@@ -1008,28 +1129,23 @@ export class MeshEditor {
       
       splitVertices.push(v2Index);
 
-      // Replace original edge with multiple edges
-      const originalEdgeIndex = newEdges.findIndex(e => e.index === edge.index);
-      if (originalEdgeIndex !== -1) {
-        newEdges.splice(originalEdgeIndex, 1);
-      }
+      // Remove original edge
+      newEdges = newEdges.filter(e => e.index !== edge.index);
 
       // Create new edges between split vertices
       for (let i = 0; i < splitVertices.length - 1; i++) {
-        newEdges.push({
+        const newEdge: EdgeData = {
           index: newEdges.length,
           vertices: [splitVertices[i], splitVertices[i + 1]],
           selected: false
-        });
+        };
+        newEdges.push(newEdge);
       }
+    });
 
-      // Update faces that use this edge
-      newFaces.forEach(face => {
-        if (face.vertices.includes(v1Index) && face.vertices.includes(v2Index)) {
-          // This face needs to be split - complex operation
-          // For now, just mark it for manual handling
-        }
-      });
+    // Reassign edge indices to ensure consistency
+    newEdges.forEach((edge, index) => {
+      edge.index = index;
     });
 
     return {
@@ -1037,6 +1153,48 @@ export class MeshEditor {
       vertices: newVertices,
       edges: newEdges,
       faces: newFaces
+    };
+  }
+
+  /**
+   * Move selected edges (move the vertices that make up the edges)
+   */
+  static moveEdges(
+    meshData: MeshEditData, 
+    delta: Vector3Tuple, 
+    constraint?: 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz'
+  ): MeshEditData {
+    const selectedEdges = this.getSelectedEdges(meshData);
+    if (selectedEdges.length === 0) return meshData;
+
+    // Get all vertices that are part of selected edges
+    const edgeVertices = new Set<number>();
+    selectedEdges.forEach(edge => {
+      edge.vertices.forEach(vertexIndex => {
+        edgeVertices.add(vertexIndex);
+      });
+    });
+
+    const constrainedDelta = this.applyConstraint(delta, constraint);
+    
+    const newVertices = meshData.vertices.map(vertex => {
+      if (edgeVertices.has(vertex.index)) {
+        const newPosition: Vector3Tuple = [
+          vertex.position[0] + constrainedDelta[0],
+          vertex.position[1] + constrainedDelta[1],
+          vertex.position[2] + constrainedDelta[2]
+        ];
+        return {
+          ...vertex,
+          position: newPosition
+        };
+      }
+      return vertex;
+    });
+
+    return { 
+      ...meshData, 
+      vertices: newVertices 
     };
   }
 

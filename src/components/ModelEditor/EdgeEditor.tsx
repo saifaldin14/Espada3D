@@ -57,6 +57,7 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
 
   // Use mesh editor hook for operations
   const {
+    moveEdges,
     bevelEdges,
     splitEdges,
     loopCut,
@@ -77,6 +78,12 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
   // Loop cut parameters
   const [loopCuts, setLoopCuts] = useState(1);
   const [loopSmoothness, setLoopSmoothness] = useState(0.0);
+
+  // Move parameters
+  const [moveDistance, setMoveDistance] = useState(0.1);
+  const [moveConstraint, setMoveConstraint] = useState<
+    "x" | "y" | "z" | "xy" | "xz" | "yz" | ""
+  >("");
 
   // Memoize selected edges calculation (must be before early return)
   const selectedEdges = useMemo(() => {
@@ -181,6 +188,37 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
     if (profile < 0.4) return "Concave";
     if (profile > 0.6) return "Convex";
     return "Linear";
+  };
+
+  const handleMoveEdges = (direction: "x" | "y" | "z" | "-x" | "-y" | "-z") => {
+    if (selectedEdges.length === 0) return;
+
+    const delta: [number, number, number] = [0, 0, 0];
+    const distance = moveDistance;
+
+    switch (direction) {
+      case "x":
+        delta[0] = distance;
+        break;
+      case "-x":
+        delta[0] = -distance;
+        break;
+      case "y":
+        delta[1] = distance;
+        break;
+      case "-y":
+        delta[1] = -distance;
+        break;
+      case "z":
+        delta[2] = distance;
+        break;
+      case "-z":
+        delta[2] = -distance;
+        break;
+    }
+
+    const constraint = moveConstraint || undefined;
+    moveEdges(delta, constraint);
   };
 
   return (
@@ -453,6 +491,111 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
               >
                 Loop Cut (from first edge)
               </Button>
+            </Paper>
+
+            {/* Move Edges */}
+            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Move Edges (G)
+              </Typography>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Distance: {moveDistance.toFixed(3)}
+                </Typography>
+                <Slider
+                  value={moveDistance}
+                  onChange={(event: Event, value: number | number[]) =>
+                    setMoveDistance(value as number)
+                  }
+                  min={0.01}
+                  max={2.0}
+                  step={0.01}
+                  size="small"
+                />
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Constraint</InputLabel>
+                  <Select
+                    value={moveConstraint}
+                    onChange={(e) => setMoveConstraint(e.target.value as any)}
+                    label="Constraint"
+                  >
+                    <MenuItem value="">None</MenuItem>
+                    <MenuItem value="x">X-Axis</MenuItem>
+                    <MenuItem value="y">Y-Axis</MenuItem>
+                    <MenuItem value="z">Z-Axis</MenuItem>
+                    <MenuItem value="xy">XY-Plane</MenuItem>
+                    <MenuItem value="xz">XZ-Plane</MenuItem>
+                    <MenuItem value="yz">YZ-Plane</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+
+              <Grid container spacing={1}>
+                <Grid item xs={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleMoveEdges("x")}
+                  >
+                    +X
+                  </Button>
+                </Grid>
+                <Grid item xs={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleMoveEdges("y")}
+                  >
+                    +Y
+                  </Button>
+                </Grid>
+                <Grid item xs={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleMoveEdges("z")}
+                  >
+                    +Z
+                  </Button>
+                </Grid>
+                <Grid item xs={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleMoveEdges("-x")}
+                  >
+                    -X
+                  </Button>
+                </Grid>
+                <Grid item xs={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleMoveEdges("-y")}
+                  >
+                    -Y
+                  </Button>
+                </Grid>
+                <Grid item xs={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleMoveEdges("-z")}
+                  >
+                    -Z
+                  </Button>
+                </Grid>
+              </Grid>
             </Paper>
 
             {/* Selection Details */}
