@@ -11,7 +11,7 @@ export const APP_CONFIG = {
     DEFAULT_COLOR: '#ecf0f1',
     OUTLINE_COLOR: 0x0000ff,
     DEFAULT_OPACITY: 1,
-    DEFAULT_METALNESS: 0,
+    DEFAULT_METALNESS: 0.1,
     DEFAULT_ROUGHNESS: 0.5,
   },
   UI: {

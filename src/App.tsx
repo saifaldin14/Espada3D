@@ -52,9 +52,9 @@ const AppContent: React.FC = () => {
       <Box sx={styles.workspaceContainer}>
         {/* Left Sidebar - Resizable */}
         <ResizablePanel
-          defaultWidth={320}
-          minWidth={250}
-          maxWidth={450}
+          defaultWidth={240}
+          minWidth={180}
+          maxWidth={360}
           side="left"
           className="workspace-sidebar-left"
         >
@@ -120,9 +120,9 @@ const AppContent: React.FC = () => {
 
         {/* Right Properties Panel - Resizable */}
         <ResizablePanel
-          defaultWidth={380}
-          minWidth={300}
-          maxWidth={600}
+          defaultWidth={240}
+          minWidth={180}
+          maxWidth={300}
           side="right"
           className="workspace-sidebar-right"
         >
@@ -277,7 +277,7 @@ const styles = {
   viewportActions: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
+    gap: 5,
     background: "rgba(255, 255, 255, 0.05)",
     borderRadius: 8,
     padding: "4px",

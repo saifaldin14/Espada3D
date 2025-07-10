@@ -169,7 +169,7 @@ const Canvas3D: React.FC = () => {
             fov: 75,
           }}
           onCreated={({ gl }) => {
-            gl.setClearColor("#f0f0f0");
+            gl.setClearColor("#1e1e1e");
           }}
         >
           <ModelProvider selectedModel={null}>

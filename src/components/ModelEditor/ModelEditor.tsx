@@ -408,7 +408,7 @@ const ModelEditor: React.FC = () => {
                       }}
                     />
                   }
-                  label="Visible"
+                  label=""
                   sx={{ m: 0 }}
                 />
                 <Typography variant="caption" sx={styles.stateCaption}>
@@ -434,7 +434,7 @@ const ModelEditor: React.FC = () => {
                       }}
                     />
                   }
-                  label="Locked"
+                  label=""
                   sx={{ m: 0 }}
                 />
                 <Typography variant="caption" sx={styles.stateCaption}>
@@ -929,35 +929,40 @@ const ModelEditor: React.FC = () => {
         </Box>
 
         {/* Edit Mode Tabs */}
-        <Stack direction="row" spacing={1} sx={styles.editModeButtonGroup}>
-          <Button
-            size="small"
-            variant={editMode === "model" ? "contained" : "outlined"}
-            onClick={() => dispatch(setEditMode("model"))}
-            startIcon={<ViewInAr fontSize="small" />}
-            sx={styles.editModeButton}
-          >
-            Object
-          </Button>
-          <Button
-            size="small"
-            variant={editMode === "material" ? "contained" : "outlined"}
-            onClick={() => dispatch(setEditMode("material"))}
-            startIcon={<Style fontSize="small" />}
-            sx={styles.editModeButton}
-          >
-            Material
-          </Button>
-          <Button
-            size="small"
-            onClick={() => dispatch(setEditMode("vertex"))}
-            variant={editMode === "vertex" ? "contained" : "outlined"}
-            startIcon={<Tune fontSize="small" />}
-            sx={styles.editModeButton}
-          >
-            Mesh
-          </Button>
-        </Stack>
+        <Box sx={styles.editModeButtonContainer}>
+          <Tooltip title="Object Mode" placement="top">
+            <Button
+              size="small"
+              variant={editMode === "model" ? "contained" : "outlined"}
+              onClick={() => dispatch(setEditMode("model"))}
+              sx={styles.editModeButton}
+            >
+              <ViewInAr sx={{ fontSize: "20px" }} />
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Material Mode" placement="top">
+            <Button
+              size="small"
+              variant={editMode === "material" ? "contained" : "outlined"}
+              onClick={() => dispatch(setEditMode("material"))}
+              sx={styles.editModeButton}
+            >
+              <Style sx={{ fontSize: "20px" }} />
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Mesh Mode" placement="top">
+            <Button
+              size="small"
+              onClick={() => dispatch(setEditMode("vertex"))}
+              variant={editMode === "vertex" ? "contained" : "outlined"}
+              sx={styles.editModeButton}
+            >
+              <Tune sx={{ fontSize: "20px" }} />
+            </Button>
+          </Tooltip>
+        </Box>
       </Box>
 
       {selectedModelId ? (
@@ -1397,25 +1402,41 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
   },
-  editModeButtonGroup: {
-    backgroundColor: "rgba(255, 255, 255, 0.03)",
-    border: "1px solid rgba(255, 255, 255, 0.06)",
+  editModeButtonContainer: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    gap: "6px",
+    backgroundColor: "rgba(17, 21, 34, 0.8)",
+    padding: "5px",
     borderRadius: "8px",
-    padding: "4px",
     width: "100%",
+    border: "1px solid rgba(72, 84, 139, 0.3)",
   },
   editModeButton: {
-    flex: 1,
     borderRadius: "6px",
-    fontSize: "0.75rem",
-    textTransform: "none" as const,
-    padding: "6px 0",
-    minWidth: "unset",
+    padding: "8px",
+    minWidth: "40px",
+    height: "40px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "background-color 0.2s ease",
     "&.MuiButton-contained": {
-      background:
-        "linear-gradient(135deg, rgba(0, 201, 255, 0.7) 0%, rgba(146, 254, 157, 0.7) 100%)",
-      color: "rgba(0, 0, 0, 0.9)",
-      fontWeight: 600,
+      background: "rgba(79, 105, 198, 0.8)",
+      color: "#ffffff",
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+      "&:hover": {
+        background: "rgba(79, 105, 198, 0.9)",
+      },
+    },
+    "&.MuiButton-outlined": {
+      borderColor: "rgba(255, 255, 255, 0.15)",
+      color: "rgba(255, 255, 255, 0.8)",
+      backgroundColor: "rgba(255, 255, 255, 0.03)",
+      "&:hover": {
+        borderColor: "rgba(255, 255, 255, 0.3)",
+        backgroundColor: "rgba(255, 255, 255, 0.08)",
+      },
     },
   },
   switchControl: {
