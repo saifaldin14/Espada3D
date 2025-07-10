@@ -143,8 +143,8 @@ const AppContent: React.FC = () => {
         {/* Right Properties Panel - Resizable */}
         <ResizablePanel
           defaultWidth={380}
-          minWidth={320}
-          maxWidth={500}
+          minWidth={300} // Reduce minimum width for better responsiveness
+          maxWidth={600} // Increase maximum width for more flexibility
           side="right"
           className="workspace-sidebar-right"
         >

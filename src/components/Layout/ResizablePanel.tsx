@@ -40,10 +40,15 @@ const ResizablePanel: React.FC<ResizablePanelProps> = ({
         newWidth = rect.right - e.clientX;
       }
 
+      // Apply boundaries with smooth clamping
       newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
-      setWidth(newWidth);
+
+      // Only update if the change is significant enough (reduces jitter)
+      if (Math.abs(newWidth - width) > 1) {
+        setWidth(newWidth);
+      }
     },
-    [isResizing, side, minWidth, maxWidth]
+    [isResizing, side, minWidth, maxWidth, width]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -70,14 +75,19 @@ const ResizablePanel: React.FC<ResizablePanelProps> = ({
     position: "absolute" as const,
     top: 0,
     bottom: 0,
-    width: "4px",
+    width: "6px", // Make resizer slightly wider for better usability
     background: "transparent",
     cursor: "col-resize",
-    zIndex: 10,
+    zIndex: 1000, // Increase z-index to ensure it's always on top
+    transition: "background 0.2s ease",
     "&:hover": {
-      background: "rgba(0, 255, 255, 0.3)",
+      background: "rgba(0, 255, 255, 0.4)",
+      boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
     },
-    ...(side === "left" ? { right: 0 } : { left: 0 }),
+    "&:active": {
+      background: "rgba(0, 255, 255, 0.6)",
+    },
+    ...(side === "left" ? { right: "-3px" } : { left: "-3px" }), // Center the resizer on the border
   };
 
   return (
@@ -92,9 +102,20 @@ const ResizablePanel: React.FC<ResizablePanelProps> = ({
         transition: isResizing ? "none" : "width 0.2s ease",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden", // Prevent content overflow
+        height: "100%", // Ensure full height
       }}
     >
-      {children}
+      <Box
+        sx={{
+          flex: 1,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {children}
+      </Box>
       <Box sx={resizerStyles} onMouseDown={handleMouseDown} />
     </Box>
   );

@@ -27,12 +27,9 @@ import {
   Switch,
   Tabs,
   Tab,
-  Button,
   IconButton,
   Slider,
-  Divider,
   Tooltip,
-  ButtonGroup,
   Chip,
 } from "@mui/material";
 import {
@@ -265,7 +262,7 @@ const ModelEditor: React.FC = () => {
           Material Properties
         </Typography>
 
-        <FormControl fullWidth sx={{ marginBottom: 2 }}>
+        <FormControl fullWidth sx={styles.formControl}>
           <InputLabel>Material Type</InputLabel>
           <Select
             value={materialType}
@@ -285,12 +282,17 @@ const ModelEditor: React.FC = () => {
         <Typography variant="body2" sx={{ marginBottom: 1 }}>
           Base Color
         </Typography>
-        <Box sx={{ marginBottom: 2 }}>
-          <SketchPicker
-            color={color}
-            onChange={(color) => handleMaterialChange("color", color.hex)}
-            disableAlpha={false}
-          />
+        <Box
+          sx={{ marginBottom: 2, display: "flex", justifyContent: "center" }}
+        >
+          <Box sx={{ transform: "scale(0.8)", transformOrigin: "top center" }}>
+            <SketchPicker
+              color={color}
+              onChange={(color) => handleMaterialChange("color", color.hex)}
+              disableAlpha={false}
+              width="240px"
+            />
+          </Box>
         </Box>
 
         <Typography variant="body2" gutterBottom>
@@ -305,7 +307,7 @@ const ModelEditor: React.FC = () => {
           max={1}
           step={0.01}
           disabled={locked}
-          sx={{ marginBottom: 2 }}
+          sx={styles.slider}
         />
 
         {(materialType === "standard" || materialType === "physical") && (
@@ -322,7 +324,7 @@ const ModelEditor: React.FC = () => {
               max={1}
               step={0.01}
               disabled={locked}
-              sx={{ marginBottom: 2 }}
+              sx={styles.slider}
             />
 
             <Typography variant="body2" gutterBottom>
@@ -337,7 +339,7 @@ const ModelEditor: React.FC = () => {
               max={1}
               step={0.01}
               disabled={locked}
-              sx={{ marginBottom: 2 }}
+              sx={styles.slider}
             />
           </>
         )}
@@ -345,12 +347,17 @@ const ModelEditor: React.FC = () => {
         <Typography variant="body2" sx={{ marginBottom: 1 }}>
           Emissive Color
         </Typography>
-        <Box sx={{ marginBottom: 2 }}>
-          <SketchPicker
-            color={emissive}
-            onChange={(color) => handleMaterialChange("emissive", color.hex)}
-            disableAlpha={true}
-          />
+        <Box
+          sx={{ marginBottom: 2, display: "flex", justifyContent: "center" }}
+        >
+          <Box sx={{ transform: "scale(0.8)", transformOrigin: "top center" }}>
+            <SketchPicker
+              color={emissive}
+              onChange={(color) => handleMaterialChange("emissive", color.hex)}
+              disableAlpha={true}
+              width="240px"
+            />
+          </Box>
         </Box>
 
         <Typography variant="body2" gutterBottom>
@@ -365,7 +372,7 @@ const ModelEditor: React.FC = () => {
           max={2}
           step={0.01}
           disabled={locked}
-          sx={{ marginBottom: 2 }}
+          sx={styles.slider}
         />
 
         <FormControlLabel
@@ -379,7 +386,7 @@ const ModelEditor: React.FC = () => {
             />
           }
           label="Transparent"
-          sx={{ marginBottom: 1 }}
+          sx={styles.switchControl}
         />
 
         <FormControlLabel
@@ -393,6 +400,7 @@ const ModelEditor: React.FC = () => {
             />
           }
           label="Wireframe"
+          sx={styles.switchControl}
         />
       </CardContent>
     </Card>
@@ -676,7 +684,7 @@ const styles = {
   editor: {
     ...glassStyles.panel,
     padding: "24px",
-    width: "380px",
+    width: "100%", // Change to full width to work with ResizablePanel
     height: "100vh",
     margin: "16px 16px 16px 8px",
     borderRadius: "20px",
@@ -684,6 +692,7 @@ const styles = {
     flexDirection: "column" as const,
     position: "relative",
     zIndex: 10,
+    boxSizing: "border-box", // Ensure padding is included in width calculation
   },
   header: {
     display: "flex",
@@ -713,8 +722,10 @@ const styles = {
   },
   scrollContainer: {
     overflowY: "auto" as const,
+    overflowX: "hidden" as const, // Prevent horizontal overflow
     flex: 1,
-    paddingRight: "12px",
+    paddingRight: "8px", // Reduce padding to prevent overflow
+    marginRight: "4px", // Add margin for scrollbar space
     "&::-webkit-scrollbar": {
       width: "6px",
     },
@@ -725,10 +736,14 @@ const styles = {
     "&::-webkit-scrollbar-thumb": {
       background: "rgba(255, 255, 255, 0.3)",
       borderRadius: "3px",
+      "&:hover": {
+        background: "rgba(255, 255, 255, 0.5)",
+      },
     },
   },
   tabs: {
-    marginBottom: "24px",
+    marginBottom: "20px", // Reduce margin to save space
+    minHeight: "48px",
     "& .MuiTabs-indicator": {
       background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
       height: "3px",
@@ -736,16 +751,28 @@ const styles = {
     },
     "& .MuiTabs-scrollButtons": {
       color: "#ffffff",
+      "&.Mui-disabled": {
+        opacity: 0.3,
+      },
+    },
+    "& .MuiTabs-flexContainer": {
+      minHeight: "48px",
     },
   },
   tab: {
     textTransform: "none",
     fontWeight: 600,
-    fontSize: "0.875rem",
+    fontSize: "0.8rem", // Slightly smaller font for better fit
     minHeight: "48px",
+    minWidth: "80px", // Ensure minimum width
     color: "rgba(255, 255, 255, 0.8)",
+    padding: "12px 16px",
     "&.Mui-selected": {
       color: "#ffffff",
+    },
+    "&:hover": {
+      color: "#ffffff",
+      opacity: 0.8,
     },
   },
   tabContent: {
@@ -754,33 +781,108 @@ const styles = {
   sectionContainer: {
     display: "flex",
     flexDirection: "column" as const,
-    gap: "20px",
+    gap: "16px", // Reduce gap for better spacing
   },
   card: {
     ...glassStyles.darkPanel,
-    marginBottom: "20px",
+    marginBottom: "16px", // Reduce margin for better spacing
     transition: "all 0.3s ease-in-out",
     "&:hover": {
-      transform: "translateY(-2px)",
-      boxShadow: "0 12px 40px rgba(0, 0, 0, 0.2)",
+      transform: "translateY(-1px)", // Reduce hover transform
+      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+    },
+    "&:last-child": {
+      marginBottom: 0, // Remove margin from last card
     },
   },
   cardContent: {
-    padding: "20px !important",
+    padding: "16px !important", // Reduce padding for more content space
     "&:last-child": {
-      paddingBottom: "20px !important",
+      paddingBottom: "16px !important",
     },
   },
   textField: {
     marginTop: "8px",
     "& .MuiOutlinedInput-root": {
       ...glassStyles.button,
+      fontSize: "0.875rem", // Ensure consistent font size
       "& input": {
         color: "#ffffff",
+        padding: "12px 14px", // Consistent padding
+      },
+      "& fieldset": {
+        borderColor: "rgba(255, 255, 255, 0.2)",
+      },
+      "&:hover fieldset": {
+        borderColor: "rgba(255, 255, 255, 0.4)",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#00c9ff",
       },
     },
+  },
+  formControl: {
+    marginBottom: "16px !important",
     "& .MuiInputLabel-root": {
       color: "rgba(255, 255, 255, 0.8)",
+      fontSize: "0.875rem",
+      "&.Mui-focused": {
+        color: "#00c9ff",
+      },
+    },
+    "& .MuiSelect-select": {
+      color: "#ffffff",
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+    },
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: "rgba(255, 255, 255, 0.2)",
+    },
+    "&:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: "rgba(255, 255, 255, 0.4)",
+    },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#00c9ff",
+    },
+  },
+  slider: {
+    marginBottom: "16px !important",
+    color: "#00c9ff",
+    "& .MuiSlider-track": {
+      background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+    },
+    "& .MuiSlider-thumb": {
+      background: "#ffffff",
+      border: "2px solid #00c9ff",
+      "&:hover": {
+        boxShadow: "0 0 0 8px rgba(0, 201, 255, 0.16)",
+      },
+    },
+    "& .MuiSlider-rail": {
+      color: "rgba(255, 255, 255, 0.3)",
+    },
+  },
+  switchControl: {
+    margin: "8px 0",
+    color: "#ffffff",
+    "& .MuiFormControlLabel-label": {
+      fontSize: "0.875rem",
+      fontWeight: 500,
+    },
+    "& .MuiSwitch-switchBase": {
+      "&.Mui-checked": {
+        "& + .MuiSwitch-track": {
+          backgroundColor: "rgba(0, 201, 255, 0.4)",
+        },
+        "& .MuiSwitch-thumb": {
+          background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+        },
+      },
+    },
+    "& .MuiSwitch-thumb": {
+      background: "#ffffff",
+    },
+    "& .MuiSwitch-track": {
+      backgroundColor: "rgba(255, 255, 255, 0.3)",
     },
   },
   actionButton: {
@@ -797,8 +899,9 @@ const styles = {
   },
   actionButtonGroup: {
     display: "flex",
-    gap: "12px",
-    marginBottom: "24px",
+    gap: "8px", // Reduce gap to fit better
+    marginBottom: "20px", // Reduce margin
+    flexWrap: "wrap", // Allow wrapping on smaller screens
   },
   emptyState: {
     display: "flex",
