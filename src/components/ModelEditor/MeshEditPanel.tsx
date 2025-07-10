@@ -1,8 +1,17 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { setEditMode } from "../../store/slices/uiSlice";
-import { Box, Typography, ButtonGroup, Button, Paper } from "@mui/material";
-import { Tune } from "@mui/icons-material";
+import {
+  Box,
+  Typography,
+  ButtonGroup,
+  Button,
+  Paper,
+  Tooltip,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
+import { Tune, CropFree, LinearScale, Crop } from "@mui/icons-material";
 import SubObjectEditor from "./SubObjectEditor";
 import MeshOperationsPanel from "./MeshOperationsPanel";
 import { EditMode } from "../../types";
@@ -14,6 +23,9 @@ interface MeshEditPanelProps {
 const MeshEditPanel: React.FC<MeshEditPanelProps> = ({ modelId }) => {
   const dispatch = useDispatch();
   const editMode = useSelector((state: any) => state.ui.editMode);
+  const theme = useTheme();
+  const isSmallPanel = useMediaQuery("(max-width:280px)");
+  const isVerySmallPanel = useMediaQuery("(max-width:200px)");
 
   const handleMeshModeChange = (mode: EditMode) => {
     dispatch(setEditMode(mode));
@@ -24,39 +36,54 @@ const MeshEditPanel: React.FC<MeshEditPanelProps> = ({ modelId }) => {
       <Box sx={styles.sectionHeader}>
         <Box sx={styles.sectionHeaderLeft}>
           <Tune sx={styles.sectionIcon} />
-          <Typography variant="subtitle1" sx={styles.sectionTitle}>
-            Mesh Edit Mode
+          <Typography variant="subtitle1" sx={styles.sectionTitle} noWrap>
+            {isVerySmallPanel ? "Mesh Edit" : "Mesh Edit Mode"}
           </Typography>
         </Box>
       </Box>
       <Box sx={styles.sectionContent}>
         {/* Sub-mode selection for mesh editing */}
-        <ButtonGroup fullWidth sx={{ mb: 2 }}>
-          <Button
-            variant={editMode === "vertex" ? "contained" : "outlined"}
-            onClick={() => handleMeshModeChange("vertex")}
-            sx={styles.meshModeButton}
-          >
-            Vertex
-          </Button>
-          <Button
-            variant={editMode === "edge" ? "contained" : "outlined"}
-            onClick={() => handleMeshModeChange("edge")}
-            sx={styles.meshModeButton}
-          >
-            Edge
-          </Button>
-          <Button
-            variant={editMode === "face" ? "contained" : "outlined"}
-            onClick={() => handleMeshModeChange("face")}
-            sx={styles.meshModeButton}
-          >
-            Face
-          </Button>
+        <ButtonGroup
+          fullWidth
+          orientation={isSmallPanel ? "vertical" : "horizontal"}
+          sx={{ mb: isSmallPanel ? 1 : 2 }}
+        >
+          <Tooltip title="Vertex Mode">
+            <Button
+              variant={editMode === "vertex" ? "contained" : "outlined"}
+              onClick={() => handleMeshModeChange("vertex")}
+              sx={styles.meshModeButton}
+              size={isSmallPanel ? "small" : "medium"}
+            >
+              {isSmallPanel ? <CropFree sx={styles.buttonIcon} /> : "Vertex"}
+            </Button>
+          </Tooltip>
+          <Tooltip title="Edge Mode">
+            <Button
+              variant={editMode === "edge" ? "contained" : "outlined"}
+              onClick={() => handleMeshModeChange("edge")}
+              sx={styles.meshModeButton}
+              size={isSmallPanel ? "small" : "medium"}
+            >
+              {isSmallPanel ? <LinearScale sx={styles.buttonIcon} /> : "Edge"}
+            </Button>
+          </Tooltip>
+          <Tooltip title="Face Mode">
+            <Button
+              variant={editMode === "face" ? "contained" : "outlined"}
+              onClick={() => handleMeshModeChange("face")}
+              sx={styles.meshModeButton}
+              size={isSmallPanel ? "small" : "medium"}
+            >
+              {isSmallPanel ? <Crop sx={styles.buttonIcon} /> : "Face"}
+            </Button>
+          </Tooltip>
         </ButtonGroup>
 
-        <SubObjectEditor modelId={modelId} />
-        <MeshOperationsPanel modelId={modelId} />
+        <Box sx={styles.editorContainer}>
+          <SubObjectEditor modelId={modelId} />
+          <MeshOperationsPanel modelId={modelId} />
+        </Box>
       </Box>
     </Paper>
   );
@@ -80,7 +107,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "12px 16px",
+    padding: "10px 12px",
     backgroundColor: "rgba(255, 255, 255, 0.02)",
     borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
     transition: "background-color 0.2s ease",
@@ -91,6 +118,9 @@ const styles = {
   sectionHeaderLeft: {
     display: "flex",
     alignItems: "center",
+    minWidth: 0,
+    overflow: "hidden",
+    width: "100%",
   },
   sectionTitle: {
     fontWeight: 600,
@@ -98,24 +128,41 @@ const styles = {
     color: "#ffffff",
     margin: 0,
     letterSpacing: "0.3px",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+    overflow: "hidden",
   },
   sectionIcon: {
-    fontSize: "18px",
-    marginRight: "10px",
+    fontSize: "16px",
+    marginRight: "8px",
+    flexShrink: 0,
     color: "#00c9ff",
   },
   sectionContent: {
-    padding: "16px",
+    padding: "10px",
+    display: "flex",
+    flexDirection: "column" as const,
   },
   meshModeButton: {
     fontSize: "0.75rem",
     textTransform: "none" as const,
-    padding: "6px 0",
+    padding: "4px 8px",
     fontWeight: 500,
+    minHeight: "28px",
     "&.MuiButton-contained": {
       background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       color: "#ffffff",
     },
+  },
+  buttonIcon: {
+    fontSize: "16px",
+  },
+  editorContainer: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "8px",
+    width: "100%",
+    overflow: "hidden",
   },
 };
 

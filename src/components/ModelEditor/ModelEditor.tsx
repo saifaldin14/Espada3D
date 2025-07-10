@@ -75,9 +75,6 @@ import {
 } from "@mui/icons-material";
 import { SketchPicker } from "react-color";
 import { MaterialProperties, Vector3Tuple, EditMode } from "../../types";
-import TextureManager from "./TextureManager";
-import SubObjectEditor from "./SubObjectEditor";
-import MeshOperationsPanel from "./MeshOperationsPanel";
 import MeshEditPanel from "./MeshEditPanel";
 import { glassStyles } from "../../config/theme";
 

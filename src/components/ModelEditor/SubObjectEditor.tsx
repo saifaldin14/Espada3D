@@ -7,6 +7,10 @@ import {
   ButtonGroup,
   Button,
   Alert,
+  Divider,
+  useTheme,
+  useMediaQuery,
+  Tooltip,
 } from "@mui/material";
 import { CropFree, LinearScale, Crop } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
@@ -29,6 +33,10 @@ interface SubObjectEditorProps {
 
 const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const isSmallPanel = useMediaQuery("(max-width:280px)");
+  const isVerySmallPanel = useMediaQuery("(max-width:200px)");
+
   const selectedModel = useSelector((state: RootState) =>
     state.models.models.find((model) => model.id === modelId)
   );
@@ -206,10 +214,12 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
 
   if (!selectedModel) {
     return (
-      <Card>
-        <CardContent>
-          <Alert severity="warning">
-            No model selected for sub-object editing
+      <Card sx={styles.errorCard}>
+        <CardContent sx={styles.errorContent}>
+          <Alert severity="warning" sx={styles.alert}>
+            {isSmallPanel
+              ? "No model selected"
+              : "No model selected for editing"}
           </Alert>
         </CardContent>
       </Card>
@@ -221,51 +231,64 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
   }
 
   return (
-    <Box>
-      {/* Sub-object Type Selection */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Sub-Object Editing: {selectedModel.name}
-          </Typography>
+    <Box sx={styles.editorContainer}>
+      {/* Stats display */}
+      {meshEditData && (
+        <Box sx={styles.statsContainer}>
+          <Tooltip title="Vertices">
+            <Box sx={styles.statItem}>
+              <Typography
+                variant="caption"
+                sx={isVerySmallPanel ? styles.statLabelCompact : null}
+              >
+                {isVerySmallPanel ? "V:" : "Vertices:"}
+              </Typography>
+              <Typography variant="caption" fontWeight="bold">
+                {meshEditData?.vertices?.length || 0}
+              </Typography>
+            </Box>
+          </Tooltip>
 
-          <Typography variant="subtitle2" gutterBottom>
-            Edit Mode
-          </Typography>
-          <ButtonGroup variant="outlined" fullWidth>
-            <Button
-              startIcon={<CropFree />}
-              variant={
-                currentSubObjectType === "vertex" ? "contained" : "outlined"
-              }
-              onClick={() => handleSubObjectTypeChange("vertex")}
-            >
-              Vertex
-            </Button>
-            <Button
-              startIcon={<LinearScale />}
-              variant={
-                currentSubObjectType === "edge" ? "contained" : "outlined"
-              }
-              onClick={() => handleSubObjectTypeChange("edge")}
-            >
-              Edge
-            </Button>
-            <Button
-              startIcon={<Crop />}
-              variant={
-                currentSubObjectType === "face" ? "contained" : "outlined"
-              }
-              onClick={() => handleSubObjectTypeChange("face")}
-            >
-              Face
-            </Button>
-          </ButtonGroup>
-        </CardContent>
-      </Card>
+          {!isVerySmallPanel && (
+            <Divider orientation="vertical" flexItem sx={styles.statDivider} />
+          )}
+
+          <Tooltip title="Edges">
+            <Box sx={styles.statItem}>
+              <Typography
+                variant="caption"
+                sx={isVerySmallPanel ? styles.statLabelCompact : null}
+              >
+                {isVerySmallPanel ? "E:" : "Edges:"}
+              </Typography>
+              <Typography variant="caption" fontWeight="bold">
+                {meshEditData?.edges?.length || 0}
+              </Typography>
+            </Box>
+          </Tooltip>
+
+          {!isVerySmallPanel && (
+            <Divider orientation="vertical" flexItem sx={styles.statDivider} />
+          )}
+
+          <Tooltip title="Faces">
+            <Box sx={styles.statItem}>
+              <Typography
+                variant="caption"
+                sx={isVerySmallPanel ? styles.statLabelCompact : null}
+              >
+                {isVerySmallPanel ? "F:" : "Faces:"}
+              </Typography>
+              <Typography variant="caption" fontWeight="bold">
+                {meshEditData?.faces?.length || 0}
+              </Typography>
+            </Box>
+          </Tooltip>
+        </Box>
+      )}
 
       {/* Editor Components */}
-      <Box mt={2}>
+      <Box sx={styles.editorContent}>
         {currentSubObjectType === "vertex" && editMode === "vertex" && (
           <VertexEditor modelId={modelId} />
         )}
@@ -278,6 +301,69 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
       </Box>
     </Box>
   );
+};
+
+const styles = {
+  editorContainer: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "8px",
+    width: "100%",
+    overflow: "hidden",
+  },
+  statsContainer: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap" as const,
+    gap: "2px",
+    padding: "6px 8px",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderRadius: "6px",
+    justifyContent: "space-between",
+  },
+  statItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    padding: "2px 4px",
+    minWidth: "fit-content",
+  },
+  statLabelCompact: {
+    fontWeight: 500,
+    color: "rgba(255, 255, 255, 0.6)",
+  },
+  statDivider: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    height: "14px",
+  },
+  editorContent: {
+    width: "100%",
+    overflow: "hidden",
+  },
+  errorCard: {
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    border: "1px solid rgba(255, 193, 7, 0.3)",
+  },
+  errorContent: {
+    padding: "6px",
+    "&:last-child": {
+      paddingBottom: "6px",
+    },
+  },
+  alert: {
+    backgroundColor: "transparent",
+    color: "rgba(255, 193, 7, 0.9)",
+    fontSize: "0.75rem",
+    padding: "0 4px",
+    "& .MuiAlert-icon": {
+      color: "rgba(255, 193, 7, 0.9)",
+      fontSize: "0.9rem",
+      marginRight: "4px",
+    },
+    "& .MuiAlert-message": {
+      padding: "2px 0",
+    },
+  },
 };
 
 export default SubObjectEditor;
