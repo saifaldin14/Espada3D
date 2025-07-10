@@ -19,7 +19,16 @@ import {
   Chip,
   IconButton,
   Typography,
+  Tooltip,
 } from "@mui/material";
+import {
+  Settings,
+  ZoomIn,
+  CameraAlt,
+  RadioButtonChecked,
+  Speed,
+  ViewInAr,
+} from "@mui/icons-material";
 import { modernTheme } from "./config/theme";
 
 const AppContent: React.FC = () => {
@@ -58,67 +67,36 @@ const AppContent: React.FC = () => {
         <Box sx={styles.viewportRegion}>
           <Box sx={styles.viewportHeader}>
             <Box sx={styles.viewportTitle}>
-              <Box sx={styles.viewportIcon}>🎯</Box>
-              <span>3D Viewport</span>
-              <Chip
-                size="small"
-                label="Active"
-                sx={{
-                  background: "linear-gradient(45deg, #00ffff, #00cc99)",
-                  color: "#000",
-                  fontWeight: 600,
-                  fontSize: "0.7rem",
-                  height: "20px",
-                }}
-              />
+              <ViewInAr sx={styles.viewportIcon} />
+              <Typography
+                variant="h6"
+                component="span"
+                sx={{ fontWeight: 600 }}
+              >
+                3D Viewport
+              </Typography>
+              <Chip size="small" label="Active" sx={styles.activeChip} />
             </Box>
             <Box sx={styles.viewportControls}>
               <Box sx={styles.viewportInfo}>
                 Objects: {useAppSelector((state) => state.models.models.length)}
               </Box>
               <Box sx={styles.viewportActions}>
-                <IconButton
-                  size="small"
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    "&:hover": {
-                      color: "#00ffff",
-                      background: "rgba(0, 255, 255, 0.1)",
-                    },
-                  }}
-                >
-                  <Box component="span" sx={{ fontSize: "16px" }}>
-                    ⚙️
-                  </Box>
-                </IconButton>
-                <IconButton
-                  size="small"
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    "&:hover": {
-                      color: "#00ffff",
-                      background: "rgba(0, 255, 255, 0.1)",
-                    },
-                  }}
-                >
-                  <Box component="span" sx={{ fontSize: "16px" }}>
-                    🔍
-                  </Box>
-                </IconButton>
-                <IconButton
-                  size="small"
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    "&:hover": {
-                      color: "#00ffff",
-                      background: "rgba(0, 255, 255, 0.1)",
-                    },
-                  }}
-                >
-                  <Box component="span" sx={{ fontSize: "16px" }}>
-                    📷
-                  </Box>
-                </IconButton>
+                <Tooltip title="Viewport Settings">
+                  <IconButton size="small" sx={styles.viewportActionButton}>
+                    <Settings fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Zoom Controls">
+                  <IconButton size="small" sx={styles.viewportActionButton}>
+                    <ZoomIn fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Camera Settings">
+                  <IconButton size="small" sx={styles.viewportActionButton}>
+                    <CameraAlt fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               </Box>
             </Box>
           </Box>
@@ -131,7 +109,7 @@ const AppContent: React.FC = () => {
               <Box sx={styles.viewportCornerInfo}>
                 <Typography
                   variant="caption"
-                  sx={{ color: "rgba(255, 255, 255, 0.5)" }}
+                  sx={{ color: "rgba(255, 255, 255, 0.7)", fontWeight: 500 }}
                 >
                   Perspective View
                 </Typography>
@@ -143,8 +121,8 @@ const AppContent: React.FC = () => {
         {/* Right Properties Panel - Resizable */}
         <ResizablePanel
           defaultWidth={380}
-          minWidth={300} // Reduce minimum width for better responsiveness
-          maxWidth={600} // Increase maximum width for more flexibility
+          minWidth={300}
+          maxWidth={600}
           side="right"
           className="workspace-sidebar-right"
         >
@@ -177,9 +155,9 @@ const AppContent: React.FC = () => {
       <Box sx={styles.statusBar}>
         <Box sx={styles.statusLeft}>
           <Box sx={styles.statusItem}>
-            <Box component="span" sx={{ color: "#00ff88", marginRight: "6px" }}>
-              ●
-            </Box>
+            <RadioButtonChecked
+              sx={{ color: "#43e97b", fontSize: 16, mr: 1 }}
+            />
             Ready
           </Box>
           <Box sx={styles.statusItem}>
@@ -190,7 +168,10 @@ const AppContent: React.FC = () => {
           </Box>
         </Box>
         <Box sx={styles.statusRight}>
-          <Box sx={styles.statusItem}>FPS: 60</Box>
+          <Box sx={styles.statusItem}>
+            <Speed sx={{ mr: 0.5, fontSize: 14 }} />
+            FPS: 60
+          </Box>
           <Box sx={styles.statusItem}>
             Tris:{" "}
             {(
@@ -204,9 +185,7 @@ const AppContent: React.FC = () => {
             ).toLocaleString()}
           </Box>
           <Box sx={styles.statusItem}>
-            <Box component="span" sx={{ marginRight: "6px" }}>
-              🚀
-            </Box>
+            <ViewInAr sx={{ mr: 0.5, fontSize: 14 }} />
             SaifEngine v1.0
           </Box>
         </Box>
@@ -286,27 +265,58 @@ const styles = {
     letterSpacing: "0.5px",
   },
   viewportIcon: {
-    fontSize: "22px",
+    fontSize: 22,
+    color: "#00c9ff",
     filter: "drop-shadow(0 0 8px rgba(0, 255, 255, 0.3))",
   },
   viewportControls: {
     display: "flex",
     alignItems: "center",
-    gap: "20px",
+    gap: 16,
   },
   viewportActions: {
     display: "flex",
     alignItems: "center",
-    gap: "8px",
+    gap: 8,
+    background: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 8,
+    padding: "4px",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+  },
+  viewportActionButton: {
+    color: "rgba(255, 255, 255, 0.7)",
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "6px",
+    padding: "6px",
+    transition: "all 0.2s ease",
+    "&:hover": {
+      color: "#00c9ff",
+      backgroundColor: "rgba(0, 201, 255, 0.1)",
+      transform: "translateY(-1px)",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+    },
   },
   viewportInfo: {
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: "0.875rem",
     fontWeight: 500,
     background: "rgba(255, 255, 255, 0.05)",
     padding: "6px 12px",
     borderRadius: "8px",
     border: "1px solid rgba(255, 255, 255, 0.1)",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    letterSpacing: "0.3px",
+  },
+  activeChip: {
+    background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+    color: "rgba(0, 0, 0, 0.8)",
+    fontWeight: 600,
+    fontSize: "0.7rem",
+    height: "20px",
+    boxShadow: "0 2px 8px rgba(56, 249, 215, 0.3)",
   },
   canvasWrapper: {
     flex: 1,
@@ -328,11 +338,12 @@ const styles = {
     position: "absolute",
     bottom: "16px",
     left: "16px",
-    background: "rgba(0, 0, 0, 0.6)",
+    background: "rgba(10, 15, 25, 0.7)",
     backdropFilter: "blur(10px)",
-    padding: "6px 10px",
-    borderRadius: "6px",
+    padding: "8px 12px",
+    borderRadius: "8px",
     border: "1px solid rgba(255, 255, 255, 0.1)",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
   },
   floatingPanel: {
     position: "absolute" as const,
@@ -376,14 +387,18 @@ const styles = {
   },
   statusItem: {
     padding: "6px 10px",
-    borderRadius: "6px",
-    background: "rgba(255, 255, 255, 0.06)",
+    borderRadius: "8px",
+    background: "rgba(255, 255, 255, 0.05)",
     border: "1px solid rgba(255, 255, 255, 0.08)",
     fontWeight: 500,
     transition: "all 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    fontSize: "0.75rem",
     "&:hover": {
       background: "rgba(255, 255, 255, 0.08)",
       transform: "translateY(-1px)",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
     },
   },
 };
