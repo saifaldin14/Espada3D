@@ -264,12 +264,15 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
                 model.rotation.toArray().slice(0, 3) as [number, number, number]
               }
               scale={model.scale.toArray() as [number, number, number]}
-              onGeometryUpdate={(newGeometry) => {
-                // Update the original mesh geometry
-                if (mesh.geometry !== newGeometry) {
-                  mesh.geometry.dispose();
-                  mesh.geometry = newGeometry;
-                }
+              onGeometryUpdate={(updatedGeometry) => {
+                const position = mesh.geometry.getAttribute("position");
+                const normal = mesh.geometry.getAttribute("normal");
+                if (position) position.needsUpdate = true;
+                if (normal) normal.needsUpdate = true;
+
+                mesh.geometry.computeVertexNormals();
+                mesh.geometry.computeBoundingBox();
+                mesh.geometry.computeBoundingSphere();
 
                 // Ensure the material is double-sided for mesh editing
                 const currentMaterial = Array.isArray(mesh.material)

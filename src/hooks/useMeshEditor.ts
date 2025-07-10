@@ -6,7 +6,8 @@ import {
   addMeshOperation, 
   clearPendingOperations,
   selectSubObjects,
-  initializeMeshData
+  initializeMeshData,
+  updateMeshData
 } from '../store/slices/meshSlice';
 import { triggerMeshUpdate } from '../store/slices/modelSlice';
 import { MeshEditor } from '../utils/meshEditor';
@@ -20,17 +21,10 @@ export const useMeshEditor = (modelId: string) => {
   // Initialize mesh data from geometry
   const initializeMesh = useCallback((geometry: THREE.BufferGeometry) => {
     try {
-      console.log('useMeshEditor: Initializing mesh data for model', modelId);
       const extractedData = MeshEditor.extractMeshData(geometry, modelId);
-      console.log('useMeshEditor: Extracted mesh data:', {
-        vertices: extractedData.vertices.length,
-        edges: extractedData.edges.length,
-        faces: extractedData.faces.length
-      });
       dispatch(initializeMeshData(extractedData));
       return extractedData;
     } catch (error) {
-      console.error('Failed to initialize mesh data:', error);
       return null;
     }
   }, [dispatch, modelId]);
@@ -39,13 +33,16 @@ export const useMeshEditor = (modelId: string) => {
   const applyOperations = useCallback((geometry: THREE.BufferGeometry) => {
     if (!meshData || pendingOperations.length === 0) return;
 
-    console.log('useMeshEditor: Applying', pendingOperations.length, 'operations');
-    let currentMeshData = { ...meshData };
+    // Create a deep copy of mesh data to avoid mutation issues
+    let currentMeshData: MeshEditData = {
+      ...meshData,
+      vertices: meshData.vertices.map(v => ({ ...v })),
+      edges: meshData.edges.map(e => ({ ...e })),
+      faces: meshData.faces.map(f => ({ ...f }))
+    };
 
-    // Apply each operation in sequence
     for (const operation of pendingOperations) {
       try {
-        console.log('useMeshEditor: Applying operation', operation.type);
         switch (operation.type) {
           case 'moveVertices':
             currentMeshData = MeshEditor.moveVertices(
@@ -128,28 +125,18 @@ export const useMeshEditor = (modelId: string) => {
             console.warn('Unknown mesh operation:', operation.type);
         }
       } catch (error) {
-        console.error(`Failed to apply ${operation.type}:`, error);
+        // Continue with next operation
       }
     }
 
-    console.log('useMeshEditor: Updating geometry from mesh data');
-    // Update the geometry with the modified mesh data
     MeshEditor.updateGeometryFromMeshData(geometry, currentMeshData);
-    
-    console.log('useMeshEditor: Updating mesh data in store');
-    // Update the mesh data in the store - using UI slice for consistency
-    dispatch(initializeMeshData(currentMeshData));
-    
-    // Clear processed operations
+    dispatch(updateMeshData(currentMeshData));
     dispatch(clearPendingOperations(modelId));
-    
-    // Notify that the model has been updated
     dispatch(triggerMeshUpdate({ modelId }));
   }, [meshData, pendingOperations, dispatch, modelId]);
 
   // Mesh editing operations
   const moveVertices = useCallback((delta: Vector3Tuple, constraint?: string, pivot?: Vector3Tuple) => {
-    console.log('useMeshEditor: Move vertices operation', { delta, constraint, pivot });
     dispatch(addMeshOperation({
       modelId,
       operation: {

@@ -38,7 +38,7 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   onGeometryUpdate,
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const geometryRef = useRef<THREE.BufferGeometry>(originalGeometry.clone());
+  const geometryRef = useRef<THREE.BufferGeometry>(originalGeometry);
   const helperGroupRef = useRef<THREE.Group>(null);
   const [hoveredElement, setHoveredElement] = useState<{
     type: string;
@@ -64,22 +64,20 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
     selectElements,
   } = useMeshEditor(modelId);
 
+  // Only update geometry reference if it's actually a different geometry
+  useEffect(() => {
+    if (originalGeometry !== geometryRef.current) {
+      geometryRef.current = originalGeometry;
+    }
+  }, [originalGeometry]);
+
   // Initialize mesh data from geometry on first load
   useEffect(() => {
-    console.log("MeshEditableModel: Checking initialization", {
-      hasEditMode: ["vertex", "edge", "face"].includes(editMode),
-      editMode,
-      hasMeshData: !!meshData,
-      modelId,
-      geometryUuid: geometryRef.current.uuid,
-    });
-
     if (!meshData && ["vertex", "edge", "face"].includes(editMode)) {
-      console.log("MeshEditableModel: Initializing mesh data for", modelId);
       try {
         initializeMesh(geometryRef.current);
       } catch (error) {
-        console.error("MeshEditableModel: Failed to initialize mesh:", error);
+        // Handle error silently
       }
     }
   }, [editMode, meshData, initializeMesh, modelId]);
@@ -87,27 +85,17 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   // Apply pending operations to geometry
   useEffect(() => {
     if (meshData && pendingOperations.length > 0) {
-      console.log(
-        "MeshEditableModel: Applying operations",
-        pendingOperations.length
-      );
       applyOperations(geometryRef.current);
 
-      // Force geometry update
-      if (meshRef.current) {
-        meshRef.current.geometry = geometryRef.current;
-        // Mark geometry attributes as needing update
-        const position = geometryRef.current.getAttribute("position");
-        const normal = geometryRef.current.getAttribute("normal");
-        if (position) position.needsUpdate = true;
-        if (normal) normal.needsUpdate = true;
-      }
+      const position = geometryRef.current.getAttribute("position");
+      const normal = geometryRef.current.getAttribute("normal");
+      if (position) position.needsUpdate = true;
+      if (normal) normal.needsUpdate = true;
 
       if (onGeometryUpdate) {
         onGeometryUpdate(geometryRef.current);
       }
 
-      // Update the material in the parent mesh to ensure double-sided rendering
       if (meshRef.current && meshRef.current.material !== meshEditingMaterial) {
         meshRef.current.material = meshEditingMaterial;
       }
@@ -116,15 +104,6 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
 
   // Create helper geometries for visualization with improved materials
   const helpers = useMemo(() => {
-    console.log("MeshEditableModel: Creating helpers", {
-      hasMeshData: !!meshData,
-      editMode,
-      currentSubObjectType,
-      vertexCount: meshData?.vertices?.length || 0,
-      edgeCount: meshData?.edges?.length || 0,
-      faceCount: meshData?.faces?.length || 0,
-    });
-
     if (!meshData || !["vertex", "edge", "face"].includes(editMode)) {
       return { vertices: [], edges: [], faces: [] };
     }

@@ -37,7 +37,7 @@ export class MeshEditor {
     // Extract vertices with all attributes
     for (let i = 0; i < positionAttribute.count; i++) {
       const vertex: VertexData = {
-        index: i,
+        index: i, // IMPORTANT: Use the original geometry index
         position: [
           positionAttribute.getX(i),
           positionAttribute.getY(i),
@@ -170,24 +170,35 @@ export class MeshEditor {
     const normalAttribute = geometry.getAttribute('normal');
     const uvAttribute = geometry.getAttribute('uv');
     
-    if (!positionAttribute) return;
+    if (!positionAttribute) {
+      return;
+    }
 
-    // Update vertex positions
+    // Clear any existing position data to prevent duplication
+    const newPositions = new Float32Array(positionAttribute.count * 3);
+    
+    // Update vertex positions from mesh data
     meshData.vertices.forEach((vertex) => {
-      positionAttribute.setXYZ(vertex.index, ...vertex.position);
-      
-      // Update normals if available
-      if (normalAttribute && vertex.normal) {
-        normalAttribute.setXYZ(vertex.index, ...vertex.normal);
-      }
-      
-      // Update UVs if available
-      if (uvAttribute && vertex.uv) {
-        uvAttribute.setXY(vertex.index, ...vertex.uv);
+      if (vertex.index < positionAttribute.count) {
+        const i = vertex.index * 3;
+        newPositions[i] = vertex.position[0];
+        newPositions[i + 1] = vertex.position[1];
+        newPositions[i + 2] = vertex.position[2];
+        
+        if (normalAttribute && vertex.normal && vertex.index < normalAttribute.count) {
+          normalAttribute.setXYZ(vertex.index, ...vertex.normal);
+        }
+        
+        if (uvAttribute && vertex.uv && vertex.index < uvAttribute.count) {
+          uvAttribute.setXY(vertex.index, ...vertex.uv);
+        }
       }
     });
 
+    // Replace the entire position array to ensure no duplicates
+    positionAttribute.array.set(newPositions);
     positionAttribute.needsUpdate = true;
+    
     if (normalAttribute) {
       normalAttribute.needsUpdate = true;
     }
@@ -195,17 +206,22 @@ export class MeshEditor {
       uvAttribute.needsUpdate = true;
     }
 
-    // Rebuild index buffer if face topology changed
-    const indexArray = new Uint32Array(meshData.faces.length * 3);
-    let indexOffset = 0;
+    const currentIndexCount = geometry.getIndex()?.count || 0;
+    const expectedIndexCount = meshData.faces.length * 3;
     
-    meshData.faces.forEach(face => {
-      face.vertices.forEach(vertexIndex => {
-        indexArray[indexOffset++] = vertexIndex;
+    if (currentIndexCount !== expectedIndexCount) {
+      const indexArray = new Uint32Array(meshData.faces.length * 3);
+      let indexOffset = 0;
+      
+      meshData.faces.forEach(face => {
+        face.vertices.forEach(vertexIndex => {
+          indexArray[indexOffset++] = vertexIndex;
+        });
       });
-    });
-    
-    geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
+      
+      geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
+    }
+
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
@@ -366,19 +382,23 @@ export class MeshEditor {
     
     const newVertices = meshData.vertices.map(vertex => {
       if (vertex.selected) {
+        const newPosition: Vector3Tuple = [
+          vertex.position[0] + constrainedDelta[0],
+          vertex.position[1] + constrainedDelta[1],
+          vertex.position[2] + constrainedDelta[2]
+        ];
         return {
           ...vertex,
-          position: [
-            vertex.position[0] + constrainedDelta[0],
-            vertex.position[1] + constrainedDelta[1],
-            vertex.position[2] + constrainedDelta[2]
-          ] as Vector3Tuple
+          position: newPosition
         };
       }
       return vertex;
     });
 
-    return { ...meshData, vertices: newVertices };
+    return { 
+      ...meshData, 
+      vertices: newVertices 
+    };
   }
 
   /**
