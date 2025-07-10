@@ -78,6 +78,7 @@ import { MaterialProperties, Vector3Tuple, EditMode } from "../../types";
 import TextureManager from "./TextureManager";
 import SubObjectEditor from "./SubObjectEditor";
 import MeshOperationsPanel from "./MeshOperationsPanel";
+import MeshEditPanel from "./MeshEditPanel";
 import { glassStyles } from "../../config/theme";
 
 const ModelEditor: React.FC = () => {
@@ -262,8 +263,9 @@ const ModelEditor: React.FC = () => {
     );
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: EditMode) => {
-    dispatch(setEditMode(newValue));
+  // Function to handle edit mode switching between vertex, edge, and face modes
+  const handleMeshModeChange = (mode: EditMode) => {
+    dispatch(setEditMode(mode));
   };
 
   const renderTransformControls = () => (
@@ -948,12 +950,8 @@ const ModelEditor: React.FC = () => {
           </Button>
           <Button
             size="small"
-            variant={
-              ["vertex", "edge", "face"].includes(editMode)
-                ? "contained"
-                : "outlined"
-            }
             onClick={() => dispatch(setEditMode("vertex"))}
+            variant={editMode === "vertex" ? "contained" : "outlined"}
             startIcon={<Tune fontSize="small" />}
             sx={styles.editModeButton}
           >
@@ -976,12 +974,12 @@ const ModelEditor: React.FC = () => {
             <Box sx={styles.sectionContainer}>{renderMaterialControls()}</Box>
           )}
 
+          {/* Mesh Editing Mode - now using MeshEditPanel for all mesh modes */}
           {(editMode === "vertex" ||
             editMode === "edge" ||
             editMode === "face") && (
             <Box sx={styles.sectionContainer}>
-              <SubObjectEditor modelId={selectedModelId} />
-              <MeshOperationsPanel modelId={selectedModelId} />
+              <MeshEditPanel modelId={selectedModelId} />
             </Box>
           )}
 
@@ -1462,6 +1460,16 @@ const styles = {
     },
     "& .MuiSlider-rail": {
       opacity: 0.3,
+    },
+  },
+  meshModeButton: {
+    fontSize: "0.75rem",
+    textTransform: "none" as const,
+    padding: "6px 0",
+    fontWeight: 500,
+    "&.MuiButton-contained": {
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      color: "#ffffff",
     },
   },
 };
