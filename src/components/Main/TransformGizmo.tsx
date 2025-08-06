@@ -42,8 +42,14 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     (state: RootState) => state.mesh.meshData[modelId]
   );
 
-  const { moveVertices, scaleVertices, rotateVertices } =
-    useMeshEditor(modelId);
+  const {
+    moveVertices,
+    scaleVertices,
+    rotateVertices,
+    moveEdges,
+    rotateEdges,
+    scaleEdges,
+  } = useMeshEditor(modelId);
 
   // Calculate selection center for gizmo positioning
   const selectionCenter = React.useMemo(() => {
@@ -130,13 +136,28 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
         currentPosition.z - startValues.position.z,
       ];
 
-      // Apply the translation to selected vertices
+      // Apply the translation to selected elements based on sub-object type
       if (delta[0] !== 0 || delta[1] !== 0 || delta[2] !== 0) {
-        moveVertices(
-          delta,
-          undefined,
-          startValues.position.toArray() as Vector3Tuple
-        );
+        if (currentSubObjectType === "vertex") {
+          moveVertices(
+            delta,
+            undefined,
+            startValues.position.toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === "edge") {
+          moveEdges(
+            delta,
+            undefined,
+            startValues.position.toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === "face") {
+          // For faces, move the vertices that make up the selected faces
+          moveVertices(
+            delta,
+            undefined,
+            startValues.position.toArray() as Vector3Tuple
+          );
+        }
 
         // Reset position for next delta calculation
         setStartValues({ ...startValues, position: currentPosition.clone() });
@@ -153,10 +174,23 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
         deltaRotation[1] !== 0 ||
         deltaRotation[2] !== 0
       ) {
-        rotateVertices(
-          deltaRotation,
-          startValues.position?.toArray() as Vector3Tuple
-        );
+        if (currentSubObjectType === "vertex") {
+          rotateVertices(
+            deltaRotation,
+            startValues.position?.toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === "edge") {
+          rotateEdges(
+            deltaRotation,
+            startValues.position?.toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === "face") {
+          // For faces, rotate the vertices that make up the selected faces
+          rotateVertices(
+            deltaRotation,
+            startValues.position?.toArray() as Vector3Tuple
+          );
+        }
 
         // Reset rotation for next delta calculation
         setStartValues({ ...startValues, rotation: currentRotation.clone() });
@@ -173,11 +207,25 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
         scaleFactors[1] !== 1 ||
         scaleFactors[2] !== 1
       ) {
-        scaleVertices(
-          scaleFactors,
-          undefined,
-          startValues.position?.toArray() as Vector3Tuple
-        );
+        if (currentSubObjectType === "vertex") {
+          scaleVertices(
+            scaleFactors,
+            undefined,
+            startValues.position?.toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === "edge") {
+          scaleEdges(
+            scaleFactors,
+            startValues.position?.toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === "face") {
+          // For faces, scale the vertices that make up the selected faces
+          scaleVertices(
+            scaleFactors,
+            undefined,
+            startValues.position?.toArray() as Vector3Tuple
+          );
+        }
 
         // Reset scale for next delta calculation
         setStartValues({ ...startValues, scale: currentScale.clone() });
@@ -187,9 +235,13 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     mode,
     isTransforming,
     startValues,
+    currentSubObjectType,
     moveVertices,
+    moveEdges,
     rotateVertices,
+    rotateEdges,
     scaleVertices,
+    scaleEdges,
   ]);
 
   // Handle transform end

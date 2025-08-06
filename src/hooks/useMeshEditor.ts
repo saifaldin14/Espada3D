@@ -128,6 +128,22 @@ export const useMeshEditor = (modelId: string) => {
               operation.params.constraint
             );
             break;
+          case 'rotateEdges':
+            currentMeshData = MeshEditor.rotateEdges(
+              currentMeshData,
+              operation.params.rotation,
+              operation.params.pivot,
+              operation.params.axis
+            );
+            break;
+          case 'scaleEdges':
+            currentMeshData = MeshEditor.scaleEdges(
+              currentMeshData,
+              operation.params.scale,
+              operation.params.pivot,
+              operation.params.constraint
+            );
+            break;
           default:
             console.warn('Unknown mesh operation:', operation.type);
         }
@@ -275,6 +291,28 @@ export const useMeshEditor = (modelId: string) => {
     }));
   }, [dispatch, modelId]);
 
+  const rotateEdges = useCallback((rotation: Vector3Tuple, pivot?: Vector3Tuple, axis?: 'x' | 'y' | 'z') => {
+    dispatch(addMeshOperation({
+      modelId,
+      operation: {
+        type: 'rotateEdges',
+        params: { rotation, pivot, axis },
+        timestamp: Date.now()
+      }
+    }));
+  }, [dispatch, modelId]);
+
+  const scaleEdges = useCallback((scale: Vector3Tuple, pivot?: Vector3Tuple, constraint?: string) => {
+    dispatch(addMeshOperation({
+      modelId,
+      operation: {
+        type: 'scaleEdges',
+        params: { scale, pivot, constraint },
+        timestamp: Date.now()
+      }
+    }));
+  }, [dispatch, modelId]);
+
   // Selection operations
   const selectElements = useCallback((type: SubObjectType, indices: number[], mode: 'set' | 'add' | 'remove' = 'set') => {
     // Update selection in UI store (which also updates mesh edit data)
@@ -351,6 +389,8 @@ export const useMeshEditor = (modelId: string) => {
     
     // Edge operations
     moveEdges,
+    rotateEdges,
+    scaleEdges,
     bevelEdges,
     splitEdges,
     loopCut,

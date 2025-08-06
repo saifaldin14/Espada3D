@@ -1199,6 +1199,111 @@ export class MeshEditor {
   }
 
   /**
+   * Rotate selected edges around a pivot point
+   */
+  static rotateEdges(
+    meshData: MeshEditData,
+    rotation: Vector3Tuple,
+    pivot?: Vector3Tuple,
+    axis?: 'x' | 'y' | 'z'
+  ): MeshEditData {
+    const selectedEdges = this.getSelectedEdges(meshData);
+    if (selectedEdges.length === 0) return meshData;
+
+    // Get all vertices that are part of selected edges
+    const edgeVertices = new Set<number>();
+    selectedEdges.forEach(edge => {
+      edge.vertices.forEach(vertexIndex => {
+        edgeVertices.add(vertexIndex);
+      });
+    });
+
+    // Get vertices data for pivot calculation
+    const edgeVerticesData = meshData.vertices.filter(vertex => 
+      edgeVertices.has(vertex.index)
+    );
+
+    const pivotPoint = pivot || this.calculateSelectionCenter(edgeVerticesData);
+    const rotationMatrix = this.createRotationMatrix(rotation, axis);
+
+    const newVertices = meshData.vertices.map(vertex => {
+      if (edgeVertices.has(vertex.index)) {
+        const relativePos = new THREE.Vector3(
+          vertex.position[0] - pivotPoint[0],
+          vertex.position[1] - pivotPoint[1],
+          vertex.position[2] - pivotPoint[2]
+        );
+
+        relativePos.applyMatrix3(rotationMatrix);
+
+        return {
+          ...vertex,
+          position: [
+            pivotPoint[0] + relativePos.x,
+            pivotPoint[1] + relativePos.y,
+            pivotPoint[2] + relativePos.z
+          ] as Vector3Tuple
+        };
+      }
+      return vertex;
+    });
+
+    return { ...meshData, vertices: newVertices };
+  }
+
+  /**
+   * Scale selected edges around a pivot point
+   */
+  static scaleEdges(
+    meshData: MeshEditData,
+    scale: Vector3Tuple,
+    pivot?: Vector3Tuple,
+    constraint?: 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz'
+  ): MeshEditData {
+    const selectedEdges = this.getSelectedEdges(meshData);
+    if (selectedEdges.length === 0) return meshData;
+
+    // Get all vertices that are part of selected edges
+    const edgeVertices = new Set<number>();
+    selectedEdges.forEach(edge => {
+      edge.vertices.forEach(vertexIndex => {
+        edgeVertices.add(vertexIndex);
+      });
+    });
+
+    // Get vertices data for pivot calculation
+    const edgeVerticesData = meshData.vertices.filter(vertex => 
+      edgeVertices.has(vertex.index)
+    );
+
+    // Calculate pivot point (center of selection if not provided)
+    const pivotPoint = pivot || this.calculateSelectionCenter(edgeVerticesData);
+    const constrainedScale = this.applyConstraint(scale, constraint);
+
+    const newVertices = meshData.vertices.map(vertex => {
+      if (edgeVertices.has(vertex.index)) {
+        const relativePos = [
+          vertex.position[0] - pivotPoint[0],
+          vertex.position[1] - pivotPoint[1],
+          vertex.position[2] - pivotPoint[2]
+        ] as Vector3Tuple;
+
+        return {
+          ...vertex,
+          position: [
+            pivotPoint[0] + relativePos[0] * constrainedScale[0],
+            pivotPoint[1] + relativePos[1] * constrainedScale[1],
+            pivotPoint[2] + relativePos[2] * constrainedScale[2]
+          ] as Vector3Tuple
+        };
+      }
+      return vertex;
+    });
+
+    return { ...meshData, vertices: newVertices };
+  }
+
+  /**
    * Create edge loop cut (Blender Ctrl+R behavior)
    */
   static loopCut(

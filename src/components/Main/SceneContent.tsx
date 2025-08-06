@@ -265,6 +265,30 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
               }
               scale={model.scale.toArray() as [number, number, number]}
               onGeometryUpdate={(updatedGeometry) => {
+                // Copy updated geometry attributes to the mesh geometry
+                if (updatedGeometry.getAttribute("position")) {
+                  mesh.geometry.setAttribute(
+                    "position",
+                    updatedGeometry.getAttribute("position")
+                  );
+                }
+                if (updatedGeometry.getAttribute("normal")) {
+                  mesh.geometry.setAttribute(
+                    "normal",
+                    updatedGeometry.getAttribute("normal")
+                  );
+                }
+                if (updatedGeometry.getAttribute("uv")) {
+                  mesh.geometry.setAttribute(
+                    "uv",
+                    updatedGeometry.getAttribute("uv")
+                  );
+                }
+                if (updatedGeometry.getIndex()) {
+                  mesh.geometry.setIndex(updatedGeometry.getIndex());
+                }
+
+                // Mark attributes as needing update
                 const position = mesh.geometry.getAttribute("position");
                 const normal = mesh.geometry.getAttribute("normal");
                 if (position) position.needsUpdate = true;
