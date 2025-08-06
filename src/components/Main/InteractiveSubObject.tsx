@@ -50,23 +50,30 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
       faces: [] as THREE.Mesh[],
     };
 
-    // Create vertex helpers (small spheres)
+    // Create vertex helpers (larger spheres for better selection)
     if (currentSubObjectType === "vertex" || editMode === "vertex") {
       meshEditData.vertices.forEach((vertex, index) => {
-        const sphereGeometry = new THREE.SphereGeometry(0.02, 8, 6);
+        const sphereGeometry = new THREE.SphereGeometry(0.08, 8, 6); // Increased from 0.02 to 0.08
         const material = new THREE.MeshBasicMaterial({
-          color: vertex.selected ? 0xff0000 : 0x888888,
+          color: vertex.selected ? 0xff0000 : 0x00ff00,
           transparent: true,
-          opacity: 0.8,
+          opacity: vertex.selected ? 0.8 : 0.4, // More visible when selected
+          depthTest: false, // Always visible through other objects
         });
         const sphere = new THREE.Mesh(sphereGeometry, material);
         sphere.position.set(...vertex.position);
-        sphere.userData = { type: "vertex", index: vertex.index };
+        sphere.userData = {
+          type: "vertex",
+          index: vertex.index,
+          originalMaterial: material,
+          isSelected: vertex.selected,
+        };
+        sphere.renderOrder = 999; // Render on top
         helpers.vertices.push(sphere);
       });
     }
 
-    // Create edge helpers (thin cylinders)
+    // Create edge helpers (thicker cylinders for better selection)
     if (currentSubObjectType === "edge" || editMode === "edge") {
       meshEditData.edges.forEach((edge, index) => {
         const v1 = meshEditData.vertices[edge.vertices[0]];
@@ -80,14 +87,15 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
           const center = start.clone().add(end).multiplyScalar(0.5);
 
           const cylinderGeometry = new THREE.CylinderGeometry(
-            0.01,
-            0.01,
+            0.05, // Increased from 0.01 to 0.05
+            0.05,
             length
           );
           const material = new THREE.MeshBasicMaterial({
-            color: edge.selected ? 0x00ff00 : 0x888888,
+            color: edge.selected ? 0x00ff00 : 0x0000ff,
             transparent: true,
-            opacity: 0.8,
+            opacity: edge.selected ? 0.8 : 0.4, // More visible when selected
+            depthTest: false, // Always visible through other objects
           });
           const cylinder = new THREE.Mesh(cylinderGeometry, material);
 
@@ -96,14 +104,92 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
           cylinder.lookAt(end);
           cylinder.rotateX(Math.PI / 2);
 
-          cylinder.userData = { type: "edge", index: edge.index };
+          cylinder.userData = {
+            type: "edge",
+            index: edge.index,
+            originalMaterial: material,
+            isSelected: edge.selected,
+          };
+          cylinder.renderOrder = 999; // Render on top
           helpers.edges.push(cylinder);
+        }
+      });
+    }
+
+    // Create face helpers (semi-transparent overlays for better selection)
+    if (currentSubObjectType === "face" || editMode === "face") {
+      meshEditData.faces.forEach((face, index) => {
+        // Create a simple geometry for the face
+        const faceVertices = face.vertices.map((vIndex) => {
+          const vertex = meshEditData.vertices[vIndex];
+          return new THREE.Vector3(...vertex.position);
+        });
+
+        if (faceVertices.length >= 3) {
+          // Create a simple triangle or quad geometry
+          const faceGeometry = new THREE.BufferGeometry();
+          const positions: number[] = [];
+
+          // Triangulate the face (simple fan triangulation)
+          for (let i = 1; i < faceVertices.length - 1; i++) {
+            positions.push(
+              ...faceVertices[0].toArray(),
+              ...faceVertices[i].toArray(),
+              ...faceVertices[i + 1].toArray()
+            );
+          }
+
+          faceGeometry.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(positions, 3)
+          );
+          faceGeometry.computeVertexNormals();
+
+          const material = new THREE.MeshBasicMaterial({
+            color: face.selected ? 0xff0000 : 0xffff00,
+            transparent: true,
+            opacity: face.selected ? 0.6 : 0.3, // More visible when selected
+            side: THREE.DoubleSide,
+            depthTest: false, // Always visible through other objects
+          });
+
+          const faceMesh = new THREE.Mesh(faceGeometry, material);
+          faceMesh.userData = {
+            type: "face",
+            index: face.index,
+            originalMaterial: material,
+            isSelected: face.selected,
+          };
+          faceMesh.renderOrder = 998; // Render on top but below vertices/edges
+          helpers.faces.push(faceMesh);
         }
       });
     }
 
     return helpers;
   }, [meshEditData, editMode, currentSubObjectType]);
+
+  const handlePointerEnter = (event: any) => {
+    const object = event.object;
+    if (object.userData?.originalMaterial && !object.userData?.isSelected) {
+      // Brighten the material on hover
+      object.material.opacity = Math.min(object.material.opacity * 1.5, 1.0);
+    }
+    // Change cursor to indicate interactivity
+    document.body.style.cursor = "pointer";
+  };
+
+  const handlePointerLeave = (event: any) => {
+    const object = event.object;
+    if (object.userData?.originalMaterial && !object.userData?.isSelected) {
+      // Restore original opacity
+      const type = object.userData.type;
+      const baseOpacity = type === "face" ? 0.3 : 0.4;
+      object.material.opacity = baseOpacity;
+    }
+    // Restore default cursor
+    document.body.style.cursor = "default";
+  };
 
   const handlePointerDown = (event: any) => {
     if (!["vertex", "edge", "face"].includes(editMode) || !meshEditData) {
@@ -117,6 +203,43 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
 
     if (intersects.length === 0) return;
 
+    // Check if we clicked directly on a helper geometry first
+    const helperIntersect = intersects.find((intersect: any) => {
+      return (
+        intersect.object.userData?.type &&
+        ["vertex", "edge", "face"].includes(intersect.object.userData.type)
+      );
+    });
+
+    if (helperIntersect) {
+      // Direct selection of helper geometry
+      const { type, index } = helperIntersect.object.userData;
+
+      if (type === currentSubObjectType) {
+        const isShiftPressed = event.shiftKey;
+        const isCtrlPressed = event.ctrlKey || event.metaKey;
+
+        let mode: "set" | "add" | "remove" = "set";
+
+        if (selectionMode === "multiple" || isShiftPressed) {
+          mode = "add";
+        } else if (isCtrlPressed) {
+          mode = "remove";
+        }
+
+        dispatch(
+          selectSubObjects({
+            modelId,
+            type,
+            indices: [index],
+            mode,
+          })
+        );
+        return;
+      }
+    }
+
+    // Fallback to proximity-based selection
     const intersect = intersects[0];
 
     if (currentSubObjectType === "vertex") {
@@ -136,8 +259,8 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
 
     meshEditData!.vertices.forEach((vertex, index) => {
       const distance = point.distanceTo(new THREE.Vector3(...vertex.position));
-      if (distance < closestDistance && distance < 0.1) {
-        // 0.1 unit threshold
+      if (distance < closestDistance && distance < 0.2) {
+        // Increased threshold from 0.1 to 0.2 for easier selection
         closestDistance = distance;
         closestVertexIndex = index;
       }
@@ -191,7 +314,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
       meshEditData!,
       meshFaceIndex,
       point,
-      0.1
+      0.2 // Increased threshold from 0.1 to 0.2 for easier selection
     );
 
     if (closestEdgeIndex !== null) {
@@ -295,10 +418,31 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
       {helperGeometries && (
         <>
           {helperGeometries.vertices.map((vertex, index) => (
-            <primitive key={`vertex-helper-${index}`} object={vertex} />
+            <primitive
+              key={`vertex-helper-${index}`}
+              object={vertex}
+              onPointerDown={handlePointerDown}
+              onPointerEnter={handlePointerEnter}
+              onPointerLeave={handlePointerLeave}
+            />
           ))}
           {helperGeometries.edges.map((edge, index) => (
-            <primitive key={`edge-helper-${index}`} object={edge} />
+            <primitive
+              key={`edge-helper-${index}`}
+              object={edge}
+              onPointerDown={handlePointerDown}
+              onPointerEnter={handlePointerEnter}
+              onPointerLeave={handlePointerLeave}
+            />
+          ))}
+          {helperGeometries.faces.map((face, index) => (
+            <primitive
+              key={`face-helper-${index}`}
+              object={face}
+              onPointerDown={handlePointerDown}
+              onPointerEnter={handlePointerEnter}
+              onPointerLeave={handlePointerLeave}
+            />
           ))}
         </>
       )}
