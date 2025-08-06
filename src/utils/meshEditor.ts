@@ -1350,6 +1350,153 @@ export class MeshEditor {
     };
   }
 
+  /**
+   * Move selected faces (move the vertices that make up the faces)
+   */
+  static moveFaces(
+    meshData: MeshEditData, 
+    delta: Vector3Tuple, 
+    constraint?: 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz'
+  ): MeshEditData {
+    const selectedFaces = this.getSelectedFaces(meshData);
+    if (selectedFaces.length === 0) return meshData;
+
+    // Get all vertices that are part of selected faces
+    const faceVertices = new Set<number>();
+    selectedFaces.forEach(face => {
+      face.vertices.forEach(vertexIndex => {
+        faceVertices.add(vertexIndex);
+      });
+    });
+
+    const constrainedDelta = this.applyConstraint(delta, constraint);
+    
+    const newVertices = meshData.vertices.map(vertex => {
+      if (faceVertices.has(vertex.index)) {
+        const newPosition: Vector3Tuple = [
+          vertex.position[0] + constrainedDelta[0],
+          vertex.position[1] + constrainedDelta[1],
+          vertex.position[2] + constrainedDelta[2]
+        ];
+        return {
+          ...vertex,
+          position: newPosition
+        };
+      }
+      return vertex;
+    });
+
+    return { 
+      ...meshData, 
+      vertices: newVertices 
+    };
+  }
+
+  /**
+   * Rotate selected faces around a pivot point
+   */
+  static rotateFaces(
+    meshData: MeshEditData,
+    rotation: Vector3Tuple,
+    pivot?: Vector3Tuple,
+    axis?: 'x' | 'y' | 'z'
+  ): MeshEditData {
+    const selectedFaces = this.getSelectedFaces(meshData);
+    if (selectedFaces.length === 0) return meshData;
+
+    // Get all vertices that are part of selected faces
+    const faceVertices = new Set<number>();
+    selectedFaces.forEach(face => {
+      face.vertices.forEach(vertexIndex => {
+        faceVertices.add(vertexIndex);
+      });
+    });
+
+    // Get vertices data for pivot calculation
+    const faceVerticesData = meshData.vertices.filter(vertex => 
+      faceVertices.has(vertex.index)
+    );
+
+    const pivotPoint = pivot || this.calculateSelectionCenter(faceVerticesData);
+    const rotationMatrix = this.createRotationMatrix(rotation, axis);
+
+    const newVertices = meshData.vertices.map(vertex => {
+      if (faceVertices.has(vertex.index)) {
+        const relativePos = new THREE.Vector3(
+          vertex.position[0] - pivotPoint[0],
+          vertex.position[1] - pivotPoint[1],
+          vertex.position[2] - pivotPoint[2]
+        );
+
+        relativePos.applyMatrix3(rotationMatrix);
+
+        return {
+          ...vertex,
+          position: [
+            pivotPoint[0] + relativePos.x,
+            pivotPoint[1] + relativePos.y,
+            pivotPoint[2] + relativePos.z
+          ] as Vector3Tuple
+        };
+      }
+      return vertex;
+    });
+
+    return { ...meshData, vertices: newVertices };
+  }
+
+  /**
+   * Scale selected faces around a pivot point
+   */
+  static scaleFaces(
+    meshData: MeshEditData,
+    scale: Vector3Tuple,
+    pivot?: Vector3Tuple,
+    constraint?: 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz'
+  ): MeshEditData {
+    const selectedFaces = this.getSelectedFaces(meshData);
+    if (selectedFaces.length === 0) return meshData;
+
+    // Get all vertices that are part of selected faces
+    const faceVertices = new Set<number>();
+    selectedFaces.forEach(face => {
+      face.vertices.forEach(vertexIndex => {
+        faceVertices.add(vertexIndex);
+      });
+    });
+
+    // Get vertices data for pivot calculation
+    const faceVerticesData = meshData.vertices.filter(vertex => 
+      faceVertices.has(vertex.index)
+    );
+
+    // Calculate pivot point (center of selection if not provided)
+    const pivotPoint = pivot || this.calculateSelectionCenter(faceVerticesData);
+    const constrainedScale = this.applyConstraint(scale, constraint);
+
+    const newVertices = meshData.vertices.map(vertex => {
+      if (faceVertices.has(vertex.index)) {
+        const relativePos = [
+          vertex.position[0] - pivotPoint[0],
+          vertex.position[1] - pivotPoint[1],
+          vertex.position[2] - pivotPoint[2]
+        ] as Vector3Tuple;
+
+        return {
+          ...vertex,
+          position: [
+            pivotPoint[0] + relativePos[0] * constrainedScale[0],
+            pivotPoint[1] + relativePos[1] * constrainedScale[1],
+            pivotPoint[2] + relativePos[2] * constrainedScale[2]
+          ] as Vector3Tuple
+        };
+      }
+      return vertex;
+    });
+
+    return { ...meshData, vertices: newVertices };
+  }
+
   // ====================== DELETE OPERATIONS ======================
 
   /**

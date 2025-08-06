@@ -144,6 +144,29 @@ export const useMeshEditor = (modelId: string) => {
               operation.params.constraint
             );
             break;
+          case 'moveFaces':
+            currentMeshData = MeshEditor.moveFaces(
+              currentMeshData,
+              operation.params.delta,
+              operation.params.constraint
+            );
+            break;
+          case 'rotateFaces':
+            currentMeshData = MeshEditor.rotateFaces(
+              currentMeshData,
+              operation.params.rotation,
+              operation.params.pivot,
+              operation.params.axis
+            );
+            break;
+          case 'scaleFaces':
+            currentMeshData = MeshEditor.scaleFaces(
+              currentMeshData,
+              operation.params.scale,
+              operation.params.pivot,
+              operation.params.constraint
+            );
+            break;
           default:
             console.warn('Unknown mesh operation:', operation.type);
         }
@@ -313,6 +336,39 @@ export const useMeshEditor = (modelId: string) => {
     }));
   }, [dispatch, modelId]);
 
+  const moveFaces = useCallback((delta: Vector3Tuple, constraint?: string, pivot?: Vector3Tuple) => {
+    dispatch(addMeshOperation({
+      modelId,
+      operation: {
+        type: 'moveFaces',
+        params: { delta, constraint, pivot },
+        timestamp: Date.now()
+      }
+    }));
+  }, [dispatch, modelId]);
+
+  const rotateFaces = useCallback((rotation: Vector3Tuple, pivot?: Vector3Tuple, axis?: 'x' | 'y' | 'z') => {
+    dispatch(addMeshOperation({
+      modelId,
+      operation: {
+        type: 'rotateFaces',
+        params: { rotation, pivot, axis },
+        timestamp: Date.now()
+      }
+    }));
+  }, [dispatch, modelId]);
+
+  const scaleFaces = useCallback((scale: Vector3Tuple, pivot?: Vector3Tuple, constraint?: string) => {
+    dispatch(addMeshOperation({
+      modelId,
+      operation: {
+        type: 'scaleFaces',
+        params: { scale, pivot, constraint },
+        timestamp: Date.now()
+      }
+    }));
+  }, [dispatch, modelId]);
+
   // Selection operations
   const selectElements = useCallback((type: SubObjectType, indices: number[], mode: 'set' | 'add' | 'remove' = 'set') => {
     // Update selection in UI store (which also updates mesh edit data)
@@ -386,6 +442,9 @@ export const useMeshEditor = (modelId: string) => {
     extrudeFaces,
     insetFaces,
     subdivideFaces,
+    moveFaces,
+    rotateFaces,
+    scaleFaces,
     
     // Edge operations
     moveEdges,

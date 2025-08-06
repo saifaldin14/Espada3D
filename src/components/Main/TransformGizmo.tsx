@@ -49,6 +49,9 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     moveEdges,
     rotateEdges,
     scaleEdges,
+    moveFaces,
+    rotateFaces,
+    scaleFaces,
   } = useMeshEditor(modelId);
 
   // Calculate selection center for gizmo positioning
@@ -151,8 +154,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
             startValues.position.toArray() as Vector3Tuple
           );
         } else if (currentSubObjectType === "face") {
-          // For faces, move the vertices that make up the selected faces
-          moveVertices(
+          moveFaces(
             delta,
             undefined,
             startValues.position.toArray() as Vector3Tuple
@@ -185,8 +187,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
             startValues.position?.toArray() as Vector3Tuple
           );
         } else if (currentSubObjectType === "face") {
-          // For faces, rotate the vertices that make up the selected faces
-          rotateVertices(
+          rotateFaces(
             deltaRotation,
             startValues.position?.toArray() as Vector3Tuple
           );
@@ -219,10 +220,8 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
             startValues.position?.toArray() as Vector3Tuple
           );
         } else if (currentSubObjectType === "face") {
-          // For faces, scale the vertices that make up the selected faces
-          scaleVertices(
+          scaleFaces(
             scaleFactors,
-            undefined,
             startValues.position?.toArray() as Vector3Tuple
           );
         }
@@ -238,10 +237,13 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     currentSubObjectType,
     moveVertices,
     moveEdges,
+    moveFaces,
     rotateVertices,
     rotateEdges,
+    rotateFaces,
     scaleVertices,
     scaleEdges,
+    scaleFaces,
   ]);
 
   // Handle transform end
