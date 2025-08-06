@@ -1,4 +1,6 @@
 // Core application types
+import { NodeGraphState } from './nodeTypes';
+
 export type Vector3Tuple = [number, number, number];
 
 export type GeometryType = 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone' | 'torus' | 'dodecahedron';
@@ -292,6 +294,7 @@ export interface UIState {
   isModalOpen: boolean;
   isHierarchyPanelOpen: boolean;
   isAnimationPanelOpen: boolean;
+  isNodeEditorOpen: boolean;
   snap: boolean;
   snapSize: number;
   subObjectSelectionMode: SelectionMode;
@@ -306,6 +309,7 @@ export interface RootState {
     geometryCache: { [modelId: string]: GeometryData };
     pendingOperations: { [modelId: string]: any[] };
   };
+  nodes: NodeGraphState;
 }
 
 // Error types

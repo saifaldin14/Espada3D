@@ -11,6 +11,7 @@ const initialState: UIState = {
   isModalOpen: false,
   isHierarchyPanelOpen: false,
   isAnimationPanelOpen: false,
+  isNodeEditorOpen: false,
   snap: false,
   snapSize: 0.5,
   subObjectSelectionMode: 'single',
@@ -38,6 +39,9 @@ const uiSlice = createSlice({
     },
     toggleAnimationPanel: (state) => {
       state.isAnimationPanelOpen = !state.isAnimationPanelOpen;
+    },
+    toggleNodeEditor: (state) => {
+      state.isNodeEditorOpen = !state.isNodeEditorOpen;
     },
     setGrid: (state, action: PayloadAction<boolean>) => {
       state.showGrid = action.payload;
@@ -70,6 +74,7 @@ export const {
   toggleEditor, 
   toggleHierarchyPanel,
   toggleAnimationPanel,
+  toggleNodeEditor,
   setGrid, 
   setWireframe, 
   setSnap,

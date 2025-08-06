@@ -8,6 +8,7 @@ import {
   setGrid,
   toggleHierarchyPanel,
   toggleAnimationPanel,
+  toggleNodeEditor,
 } from "../../store/slices/uiSlice";
 import {
   undo,
@@ -72,6 +73,7 @@ import {
   Help,
   KeyboardArrowRight,
   RadioButtonChecked,
+  AccountCircle,
 } from "@mui/icons-material";
 import { ToolType, EditMode } from "../../types";
 import { glassStyles } from "../../config/theme";
@@ -87,6 +89,9 @@ const EditorToolbar: React.FC = () => {
   );
   const isAnimationPanelOpen = useSelector(
     (state: any) => state.ui.isAnimationPanelOpen
+  );
+  const isNodeEditorOpen = useSelector(
+    (state: any) => state.ui.isNodeEditorOpen
   );
   const selectedModelId = useSelector(
     (state: any) => state.models.selectedModelId
@@ -484,6 +489,19 @@ const EditorToolbar: React.FC = () => {
                   className="hover-lift"
                 >
                   <Timeline fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Node Editor">
+                <IconButton
+                  size="small"
+                  onClick={() => dispatch(toggleNodeEditor())}
+                  sx={{
+                    ...styles.iconButton,
+                    ...(isNodeEditorOpen ? styles.activeIconButton : {}),
+                  }}
+                  className="hover-lift"
+                >
+                  <AccountCircle fontSize="small" />
                 </IconButton>
               </Tooltip>
             </Box>

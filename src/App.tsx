@@ -5,6 +5,7 @@ import ModelEditor from "./components/ModelEditor/ModelEditor";
 import EditorToolbar from "./components/ModelEditor/EditorToolbar";
 import HierarchyPanel from "./components/ModelEditor/HierarchyPanel";
 import AnimationPanel from "./components/ModelEditor/AnimationPanel";
+import NodeEditor from "./components/NodeEditor/NodeEditor";
 import MeshEditingKeyboardShortcuts from "./components/Main/MeshEditingKeyboardShortcuts";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ResizablePanel } from "./components/Layout";
@@ -38,6 +39,7 @@ const AppContent: React.FC = () => {
   const isAnimationPanelOpen = useAppSelector(
     (state) => state.ui.isAnimationPanelOpen
   );
+  const isNodeEditorOpen = useAppSelector((state) => state.ui.isNodeEditorOpen);
 
   return (
     <Box sx={styles.appContainer} className="fade-in">
@@ -147,6 +149,14 @@ const AppContent: React.FC = () => {
         <Box sx={{ ...styles.floatingPanel, ...styles.animationPanel }}>
           <ErrorBoundary>
             <AnimationPanel isOpen={isAnimationPanelOpen} />
+          </ErrorBoundary>
+        </Box>
+      )}
+
+      {isNodeEditorOpen && (
+        <Box sx={{ ...styles.floatingPanel, ...styles.nodeEditorPanel }}>
+          <ErrorBoundary>
+            <NodeEditor isOpen={isNodeEditorOpen} />
           </ErrorBoundary>
         </Box>
       )}
@@ -360,6 +370,13 @@ const styles = {
   animationPanel: {
     top: "160px",
     right: "840px",
+  },
+  nodeEditorPanel: {
+    top: "120px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "80vw",
+    height: "70vh",
   },
   statusBar: {
     display: "flex",
