@@ -15,6 +15,7 @@ import { Tune, CropFree, LinearScale, Crop } from "@mui/icons-material";
 import SubObjectEditor from "./SubObjectEditor";
 import MeshOperationsPanel from "./MeshOperationsPanel";
 import { EditMode } from "../../types";
+import { EditModes } from "../../Enums";
 
 interface MeshEditPanelProps {
   modelId: string;
@@ -50,32 +51,40 @@ const MeshEditPanel: React.FC<MeshEditPanelProps> = ({ modelId }) => {
         >
           <Tooltip title="Vertex Mode">
             <Button
-              variant={editMode === "vertex" ? "contained" : "outlined"}
-              onClick={() => handleMeshModeChange("vertex")}
+              variant={editMode === EditModes.vertex ? "contained" : "outlined"}
+              onClick={() => handleMeshModeChange(EditModes.vertex)}
               sx={styles.meshModeButton}
               size={isSmallPanel ? "small" : "medium"}
             >
-              {isSmallPanel ? <CropFree sx={styles.buttonIcon} /> : "Vertex"}
+              {isSmallPanel ? (
+                <CropFree sx={styles.buttonIcon} />
+              ) : (
+                EditModes.vertex
+              )}
             </Button>
           </Tooltip>
           <Tooltip title="Edge Mode">
             <Button
-              variant={editMode === "edge" ? "contained" : "outlined"}
-              onClick={() => handleMeshModeChange("edge")}
+              variant={editMode === EditModes.edge ? "contained" : "outlined"}
+              onClick={() => handleMeshModeChange(EditModes.edge)}
               sx={styles.meshModeButton}
               size={isSmallPanel ? "small" : "medium"}
             >
-              {isSmallPanel ? <LinearScale sx={styles.buttonIcon} /> : "Edge"}
+              {isSmallPanel ? (
+                <LinearScale sx={styles.buttonIcon} />
+              ) : (
+                EditModes.edge
+              )}
             </Button>
           </Tooltip>
           <Tooltip title="Face Mode">
             <Button
-              variant={editMode === "face" ? "contained" : "outlined"}
-              onClick={() => handleMeshModeChange("face")}
+              variant={editMode === EditModes.face ? "contained" : "outlined"}
+              onClick={() => handleMeshModeChange(EditModes.face)}
               sx={styles.meshModeButton}
               size={isSmallPanel ? "small" : "medium"}
             >
-              {isSmallPanel ? <Crop sx={styles.buttonIcon} /> : "Face"}
+              {isSmallPanel ? <Crop sx={styles.buttonIcon} /> : EditModes.face}
             </Button>
           </Tooltip>
         </ButtonGroup>

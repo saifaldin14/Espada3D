@@ -77,6 +77,7 @@ import { SketchPicker } from "react-color";
 import { MaterialProperties, Vector3Tuple, EditMode } from "../../types";
 import MeshEditPanel from "./MeshEditPanel";
 import { glassStyles } from "../../config/theme";
+import { EditModes } from "../../Enums";
 
 const ModelEditor: React.FC = () => {
   const selectedModelId = useSelector(
@@ -478,7 +479,10 @@ const ModelEditor: React.FC = () => {
 
   const renderMaterialControls = () => (
     <Paper elevation={0} sx={styles.section}>
-      <Box sx={styles.sectionHeader} onClick={() => toggleSection("material")}>
+      <Box
+        sx={styles.sectionHeader}
+        onClick={() => toggleSection(EditModes.material)}
+      >
         <Box sx={styles.sectionHeaderLeft}>
           <ColorLens sx={styles.sectionIcon} />
           <Typography variant="subtitle1" sx={styles.sectionTitle}>
@@ -930,8 +934,8 @@ const ModelEditor: React.FC = () => {
           <Tooltip title="Object Mode" placement="top">
             <Button
               size="small"
-              variant={editMode === "model" ? "contained" : "outlined"}
-              onClick={() => dispatch(setEditMode("model"))}
+              variant={editMode === EditModes.model ? "contained" : "outlined"}
+              onClick={() => dispatch(setEditMode(EditModes.model))}
               sx={styles.editModeButton}
             >
               <ViewInAr sx={{ fontSize: "20px" }} />
@@ -941,8 +945,10 @@ const ModelEditor: React.FC = () => {
           <Tooltip title="Material Mode" placement="top">
             <Button
               size="small"
-              variant={editMode === "material" ? "contained" : "outlined"}
-              onClick={() => dispatch(setEditMode("material"))}
+              variant={
+                editMode === EditModes.material ? "contained" : "outlined"
+              }
+              onClick={() => dispatch(setEditMode(EditModes.material))}
               sx={styles.editModeButton}
             >
               <Style sx={{ fontSize: "20px" }} />
@@ -952,8 +958,8 @@ const ModelEditor: React.FC = () => {
           <Tooltip title="Mesh Mode" placement="top">
             <Button
               size="small"
-              onClick={() => dispatch(setEditMode("vertex"))}
-              variant={editMode === "vertex" ? "contained" : "outlined"}
+              onClick={() => dispatch(setEditMode(EditModes.vertex))}
+              variant={editMode === EditModes.vertex ? "contained" : "outlined"}
               sx={styles.editModeButton}
             >
               <Tune sx={{ fontSize: "20px" }} />
@@ -965,27 +971,27 @@ const ModelEditor: React.FC = () => {
       {selectedModelId ? (
         <Box sx={styles.scrollContainer}>
           {/* Show different sections based on edit mode */}
-          {editMode === "model" && (
+          {editMode === EditModes.model && (
             <Box sx={styles.sectionContainer}>
               {renderObjectControls()}
               {renderTransformControls()}
             </Box>
           )}
 
-          {editMode === "material" && (
+          {editMode === EditModes.material && (
             <Box sx={styles.sectionContainer}>{renderMaterialControls()}</Box>
           )}
 
           {/* Mesh Editing Mode - now using MeshEditPanel for all mesh modes */}
-          {(editMode === "vertex" ||
-            editMode === "edge" ||
-            editMode === "face") && (
+          {(editMode === EditModes.vertex ||
+            editMode === EditModes.edge ||
+            editMode === EditModes.face) && (
             <Box sx={styles.sectionContainer}>
               <MeshEditPanel modelId={selectedModelId} />
             </Box>
           )}
 
-          {editMode === "animation" && (
+          {editMode === EditModes.animation && (
             <Paper elevation={0} sx={styles.section}>
               <Box sx={styles.sectionHeader}>
                 <Box sx={styles.sectionHeaderLeft}>
@@ -1004,7 +1010,7 @@ const ModelEditor: React.FC = () => {
             </Paper>
           )}
 
-          {editMode === "hierarchy" && (
+          {editMode === EditModes.hierarchy && (
             <Paper elevation={0} sx={styles.section}>
               <Box sx={styles.sectionHeader}>
                 <Box sx={styles.sectionHeaderLeft}>

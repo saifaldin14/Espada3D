@@ -26,6 +26,7 @@ import VertexEditor from "./VertexEditor";
 import EdgeEditor from "./EdgeEditor";
 import FaceEditor from "./FaceEditor";
 import * as THREE from "three";
+import { EditModes } from "../../Enums";
 
 interface SubObjectEditorProps {
   modelId: string;
@@ -54,7 +55,9 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
   useEffect(() => {
     // Initialize mesh edit data when entering sub-object editing mode
     if (
-      (editMode === "vertex" || editMode === "edge" || editMode === "face") &&
+      (editMode === EditModes.vertex ||
+        editMode === EditModes.edge ||
+        editMode === EditModes.face) &&
       !meshEditData &&
       selectedModel &&
       geometryCache
@@ -74,7 +77,11 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
 
     // Clean up mesh edit data when leaving sub-object editing mode
     return () => {
-      if (editMode !== "vertex" && editMode !== "edge" && editMode !== "face") {
+      if (
+        editMode !== EditModes.vertex &&
+        editMode !== EditModes.edge &&
+        editMode !== EditModes.face
+      ) {
         dispatch(clearMeshData(modelId));
       }
     };
@@ -82,7 +89,11 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
 
   // Synchronize currentSubObjectType with editMode for sub-object editing
   useEffect(() => {
-    if (editMode === "vertex" || editMode === "edge" || editMode === "face") {
+    if (
+      editMode === EditModes.vertex ||
+      editMode === EditModes.edge ||
+      editMode === EditModes.face
+    ) {
       if (currentSubObjectType !== editMode) {
         dispatch(setCurrentSubObjectType(editMode));
       }
@@ -198,7 +209,7 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
             },
           ] as any[],
           selectionMode: "single",
-          subObjectType: "vertex",
+          subObjectType: EditModes.vertex,
         } as any;
       default:
         return {
@@ -207,7 +218,7 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
           edges: [],
           faces: [],
           selectionMode: "single",
-          subObjectType: "vertex",
+          subObjectType: EditModes.vertex,
         } as any;
     }
   };
@@ -226,7 +237,11 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
     );
   }
 
-  if (editMode !== "vertex" && editMode !== "edge" && editMode !== "face") {
+  if (
+    editMode !== EditModes.vertex &&
+    editMode !== EditModes.edge &&
+    editMode !== EditModes.face
+  ) {
     return null;
   }
 
@@ -289,15 +304,12 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
 
       {/* Editor Components */}
       <Box sx={styles.editorContent}>
-        {currentSubObjectType === "vertex" && editMode === "vertex" && (
-          <VertexEditor modelId={modelId} />
-        )}
-        {currentSubObjectType === "edge" && editMode === "edge" && (
-          <EdgeEditor modelId={modelId} />
-        )}
-        {currentSubObjectType === "face" && editMode === "face" && (
-          <FaceEditor modelId={modelId} />
-        )}
+        {currentSubObjectType === EditModes.vertex &&
+          editMode === EditModes.vertex && <VertexEditor modelId={modelId} />}
+        {currentSubObjectType === EditModes.edge &&
+          editMode === EditModes.edge && <EdgeEditor modelId={modelId} />}
+        {currentSubObjectType === EditModes.face &&
+          editMode === EditModes.face && <FaceEditor modelId={modelId} />}
       </Box>
     </Box>
   );

@@ -41,6 +41,7 @@ import { selectSubObjects } from "../../store/slices/meshSlice";
 import { SelectionMode, BevelProfile } from "../../types";
 import { MeshEditor } from "../../utils/meshEditor";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
+import { EditModes, SelectModes } from "../../Enums";
 
 interface EdgeEditorProps {
   modelId: string;
@@ -129,9 +130,9 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
     dispatch(
       selectSubObjects({
         modelId,
-        type: "edge",
+        type: EditModes.edge,
         indices: allIndices,
-        mode: "set",
+        mode: SelectModes.set,
       })
     );
   };
@@ -140,19 +141,19 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
     dispatch(
       selectSubObjects({
         modelId,
-        type: "edge",
+        type: EditModes.edge,
         indices: [],
-        mode: "set",
+        mode: SelectModes.set,
       })
     );
   };
 
   const handleGrowSelection = () => {
-    growSelection("edge");
+    growSelection(EditModes.edge);
   };
 
   const handleShrinkSelection = () => {
-    shrinkSelection("edge");
+    shrinkSelection(EditModes.edge);
   };
 
   const handleSelectEdgeLoop = () => {

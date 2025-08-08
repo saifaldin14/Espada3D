@@ -50,6 +50,7 @@ import {
   MergeType,
 } from "../../types";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
+import { EditModes } from "../../Enums";
 
 interface VertexEditorProps {
   modelId: string;
@@ -108,19 +109,19 @@ const VertexEditor: React.FC<VertexEditorProps> = ({ modelId }) => {
   };
 
   const handleSelectAll = () => {
-    selectAll("vertex");
+    selectAll(EditModes.vertex);
   };
 
   const handleDeselectAll = () => {
-    deselectAll("vertex");
+    deselectAll(EditModes.vertex);
   };
 
   const handleGrowSelection = () => {
-    growSelection("vertex");
+    growSelection(EditModes.vertex);
   };
 
   const handleShrinkSelection = () => {
-    shrinkSelection("vertex");
+    shrinkSelection(EditModes.vertex);
   };
 
   const handleMoveVertices = () => {

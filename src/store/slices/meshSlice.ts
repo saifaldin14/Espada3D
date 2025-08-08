@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { MeshEditData, SelectSubObjectPayload, GeometryData } from '../../types';
+import { SelectModes } from '../../Enums';
 
 interface MeshState {
   meshData: { [modelId: string]: MeshEditData };
@@ -61,11 +62,11 @@ const meshSlice = createSlice({
             ...meshData,
             vertices: meshData.vertices.map((vertex, index) => {
               const shouldSelect = indices.includes(index);
-              if (mode === 'set') {
+              if (mode === SelectModes.set) {
                 return { ...vertex, selected: shouldSelect };
-              } else if (mode === 'add' && shouldSelect) {
+              } else if (mode === SelectModes.add && shouldSelect) {
                 return { ...vertex, selected: true };
-              } else if (mode === 'remove' && shouldSelect) {
+              } else if (mode === SelectModes.remove && shouldSelect) {
                 return { ...vertex, selected: false };
               }
               return vertex;
@@ -76,11 +77,11 @@ const meshSlice = createSlice({
             ...meshData,
             edges: meshData.edges.map((edge, index) => {
               const shouldSelect = indices.includes(index);
-              if (mode === 'set') {
+              if (mode === SelectModes.set) {
                 return { ...edge, selected: shouldSelect };
-              } else if (mode === 'add' && shouldSelect) {
+              } else if (mode === SelectModes.add && shouldSelect) {
                 return { ...edge, selected: true };
-              } else if (mode === 'remove' && shouldSelect) {
+              } else if (mode === SelectModes.remove && shouldSelect) {
                 return { ...edge, selected: false };
               }
               return edge;
@@ -91,11 +92,11 @@ const meshSlice = createSlice({
             ...meshData,
             faces: meshData.faces.map((face, index) => {
               const shouldSelect = indices.includes(index);
-              if (mode === 'set') {
+              if (mode === SelectModes.set) {
                 return { ...face, selected: shouldSelect };
-              } else if (mode === 'add' && shouldSelect) {
+              } else if (mode === SelectModes.add && shouldSelect) {
                 return { ...face, selected: true };
-              } else if (mode === 'remove' && shouldSelect) {
+              } else if (mode === SelectModes.remove && shouldSelect) {
                 return { ...face, selected: false };
               }
               return face;

@@ -44,6 +44,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
 import { Vector3Tuple, TransformConstraint, MergeType } from "../../types";
+import { MeshEditModes } from "../../consts";
+import { EditModes } from "../../Enums";
 
 interface MeshOperationsPanelProps {
   modelId: string;
@@ -101,22 +103,22 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({
     if (!meshData) return { count: 0, type: "none" };
 
     switch (currentSubObjectType) {
-      case "vertex":
+      case EditModes.vertex:
         return {
           count: meshData.vertices.filter((v) => v.selected).length,
-          type: "vertex",
+          type: EditModes.vertex,
           total: meshData.vertices.length,
         };
-      case "edge":
+      case EditModes.edge:
         return {
           count: meshData.edges.filter((e) => e.selected).length,
-          type: "edge",
+          type: EditModes.edge,
           total: meshData.edges.length,
         };
-      case "face":
+      case EditModes.face:
         return {
           count: meshData.faces.filter((f) => f.selected).length,
-          type: "face",
+          type: EditModes.face,
           total: meshData.faces.length,
         };
       default:
@@ -183,7 +185,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({
     deleteSelectedElements();
   }, [deleteSelectedElements]);
 
-  if (!["vertex", "edge", "face"].includes(editMode)) {
+  if (!MeshEditModes.includes(editMode)) {
     return (
       <Card>
         <CardContent>
@@ -510,7 +512,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({
       </Accordion>
 
       {/* Face Operations */}
-      {currentSubObjectType === "face" && (
+      {currentSubObjectType === EditModes.face && (
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center" gap={1}>
@@ -641,7 +643,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({
       )}
 
       {/* Edge Operations */}
-      {currentSubObjectType === "edge" && (
+      {currentSubObjectType === EditModes.edge && (
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center" gap={1}>
@@ -760,7 +762,7 @@ const MeshOperationsPanel: React.FC<MeshOperationsPanelProps> = ({
       )}
 
       {/* Vertex Operations */}
-      {currentSubObjectType === "vertex" && (
+      {currentSubObjectType === EditModes.vertex && (
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center" gap={1}>

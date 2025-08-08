@@ -1,12 +1,14 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { BoxSelectionMode } from "../../types";
+import { SelectModes } from "../../Enums";
 
 interface BoxSelectionProps {
   onBoxSelect: (
     startPoint: THREE.Vector2,
     endPoint: THREE.Vector2,
-    mode: "set" | "add" | "remove"
+    mode: BoxSelectionMode
   ) => void;
   isActive: boolean;
 }
@@ -15,12 +17,12 @@ const BoxSelection: React.FC<BoxSelectionProps> = ({
   onBoxSelect,
   isActive,
 }) => {
-  const { gl, camera, scene } = useThree();
+  const { gl } = useThree();
   const [isSelecting, setIsSelecting] = useState(false);
   const [startPoint, setStartPoint] = useState<THREE.Vector2 | null>(null);
   const [currentPoint, setCurrentPoint] = useState<THREE.Vector2 | null>(null);
-  const [selectionMode, setSelectionMode] = useState<"set" | "add" | "remove">(
-    "set"
+  const [selectionMode, setSelectionMode] = useState<BoxSelectionMode>(
+    SelectModes.set
   );
   const selectionBoxRef = useRef<HTMLDivElement | null>(null);
 
@@ -54,11 +56,11 @@ const BoxSelection: React.FC<BoxSelectionProps> = ({
       const y = event.clientY - rect.top;
 
       // Determine selection mode based on modifier keys
-      let mode: "set" | "add" | "remove" = "set";
+      let mode: BoxSelectionMode = SelectModes.set;
       if (event.ctrlKey || event.metaKey) {
-        mode = "add";
+        mode = SelectModes.add;
       } else if (event.altKey) {
-        mode = "remove";
+        mode = SelectModes.remove;
       }
 
       setStartPoint(new THREE.Vector2(x, y));
@@ -68,17 +70,17 @@ const BoxSelection: React.FC<BoxSelectionProps> = ({
 
       // Update box color based on mode
       selectionBox.style.border =
-        mode === "add"
+        mode === SelectModes.add
           ? "1px dashed #00ff00"
-          : mode === "remove"
-          ? "1px dashed #ff0000"
-          : "1px dashed #00ffff";
+          : mode === SelectModes.remove
+            ? "1px dashed #ff0000"
+            : "1px dashed #00ffff";
       selectionBox.style.backgroundColor =
-        mode === "add"
+        mode === SelectModes.add
           ? "rgba(0, 255, 0, 0.1)"
-          : mode === "remove"
-          ? "rgba(255, 0, 0, 0.1)"
-          : "rgba(0, 255, 255, 0.1)";
+          : mode === SelectModes.remove
+            ? "rgba(255, 0, 0, 0.1)"
+            : "rgba(0, 255, 255, 0.1)";
       selectionBox.style.display = "block";
     };
 

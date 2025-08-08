@@ -11,7 +11,8 @@ import {
 } from '../store/slices/meshSlice';
 import { triggerMeshUpdate } from '../store/slices/modelSlice';
 import { MeshEditor } from '../utils/meshEditor';
-import { MeshEditData, Vector3Tuple, SubObjectType } from '../types';
+import { MeshEditData, Vector3Tuple, SubObjectType, BoxSelectionMode } from '../types';
+import { SelectModes } from '../Enums';
 
 export const useMeshEditor = (modelId: string) => {
   const dispatch = useDispatch();
@@ -370,7 +371,7 @@ export const useMeshEditor = (modelId: string) => {
   }, [dispatch, modelId]);
 
   // Selection operations
-  const selectElements = useCallback((type: SubObjectType, indices: number[], mode: 'set' | 'add' | 'remove' = 'set') => {
+  const selectElements = useCallback((type: SubObjectType, indices: number[], mode: BoxSelectionMode = SelectModes.set) => {
     // Update selection in UI store (which also updates mesh edit data)
     dispatch(selectSubObjects({ modelId, type, indices, mode }));
   }, [dispatch, modelId]);
@@ -391,39 +392,39 @@ export const useMeshEditor = (modelId: string) => {
         break;
     }
     
-    selectElements(type, allIndices, 'set');
+    selectElements(type, allIndices, SelectModes.set);
   }, [meshData, selectElements]);
 
   const deselectAll = useCallback((type: SubObjectType) => {
-    selectElements(type, [], 'set');
+    selectElements(type, [], SelectModes.set);
   }, [selectElements]);
 
   const growSelection = useCallback((type: SubObjectType) => {
     if (!meshData) return;
     
     const newSelection = MeshEditor.growSelection(meshData, type);
-    selectElements(type, newSelection, 'set');
+    selectElements(type, newSelection, SelectModes.set);
   }, [meshData, selectElements]);
 
   const shrinkSelection = useCallback((type: SubObjectType) => {
     if (!meshData) return;
     
     const newSelection = MeshEditor.shrinkSelection(meshData, type);
-    selectElements(type, newSelection, 'set');
+    selectElements(type, newSelection, SelectModes.set);
   }, [meshData, selectElements]);
 
   const selectEdgeLoop = useCallback((edgeIndex: number) => {
     if (!meshData) return;
     
     const loopSelection = MeshEditor.selectEdgeLoop(meshData, edgeIndex);
-    selectElements('edge', loopSelection, 'set');
+    selectElements('edge', loopSelection, SelectModes.set);
   }, [meshData, selectElements]);
 
   const selectFaceLoop = useCallback((faceIndex: number) => {
     if (!meshData) return;
     
     const loopSelection = MeshEditor.selectFaceLoop(meshData, faceIndex);
-    selectElements('face', loopSelection, 'set');
+    selectElements('face', loopSelection, SelectModes.set);
   }, [meshData, selectElements]);
 
   return {

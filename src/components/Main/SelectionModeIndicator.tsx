@@ -1,6 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
+import { MeshEditModes } from "../../consts";
 
 const SelectionModeIndicator: React.FC = () => {
   const editMode = useSelector((state: RootState) => state.ui.editMode);
@@ -11,7 +12,7 @@ const SelectionModeIndicator: React.FC = () => {
     (state: RootState) => state.ui.subObjectSelectionMode
   );
 
-  if (!["vertex", "edge", "face"].includes(editMode)) {
+  if (!MeshEditModes.includes(editMode)) {
     return null;
   }
 

@@ -14,6 +14,7 @@ import { ModelMetadata, ToolType } from "../../types";
 import SubObjectHighlight from "./SubObjectHighlight";
 import InteractiveSubObject from "./InteractiveSubObject";
 import MeshEditableModel from "./MeshEditableModel";
+import { MeshEditModes } from "../../consts";
 
 interface SceneContentProps {
   models: { [id: string]: Group };
@@ -57,8 +58,9 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   // Add keyboard support for deleting models
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Delete" || event.key === "Backspace") {
+      if (event.key === "x") {
         if (selectedModelId) {
+          alert("Are you sure you want to delete the object from the scene?"); // TODO: Make this a modal
           deleteModel(selectedModelId);
         }
       }
@@ -245,9 +247,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
       {Object.entries(renderedModels).map(([modelId, model]) => {
         const mesh = model.children[0] as Mesh;
         const isSelected = selectedModelId === modelId;
-        const isSubObjectEditMode = ["vertex", "edge", "face"].includes(
-          editMode
-        );
+        const isSubObjectEditMode = MeshEditModes.includes(editMode);
 
         // For sub-object editing modes, use MeshEditableModel
         if (isSelected && isSubObjectEditMode && mesh?.geometry) {

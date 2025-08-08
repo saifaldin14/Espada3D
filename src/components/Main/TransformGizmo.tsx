@@ -6,6 +6,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
 import { Vector3Tuple, TransformConstraint } from "../../types";
+import { MeshEditModes } from "../../consts";
+import { EditModes } from "../../Enums";
 
 interface TransformGizmoProps {
   modelId: string;
@@ -56,16 +58,16 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
 
   // Calculate selection center for gizmo positioning
   const selectionCenter = React.useMemo(() => {
-    if (!meshData || !["vertex", "edge", "face"].includes(editMode)) {
+    if (!meshData || !MeshEditModes.includes(editMode)) {
       return new THREE.Vector3(0, 0, 0);
     }
 
     let selectedElements: any[] = [];
-    if (currentSubObjectType === "vertex") {
+    if (currentSubObjectType === EditModes.vertex) {
       selectedElements = meshData.vertices.filter((v) => v.selected);
-    } else if (currentSubObjectType === "edge") {
+    } else if (currentSubObjectType === EditModes.edge) {
       selectedElements = meshData.edges.filter((e) => e.selected);
-    } else if (currentSubObjectType === "face") {
+    } else if (currentSubObjectType === EditModes.face) {
       selectedElements = meshData.faces.filter((f) => f.selected);
     }
 
@@ -76,12 +78,12 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     const center = new THREE.Vector3();
     let count = 0;
 
-    if (currentSubObjectType === "vertex") {
+    if (currentSubObjectType === EditModes.vertex) {
       selectedElements.forEach((vertex) => {
         center.add(new THREE.Vector3().fromArray(vertex.position));
         count++;
       });
-    } else if (currentSubObjectType === "edge") {
+    } else if (currentSubObjectType === EditModes.edge) {
       selectedElements.forEach((edge) => {
         edge.vertices.forEach((vIndex: number) => {
           const vertex = meshData.vertices[vIndex];
@@ -91,7 +93,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
           }
         });
       });
-    } else if (currentSubObjectType === "face") {
+    } else if (currentSubObjectType === EditModes.face) {
       selectedElements.forEach((face) => {
         face.vertices.forEach((vIndex: number) => {
           const vertex = meshData.vertices[vIndex];
@@ -141,19 +143,19 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
 
       // Apply the translation to selected elements based on sub-object type
       if (delta[0] !== 0 || delta[1] !== 0 || delta[2] !== 0) {
-        if (currentSubObjectType === "vertex") {
+        if (currentSubObjectType === EditModes.vertex) {
           moveVertices(
             delta,
             undefined,
             startValues.position.toArray() as Vector3Tuple
           );
-        } else if (currentSubObjectType === "edge") {
+        } else if (currentSubObjectType === EditModes.edge) {
           moveEdges(
             delta,
             undefined,
             startValues.position.toArray() as Vector3Tuple
           );
-        } else if (currentSubObjectType === "face") {
+        } else if (currentSubObjectType === EditModes.face) {
           moveFaces(
             delta,
             undefined,
@@ -176,17 +178,17 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
         deltaRotation[1] !== 0 ||
         deltaRotation[2] !== 0
       ) {
-        if (currentSubObjectType === "vertex") {
+        if (currentSubObjectType === EditModes.vertex) {
           rotateVertices(
             deltaRotation,
             startValues.position?.toArray() as Vector3Tuple
           );
-        } else if (currentSubObjectType === "edge") {
+        } else if (currentSubObjectType === EditModes.edge) {
           rotateEdges(
             deltaRotation,
             startValues.position?.toArray() as Vector3Tuple
           );
-        } else if (currentSubObjectType === "face") {
+        } else if (currentSubObjectType === EditModes.face) {
           rotateFaces(
             deltaRotation,
             startValues.position?.toArray() as Vector3Tuple
@@ -208,18 +210,18 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
         scaleFactors[1] !== 1 ||
         scaleFactors[2] !== 1
       ) {
-        if (currentSubObjectType === "vertex") {
+        if (currentSubObjectType === EditModes.vertex) {
           scaleVertices(
             scaleFactors,
             undefined,
             startValues.position?.toArray() as Vector3Tuple
           );
-        } else if (currentSubObjectType === "edge") {
+        } else if (currentSubObjectType === EditModes.edge) {
           scaleEdges(
             scaleFactors,
             startValues.position?.toArray() as Vector3Tuple
           );
-        } else if (currentSubObjectType === "face") {
+        } else if (currentSubObjectType === EditModes.face) {
           scaleFaces(
             scaleFactors,
             startValues.position?.toArray() as Vector3Tuple
@@ -264,15 +266,15 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   // Show/hide gizmo based on selection
   const hasSelection =
     meshData &&
-    ((currentSubObjectType === "vertex" &&
+    ((currentSubObjectType === EditModes.vertex &&
       meshData.vertices.some((v) => v.selected)) ||
-      (currentSubObjectType === "edge" &&
+      (currentSubObjectType === EditModes.edge &&
         meshData.edges.some((e) => e.selected)) ||
-      (currentSubObjectType === "face" &&
+      (currentSubObjectType === EditModes.face &&
         meshData.faces.some((f) => f.selected)));
 
   const shouldShowGizmo =
-    visible && hasSelection && ["vertex", "edge", "face"].includes(editMode);
+    visible && hasSelection && MeshEditModes.includes(editMode);
 
   if (!shouldShowGizmo) return null;
 

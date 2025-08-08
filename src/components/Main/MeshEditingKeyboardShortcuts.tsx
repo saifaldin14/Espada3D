@@ -1,3 +1,4 @@
+// TODO: find a way to use unused imports
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
@@ -9,6 +10,8 @@ import {
 } from "../../store/slices/uiSlice";
 import { selectSubObjects } from "../../store/slices/meshSlice";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
+import { MeshEditModes } from "../../consts";
+import { EditModes } from "../../Enums";
 
 const MeshEditingKeyboardShortcuts: React.FC = () => {
   const dispatch = useDispatch();
@@ -62,8 +65,8 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
         !event.altKey
       ) {
         event.preventDefault();
-        dispatch(setEditMode("vertex"));
-        dispatch(setCurrentSubObjectType("vertex"));
+        dispatch(setEditMode(EditModes.vertex));
+        dispatch(setCurrentSubObjectType(EditModes.vertex));
         return;
       }
 
@@ -75,8 +78,8 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
         !event.altKey
       ) {
         event.preventDefault();
-        dispatch(setEditMode("edge"));
-        dispatch(setCurrentSubObjectType("edge"));
+        dispatch(setEditMode(EditModes.edge));
+        dispatch(setCurrentSubObjectType(EditModes.edge));
         return;
       }
 
@@ -88,25 +91,25 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
         !event.altKey
       ) {
         event.preventDefault();
-        dispatch(setEditMode("face"));
-        dispatch(setCurrentSubObjectType("face"));
+        dispatch(setEditMode(EditModes.face));
+        dispatch(setCurrentSubObjectType(EditModes.face));
         return;
       }
 
       // Tab cycling through edit modes
       if (event.key === "Tab" && !event.ctrlKey && !event.altKey) {
         event.preventDefault();
-        if (editMode === "model") {
-          dispatch(setEditMode("vertex"));
-          dispatch(setCurrentSubObjectType("vertex"));
-        } else if (editMode === "vertex") {
-          dispatch(setEditMode("edge"));
-          dispatch(setCurrentSubObjectType("edge"));
-        } else if (editMode === "edge") {
-          dispatch(setEditMode("face"));
-          dispatch(setCurrentSubObjectType("face"));
-        } else if (editMode === "face") {
-          dispatch(setEditMode("model"));
+        if (editMode === EditModes.model) {
+          dispatch(setEditMode(EditModes.vertex));
+          dispatch(setCurrentSubObjectType(EditModes.vertex));
+        } else if (editMode === EditModes.vertex) {
+          dispatch(setEditMode(EditModes.edge));
+          dispatch(setCurrentSubObjectType(EditModes.edge));
+        } else if (editMode === EditModes.edge) {
+          dispatch(setEditMode(EditModes.face));
+          dispatch(setCurrentSubObjectType(EditModes.face));
+        } else if (editMode === EditModes.face) {
+          dispatch(setEditMode(EditModes.model));
         }
         return;
       }
@@ -137,7 +140,7 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       // ====================== SELECTION OPERATIONS ======================
 
       // Only handle selection shortcuts in mesh edit modes
-      if (!["vertex", "edge", "face"].includes(editMode)) return;
+      if (!MeshEditModes.includes(editMode)) return;
 
       // Select all (A key - Blender convention)
       if (event.key === "a" || event.key === "A") {
@@ -191,7 +194,10 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // Face operations
-      if (editMode === "face" || currentSubObjectType === "face") {
+      if (
+        editMode === EditModes.face ||
+        currentSubObjectType === EditModes.face
+      ) {
         // Extrude faces (E key - Blender convention)
         if (event.key === "e" || event.key === "E") {
           event.preventDefault();
@@ -215,7 +221,10 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // Edge operations
-      if (editMode === "edge" || currentSubObjectType === "edge") {
+      if (
+        editMode === EditModes.edge ||
+        currentSubObjectType === EditModes.edge
+      ) {
         // Bevel edges (Ctrl+B - Blender convention)
         if ((event.key === "b" || event.key === "B") && event.ctrlKey) {
           event.preventDefault();
@@ -239,7 +248,10 @@ const MeshEditingKeyboardShortcuts: React.FC = () => {
       }
 
       // Vertex operations
-      if (editMode === "vertex" || currentSubObjectType === "vertex") {
+      if (
+        editMode === EditModes.vertex ||
+        currentSubObjectType === EditModes.vertex
+      ) {
         // Merge vertices (Alt+M - Blender convention)
         if ((event.key === "m" || event.key === "M") && event.altKey) {
           event.preventDefault();

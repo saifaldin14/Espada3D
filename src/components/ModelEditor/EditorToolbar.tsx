@@ -77,6 +77,7 @@ import {
 } from "@mui/icons-material";
 import { ToolType, EditMode } from "../../types";
 import { glassStyles } from "../../config/theme";
+import { EditModes } from "../../Enums";
 
 const EditorToolbar: React.FC = () => {
   const activeTool = useSelector((state: any) => state.ui.activeTool);
@@ -362,22 +363,28 @@ const EditorToolbar: React.FC = () => {
                 size="small"
                 sx={styles.toggleGroup}
               >
-                <ToggleButton value="model" sx={styles.toggleButton}>
+                <ToggleButton value={EditModes.model} sx={styles.toggleButton}>
                   <Tooltip title="Object Mode">
                     <ViewInAr fontSize="small" />
                   </Tooltip>
                 </ToggleButton>
-                <ToggleButton value="material" sx={styles.toggleButton}>
+                <ToggleButton
+                  value={EditModes.material}
+                  sx={styles.toggleButton}
+                >
                   <Tooltip title="Material Mode">
                     <Texture fontSize="small" />
                   </Tooltip>
                 </ToggleButton>
-                <ToggleButton value="vertex" sx={styles.toggleButton}>
+                <ToggleButton value={EditModes.vertex} sx={styles.toggleButton}>
                   <Tooltip title="Mesh Edit">
                     <Category fontSize="small" />
                   </Tooltip>
                 </ToggleButton>
-                <ToggleButton value="animation" sx={styles.toggleButton}>
+                <ToggleButton
+                  value={EditModes.animation}
+                  sx={styles.toggleButton}
+                >
                   <Tooltip title="Animation">
                     <Animation fontSize="small" />
                   </Tooltip>

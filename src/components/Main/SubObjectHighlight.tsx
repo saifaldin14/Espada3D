@@ -3,6 +3,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { MeshEditor } from "../../utils/meshEditor";
 import * as THREE from "three";
+import { MeshEditModes } from "../../consts";
+import { EditModes } from "../../Enums";
 
 interface SubObjectHighlightProps {
   modelId: string;
@@ -22,13 +24,16 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
   const editMode = useSelector((state: RootState) => state.ui.editMode);
 
   const highlightElements = useMemo(() => {
-    if (!meshEditData || !["vertex", "edge", "face"].includes(editMode)) {
+    if (!meshEditData || !MeshEditModes.includes(editMode)) {
       return null;
     }
 
     const elements: JSX.Element[] = [];
 
-    if (currentSubObjectType === "vertex" || editMode === "vertex") {
+    if (
+      currentSubObjectType === EditModes.vertex ||
+      editMode === EditModes.vertex
+    ) {
       const selectedVertices = MeshEditor.getSelectedVertices(meshEditData);
       selectedVertices.forEach((vertex, index) => {
         elements.push(
@@ -40,7 +45,10 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
       });
     }
 
-    if (currentSubObjectType === "edge" || editMode === "edge") {
+    if (
+      currentSubObjectType === EditModes.edge ||
+      editMode === EditModes.edge
+    ) {
       const selectedEdges = MeshEditor.getSelectedEdges(meshEditData);
       selectedEdges.forEach((edge, index) => {
         const v1 = meshEditData.vertices[edge.vertices[0]];
@@ -71,7 +79,10 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
       });
     }
 
-    if (currentSubObjectType === "face" || editMode === "face") {
+    if (
+      currentSubObjectType === EditModes.face ||
+      editMode === EditModes.face
+    ) {
       const selectedFaces = MeshEditor.getSelectedFaces(meshEditData);
       selectedFaces.forEach((face, index) => {
         // Create a face highlight by drawing lines around the face perimeter
@@ -150,7 +161,7 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
     return elements;
   }, [meshEditData, currentSubObjectType, editMode]);
 
-  if (!meshEditData || !["vertex", "edge", "face"].includes(editMode)) {
+  if (!meshEditData || !MeshEditModes.includes(editMode)) {
     return null;
   }
 

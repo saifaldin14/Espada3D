@@ -1,4 +1,5 @@
 // Core application types
+import { EditModes, SelectModes } from '../Enums';
 import { NodeGraphState } from './nodeTypes';
 
 export type Vector3Tuple = [number, number, number];
@@ -6,9 +7,16 @@ export type Vector3Tuple = [number, number, number];
 export type GeometryType = 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone' | 'torus' | 'dodecahedron';
 export type MaterialType = 'standard' | 'phong' | 'lambert' | 'basic' | 'physical' | 'toon';
 export type ToolType = 'translate' | 'rotate' | 'scale' | 'select';
-export type EditMode = 'model' | 'material' | 'animation' | 'hierarchy' | 'vertex' | 'edge' | 'face';
+export type EditMode = EditModes.model |
+ EditModes.material | 
+ EditModes.animation | 
+ EditModes.hierarchy | 
+ EditModes.vertex | 
+ EditModes.edge | 
+ EditModes.face;
 export type SubObjectType = 'vertex' | 'edge' | 'face';
 export type SelectionMode = 'single' | 'multiple' | 'box' | 'lasso';
+export type BoxSelectionMode = SelectModes.set | SelectModes.add | SelectModes.remove;
 
 export interface TextureProperties {
   map?: string;
@@ -157,7 +165,7 @@ export interface SelectSubObjectPayload {
   modelId: string;
   type: SubObjectType;
   indices: number[];
-  mode: 'set' | 'add' | 'remove';
+  mode: BoxSelectionMode;
 }
 
 // Enhanced mesh editing types

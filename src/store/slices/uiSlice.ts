@@ -1,9 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { UIState, ToolType, EditMode, SelectionMode, SubObjectType } from '../../types';
+import { EditModes } from '../../Enums';
 
 const initialState: UIState = {
   activeTool: 'translate',
-  editMode: 'model',
+  editMode: EditModes.model,
   isSidebarOpen: true,
   isEditorOpen: true,
   showGrid: true,

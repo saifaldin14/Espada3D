@@ -1,3 +1,4 @@
+// TODO: See if I can clean the code (there is some code duplication for example)
 import React, { useRef, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useFrame, useThree } from "@react-three/fiber";
@@ -5,6 +6,9 @@ import { RootState } from "../../store";
 import { selectSubObjects } from "../../store/slices/meshSlice";
 import { MeshEditor } from "../../utils/meshEditor";
 import * as THREE from "three";
+import { BoxSelectionMode } from "../../types";
+import { EditModes, SelectModes } from "../../Enums";
+import { MeshEditModes } from "../../consts";
 
 interface InteractiveSubObjectProps {
   modelId: string;
@@ -40,7 +44,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
 
   // Create helper geometries for vertex/edge picking
   const helperGeometries = useMemo(() => {
-    if (!meshEditData || !["vertex", "edge", "face"].includes(editMode)) {
+    if (!meshEditData || !MeshEditModes.includes(editMode)) {
       return null;
     }
 
@@ -51,7 +55,10 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     };
 
     // Create vertex helpers (larger spheres for better selection)
-    if (currentSubObjectType === "vertex" || editMode === "vertex") {
+    if (
+      currentSubObjectType === EditModes.vertex ||
+      editMode === EditModes.vertex
+    ) {
       meshEditData.vertices.forEach((vertex, index) => {
         const sphereGeometry = new THREE.SphereGeometry(0.08, 8, 6); // Increased from 0.02 to 0.08
         const material = new THREE.MeshBasicMaterial({
@@ -63,7 +70,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
         const sphere = new THREE.Mesh(sphereGeometry, material);
         sphere.position.set(...vertex.position);
         sphere.userData = {
-          type: "vertex",
+          type: EditModes.vertex,
           index: vertex.index,
           originalMaterial: material,
           isSelected: vertex.selected,
@@ -74,7 +81,10 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     }
 
     // Create edge helpers (thicker cylinders for better selection)
-    if (currentSubObjectType === "edge" || editMode === "edge") {
+    if (
+      currentSubObjectType === EditModes.edge ||
+      editMode === EditModes.edge
+    ) {
       meshEditData.edges.forEach((edge, index) => {
         const v1 = meshEditData.vertices[edge.vertices[0]];
         const v2 = meshEditData.vertices[edge.vertices[1]];
@@ -105,7 +115,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
           cylinder.rotateX(Math.PI / 2);
 
           cylinder.userData = {
-            type: "edge",
+            type: EditModes.edge,
             index: edge.index,
             originalMaterial: material,
             isSelected: edge.selected,
@@ -117,7 +127,10 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     }
 
     // Create face helpers (semi-transparent overlays for better selection)
-    if (currentSubObjectType === "face" || editMode === "face") {
+    if (
+      currentSubObjectType === EditModes.face ||
+      editMode === EditModes.face
+    ) {
       meshEditData.faces.forEach((face, index) => {
         // Create a simple geometry for the face
         const faceVertices = face.vertices.map((vIndex) => {
@@ -155,7 +168,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
 
           const faceMesh = new THREE.Mesh(faceGeometry, material);
           faceMesh.userData = {
-            type: "face",
+            type: EditModes.face,
             index: face.index,
             originalMaterial: material,
             isSelected: face.selected,
@@ -184,7 +197,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     if (object.userData?.originalMaterial && !object.userData?.isSelected) {
       // Restore original opacity
       const type = object.userData.type;
-      const baseOpacity = type === "face" ? 0.3 : 0.4;
+      const baseOpacity = type === EditModes.face ? 0.3 : 0.4;
       object.material.opacity = baseOpacity;
     }
     // Restore default cursor
@@ -192,7 +205,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
   };
 
   const handlePointerDown = (event: any) => {
-    if (!["vertex", "edge", "face"].includes(editMode) || !meshEditData) {
+    if (!MeshEditModes.includes(editMode) || !meshEditData) {
       return;
     }
 
@@ -207,7 +220,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     const helperIntersect = intersects.find((intersect: any) => {
       return (
         intersect.object.userData?.type &&
-        ["vertex", "edge", "face"].includes(intersect.object.userData.type)
+        MeshEditModes.includes(intersect.object.userData.type)
       );
     });
 
@@ -219,12 +232,12 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
         const isShiftPressed = event.shiftKey;
         const isCtrlPressed = event.ctrlKey || event.metaKey;
 
-        let mode: "set" | "add" | "remove" = "set";
+        let mode: BoxSelectionMode = SelectModes.set;
 
         if (selectionMode === "multiple" || isShiftPressed) {
-          mode = "add";
+          mode = SelectModes.add;
         } else if (isCtrlPressed) {
-          mode = "remove";
+          mode = SelectModes.remove;
         }
 
         dispatch(
@@ -242,11 +255,11 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     // Fallback to proximity-based selection
     const intersect = intersects[0];
 
-    if (currentSubObjectType === "vertex") {
+    if (currentSubObjectType === EditModes.vertex) {
       handleVertexSelection(intersect, event);
-    } else if (currentSubObjectType === "edge") {
+    } else if (currentSubObjectType === EditModes.edge) {
       handleEdgeSelection(intersect, event);
-    } else if (currentSubObjectType === "face") {
+    } else if (currentSubObjectType === EditModes.face) {
       handleFaceSelection(intersect, event);
     }
   };
@@ -270,18 +283,18 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
       const isShiftPressed = event.shiftKey;
       const isCtrlPressed = event.ctrlKey || event.metaKey;
 
-      let mode: "set" | "add" | "remove" = "set";
+      let mode: BoxSelectionMode = SelectModes.set;
 
       if (selectionMode === "multiple" || isShiftPressed) {
-        mode = "add";
+        mode = SelectModes.add;
       } else if (isCtrlPressed) {
-        mode = "remove";
+        mode = SelectModes.remove;
       }
 
       dispatch(
         selectSubObjects({
           modelId,
-          type: "vertex",
+          type: EditModes.vertex,
           indices: [closestVertexIndex],
           mode,
         })
@@ -321,18 +334,18 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
       const isShiftPressed = event.shiftKey;
       const isCtrlPressed = event.ctrlKey || event.metaKey;
 
-      let mode: "set" | "add" | "remove" = "set";
+      let mode: BoxSelectionMode = SelectModes.set;
 
       if (selectionMode === "multiple" || isShiftPressed) {
-        mode = "add";
+        mode = SelectModes.add;
       } else if (isCtrlPressed) {
-        mode = "remove";
+        mode = SelectModes.remove;
       }
 
       dispatch(
         selectSubObjects({
           modelId,
-          type: "edge",
+          type: EditModes.edge,
           indices: [closestEdgeIndex],
           mode,
         })
@@ -361,18 +374,18 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     const isShiftPressed = event.shiftKey;
     const isCtrlPressed = event.ctrlKey || event.metaKey;
 
-    let mode: "set" | "add" | "remove" = "set";
+    let mode: BoxSelectionMode = SelectModes.set;
 
     if (selectionMode === "multiple" || isShiftPressed) {
-      mode = "add";
+      mode = SelectModes.add;
     } else if (isCtrlPressed) {
-      mode = "remove";
+      mode = SelectModes.remove;
     }
 
     dispatch(
       selectSubObjects({
         modelId,
-        type: "face",
+        type: EditModes.face,
         indices: [meshFaceIndex],
         mode,
       })
@@ -393,7 +406,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     });
   }, [modelId, editMode, currentSubObjectType, meshEditData]);
 
-  if (!["vertex", "edge", "face"].includes(editMode)) {
+  if (!MeshEditModes.includes(editMode)) {
     return (
       <mesh
         ref={meshRef}
