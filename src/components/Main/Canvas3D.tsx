@@ -11,6 +11,8 @@ import {
   MeshStandardMaterial,
   MeshPhongMaterial,
   MeshLambertMaterial,
+  ACESFilmicToneMapping,
+  SRGBColorSpace,
 } from "three";
 import { ModelProvider } from "./ModelContext";
 import SceneContent from "./SceneContent";
@@ -36,7 +38,7 @@ const Canvas3D: React.FC = () => {
       const materialProps = {
         color: color || APP_CONFIG.MATERIALS.DEFAULT_COLOR,
         wireframe,
-      };
+      } as any;
 
       switch (materialType) {
         case "phong":
@@ -53,6 +55,22 @@ const Canvas3D: React.FC = () => {
   useEffect(() => {
     const newModels: { [id: string]: Group } = {};
 
+    // Dispose helper
+    const disposeGroup = (group: Group) => {
+      group.traverse((obj: any) => {
+        if (obj.isMesh) {
+          const mesh = obj as Mesh;
+          if (mesh.geometry) mesh.geometry.dispose();
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((m) => m.dispose && m.dispose());
+          } else if ((mesh.material as any)?.dispose) {
+            (mesh.material as any).dispose();
+          }
+        }
+      });
+    };
+
+    // Build or update groups
     modelsMetadata.forEach((meta) => {
       let modelGroup = models[meta.id];
 
@@ -76,7 +94,7 @@ const Canvas3D: React.FC = () => {
           const geometryData = MeshEditor.createGeometryData(
             geometry,
             meta.id,
-            meta.type
+            meta.type as GeometryType
           );
           dispatch(setGeometryCache(geometryData));
         } catch (error) {
@@ -94,6 +112,9 @@ const Canvas3D: React.FC = () => {
         );
 
         const mesh = new Mesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
         modelGroup = new Group();
         modelGroup.add(mesh);
         modelGroup.position.set(
@@ -111,7 +132,7 @@ const Canvas3D: React.FC = () => {
       } else {
         // Update the wireframe and color properties for existing models
         const mesh = modelGroup.children[0] as Mesh;
-        const material = mesh.material;
+        const material = mesh.material as any;
 
         if (Array.isArray(material)) {
           material.forEach((mat) => {
@@ -154,10 +175,22 @@ const Canvas3D: React.FC = () => {
       }
 
       // Add the model to newModels (only models that exist in metadata)
-      newModels[meta.id] = modelGroup;
+      newModels[meta.id] = modelGroup!;
+    });
+
+    // Dispose removed models to avoid memory leaks
+    Object.keys(models).forEach((id) => {
+      if (!newModels[id]) {
+        disposeGroup(models[id]);
+      }
     });
 
     setModels(newModels);
+
+    // Cleanup on unmount
+    return () => {
+      Object.values(newModels).forEach(disposeGroup);
+    };
   }, [modelsMetadata, showWireframe, createMaterial]);
 
   return (
@@ -168,14 +201,22 @@ const Canvas3D: React.FC = () => {
             position: [...APP_CONFIG.SCENE.DEFAULT_CAMERA_POSITION],
             fov: 75,
           }}
+          shadows
           onCreated={({ gl }) => {
+            gl.outputColorSpace = SRGBColorSpace;
+            gl.toneMapping = ACESFilmicToneMapping;
             gl.setClearColor("#1e1e1e");
+            gl.shadowMap.enabled = true;
           }}
         >
           <ModelProvider selectedModel={null}>
             <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} />
-            <directionalLight position={[-10, 10, 5]} intensity={0.3} />
+            <pointLight position={[10, 10, 10]} castShadow />
+            <directionalLight
+              position={[-10, 10, 5]}
+              intensity={0.6}
+              castShadow
+            />
 
             {showGrid && (
               <gridHelper

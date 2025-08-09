@@ -76,7 +76,7 @@ export const useUI = () => {
   const dispatch = useAppDispatch();
   const ui = useAppSelector(state => state.ui);
   
-  const setActiveTool = useCallback((tool: 'translate' | 'rotate' | 'scale') => {
+  const setActiveTool = useCallback((tool: 'translate' | 'rotate' | 'scale' | 'select') => {
     dispatch({ type: 'ui/setActiveTool', payload: tool });
   }, [dispatch]);
   

@@ -1,13 +1,23 @@
 import { all, call, put, takeEvery } from 'redux-saga/effects';
-import { addModel } from '../slices/modelSlice';
+import { addModel, setError, setLoading } from '../slices/modelSlice';
 import { loadModel } from '../../utils/loaders';
 
-function* handleLoadModel(action: any): any {
+interface LoadModelRequestAction {
+  type: string;
+  payload: { url: string };
+}
+
+function* handleLoadModel(action: LoadModelRequestAction): any {
   try {
+    yield put(setLoading(true));
     const model = yield call(loadModel, action.payload.url);
-    yield put(addModel(model));
+    // TODO: Transform loaded GLTF into ModelMetadata before adding to store
+    yield put(addModel(model as any));
+    yield put(setLoading(false));
   } catch (error) {
     console.error('Error loading model:', error);
+    yield put(setError('Failed to load model'));
+    yield put(setLoading(false));
   }
 }
 

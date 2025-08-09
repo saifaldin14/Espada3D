@@ -7,6 +7,7 @@ import {
   Object3D,
   Object3DEventMap,
   DoubleSide,
+  BackSide,
 } from "three";
 import { useAppSelector } from "../../hooks/useRedux";
 import { useModels } from "../../hooks/useRedux";
@@ -60,8 +61,13 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "x") {
         if (selectedModelId) {
-          alert("Are you sure you want to delete the object from the scene?"); // TODO: Make this a modal
-          deleteModel(selectedModelId);
+          if (
+            window.confirm(
+              "Are you sure you want to delete the selected object from the scene?"
+            )
+          ) {
+            deleteModel(selectedModelId);
+          }
         }
       }
     };
@@ -214,7 +220,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
     const geometry = mesh.geometry.clone();
     const outlineMaterial = new MeshStandardMaterial({
       color: 0x0000ff,
-      side: 1, // THREE.BackSide
+      side: BackSide,
       transparent: true,
       opacity: 0.5,
     });

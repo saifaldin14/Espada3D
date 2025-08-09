@@ -9,8 +9,6 @@ import NodeEditor from "./components/NodeEditor/NodeEditor";
 import MeshEditingKeyboardShortcuts from "./components/Main/MeshEditingKeyboardShortcuts";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ResizablePanel } from "./components/Layout";
-import { Provider } from "react-redux";
-import store from "./store";
 import { ModelProvider } from "./components/Main/ModelContext";
 import { useAppSelector } from "./hooks/useRedux";
 import {
@@ -33,13 +31,8 @@ import {
 import { modernTheme } from "./config/theme";
 
 const AppContent: React.FC = () => {
-  const isHierarchyPanelOpen = useAppSelector(
-    (state) => state.ui.isHierarchyPanelOpen
-  );
-  const isAnimationPanelOpen = useAppSelector(
-    (state) => state.ui.isAnimationPanelOpen
-  );
-  const isNodeEditorOpen = useAppSelector((state) => state.ui.isNodeEditorOpen);
+  const ui = useAppSelector((state) => state.ui);
+  const modelsCount = useAppSelector((state) => state.models.models.length);
 
   return (
     <Box sx={styles.appContainer} className="fade-in">
@@ -80,9 +73,7 @@ const AppContent: React.FC = () => {
               <Chip size="small" label="Active" sx={styles.activeChip} />
             </Box>
             <Box sx={styles.viewportControls}>
-              <Box sx={styles.viewportInfo}>
-                Objects: {useAppSelector((state) => state.models.models.length)}
-              </Box>
+              <Box sx={styles.viewportInfo}>Objects: {modelsCount}</Box>
               <Box sx={styles.viewportActions}>
                 <Tooltip title="Viewport Settings">
                   <IconButton size="small" sx={styles.viewportActionButton}>
@@ -137,26 +128,26 @@ const AppContent: React.FC = () => {
       </Box>
 
       {/* Floating Panels */}
-      {isHierarchyPanelOpen && (
+      {ui.isHierarchyPanelOpen && (
         <Box sx={{ ...styles.floatingPanel, ...styles.hierarchyPanel }}>
           <ErrorBoundary>
-            <HierarchyPanel isOpen={isHierarchyPanelOpen} />
+            <HierarchyPanel isOpen={ui.isHierarchyPanelOpen} />
           </ErrorBoundary>
         </Box>
       )}
 
-      {isAnimationPanelOpen && (
+      {ui.isAnimationPanelOpen && (
         <Box sx={{ ...styles.floatingPanel, ...styles.animationPanel }}>
           <ErrorBoundary>
-            <AnimationPanel isOpen={isAnimationPanelOpen} />
+            <AnimationPanel isOpen={ui.isAnimationPanelOpen} />
           </ErrorBoundary>
         </Box>
       )}
 
-      {isNodeEditorOpen && (
+      {ui.isNodeEditorOpen && (
         <Box sx={{ ...styles.floatingPanel, ...styles.nodeEditorPanel }}>
           <ErrorBoundary>
-            <NodeEditor isOpen={isNodeEditorOpen} />
+            <NodeEditor isOpen={ui.isNodeEditorOpen} />
           </ErrorBoundary>
         </Box>
       )}
@@ -170,12 +161,8 @@ const AppContent: React.FC = () => {
             />
             Ready
           </Box>
-          <Box sx={styles.statusItem}>
-            Mode: {useAppSelector((state) => state.ui.editMode || "Object")}
-          </Box>
-          <Box sx={styles.statusItem}>
-            Tool: {useAppSelector((state) => state.ui.activeTool || "Select")}
-          </Box>
+          <Box sx={styles.statusItem}>Mode: {ui.editMode || "Object"}</Box>
+          <Box sx={styles.statusItem}>Tool: {ui.activeTool || "Select"}</Box>
         </Box>
         <Box sx={styles.statusRight}>
           <Box sx={styles.statusItem}>
@@ -183,16 +170,10 @@ const AppContent: React.FC = () => {
             FPS: 60
           </Box>
           <Box sx={styles.statusItem}>
-            Tris:{" "}
-            {(
-              useAppSelector((state) => state.models.models.length) * 1200
-            ).toLocaleString()}
+            Tris: {(modelsCount * 1200).toLocaleString()}
           </Box>
           <Box sx={styles.statusItem}>
-            Verts:{" "}
-            {(
-              useAppSelector((state) => state.models.models.length) * 800
-            ).toLocaleString()}
+            Verts: {(modelsCount * 800).toLocaleString()}
           </Box>
           <Box sx={styles.statusItem}>
             <ViewInAr sx={{ mr: 0.5, fontSize: 14 }} />
@@ -209,14 +190,12 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <Provider store={store}>
-      <ThemeProvider theme={modernTheme}>
-        <CssBaseline />
-        <ErrorBoundary>
-          <AppContent />
-        </ErrorBoundary>
-      </ThemeProvider>
-    </Provider>
+    <ThemeProvider theme={modernTheme}>
+      <CssBaseline />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 };
 

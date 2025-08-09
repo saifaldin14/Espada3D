@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { selectModel } from "../../store/slices/modelSlice";
+import {
+  selectModel,
+  updateModelMetadata,
+} from "../../store/slices/modelSlice";
 import { setGrid, setWireframe } from "../../store/slices/uiSlice";
 import {
   Box,
@@ -39,13 +42,17 @@ const Sidebar: React.FC = () => {
     (state: any) => state.models.selectedModelId
   );
   const showGrid = useSelector((state: any) => state.ui.showGrid);
-  const wireframe = useSelector((state: any) => state.ui.wireframe);
+  const showWireframe = useSelector((state: any) => state.ui.showWireframe);
   const dispatch = useDispatch();
 
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleModelSelect = (id: string) => {
     dispatch(selectModel(id));
+  };
+
+  const toggleVisibility = (id: string, visible: boolean) => {
+    dispatch(updateModelMetadata({ id, visible: !visible }));
   };
 
   return (
@@ -145,7 +152,7 @@ const Sidebar: React.FC = () => {
                           sx={styles.miniButton}
                           onClick={(e: any) => {
                             e.stopPropagation();
-                            // Toggle visibility handler would go here
+                            toggleVisibility(model.id, model.visible);
                           }}
                         >
                           {model.visible ? (
@@ -186,7 +193,7 @@ const Sidebar: React.FC = () => {
           <FormControlLabel
             control={
               <Switch
-                checked={wireframe}
+                checked={showWireframe}
                 onChange={(e) => dispatch(setWireframe(e.target.checked))}
                 size="small"
                 icon={<Palette fontSize="small" />}
