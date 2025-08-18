@@ -53,6 +53,14 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       color: "#00BCD4",
     },
     {
+      type: "mesh",
+      name: "Mesh",
+      description: "Create or modify mesh objects",
+      category: "geometry",
+      icon: "🔷",
+      color: "#00BCD4",
+    },
+    {
       type: "transform",
       name: "Transform",
       description: "Transform geometry",
@@ -70,6 +78,32 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       icon: "🎨",
       color: "#9C27B0",
     },
+    {
+      type: "texture",
+      name: "Texture",
+      description: "Texture mapping and generation",
+      category: "material",
+      icon: "🖼️",
+      color: "#9C27B0",
+    },
+
+    // Lighting
+    {
+      type: "light",
+      name: "Light",
+      description: "Scene lighting",
+      category: "lighting",
+      icon: "💡",
+      color: "#FFEB3B",
+    },
+    {
+      type: "camera",
+      name: "Camera",
+      description: "Camera controls",
+      category: "lighting",
+      icon: "📷",
+      color: "#FFEB3B",
+    },
 
     // Utility
     {
@@ -78,6 +112,14 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       description: "Apply filters and effects",
       category: "utility",
       icon: "🔍",
+      color: "#795548",
+    },
+    {
+      type: "script",
+      name: "Script",
+      description: "Custom scripting node",
+      category: "utility",
+      icon: "📜",
       color: "#795548",
     },
 
@@ -97,6 +139,7 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
     { name: "math", title: "Mathematics", expanded: true },
     { name: "geometry", title: "Geometry", expanded: true },
     { name: "material", title: "Materials", expanded: false },
+    { name: "lighting", title: "Lighting", expanded: false },
     { name: "utility", title: "Utilities", expanded: false },
     { name: "logic", title: "Logic", expanded: false },
   ];

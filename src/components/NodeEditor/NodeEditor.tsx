@@ -1,5 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Box, Typography, IconButton, Tooltip, Paper } from "@mui/material";
+import {
+  Box,
+  Typography,
+  IconButton,
+  Tooltip,
+  Paper,
+  Collapse,
+} from "@mui/material";
 import {
   Add,
   Delete,
@@ -7,6 +14,9 @@ import {
   Stop,
   Save,
   FolderOpen,
+  ExpandLess,
+  ExpandMore,
+  Close,
 } from "@mui/icons-material";
 import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import {
@@ -26,8 +36,11 @@ import {
   updateNodePosition,
   updateNodeData,
   setSelectedNode,
-  executeNodeGraph,
+  setExecuting,
+  setNodeExecutionResult,
 } from "../../store/slices/nodeSlice";
+import { toggleNodeEditor } from "../../store/slices/uiSlice";
+import { createNodeExecutor } from "../../utils/nodeExecutor";
 
 interface NodeEditorProps {
   isOpen: boolean;
@@ -41,11 +54,20 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const [draggedNodeType, setDraggedNodeType] = useState<NodeType | null>(null);
   const [viewportOffset, setViewportOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const handleNodeDragStart = useCallback((nodeType: NodeType) => {
     setDraggedNodeType(nodeType);
   }, []);
+
+  const handleClose = useCallback(() => {
+    dispatch(toggleNodeEditor());
+  }, [dispatch]);
+
+  const handleToggleCollapse = useCallback(() => {
+    setIsCollapsed(!isCollapsed);
+  }, [isCollapsed]);
 
   const handleCanvasDrop = useCallback(
     (event: React.DragEvent) => {
@@ -87,9 +109,23 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     }
   }, [selectedNodeId, dispatch]);
 
-  const handleExecute = useCallback(() => {
-    dispatch(executeNodeGraph());
-  }, [dispatch]);
+  const handleExecute = useCallback(async () => {
+    dispatch(setExecuting(true));
+
+    try {
+      const executor = createNodeExecutor(nodes, connections);
+      const results = await executor.executeGraph();
+
+      // Store execution results
+      Object.values(results).forEach((result) => {
+        dispatch(setNodeExecutionResult(result));
+      });
+    } catch (error) {
+      console.error("Node execution failed:", error);
+    } finally {
+      dispatch(setExecuting(false));
+    }
+  }, [nodes, connections, dispatch]);
 
   const selectedNode = selectedNodeId
     ? nodes.find((n) => n.id === selectedNodeId)
@@ -133,58 +169,70 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
               <FolderOpen />
             </IconButton>
           </Tooltip>
+          <Tooltip title={isCollapsed ? "Expand" : "Collapse"}>
+            <IconButton onClick={handleToggleCollapse} sx={styles.actionButton}>
+              {isCollapsed ? <ExpandMore /> : <ExpandLess />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Close">
+            <IconButton onClick={handleClose} sx={styles.actionButton}>
+              <Close />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 
-      {/* Main Content */}
-      <Box sx={styles.content}>
-        {/* Node Library */}
-        <Box sx={styles.sidebar}>
-          <NodeLibrary onNodeDragStart={handleNodeDragStart} />
-        </Box>
+      {/* Collapsible Content */}
+      <Collapse in={!isCollapsed} timeout="auto" unmountOnExit>
+        <Box sx={styles.content}>
+          {/* Node Library */}
+          <Box sx={styles.sidebar}>
+            <NodeLibrary onNodeDragStart={handleNodeDragStart} />
+          </Box>
 
-        {/* Canvas */}
-        <Box
-          sx={styles.canvasContainer}
-          ref={canvasRef}
-          onDrop={handleCanvasDrop}
-          onDragOver={handleCanvasDragOver}
-        >
-          <NodeCanvas
-            nodes={nodes}
-            connections={connections}
-            selectedNodeId={selectedNodeId}
-            onNodeSelect={handleNodeSelect}
-            onNodeMove={(nodeId, position) =>
-              dispatch(updateNodePosition({ nodeId, position }))
-            }
-            onConnect={(sourceId, targetId, sourcePort, targetPort) =>
-              dispatch(
-                connectNodes({ sourceId, targetId, sourcePort, targetPort })
-              )
-            }
-            onDisconnect={(connectionId) =>
-              dispatch(disconnectNodes(connectionId))
-            }
-            viewportOffset={viewportOffset}
-            zoom={zoom}
-            onViewportChange={setViewportOffset}
-            onZoomChange={setZoom}
-          />
-        </Box>
-
-        {/* Properties Panel */}
-        {selectedNode && (
-          <Box sx={styles.propertiesPanel}>
-            <NodeProperties
-              node={selectedNode}
-              onUpdateData={(data) =>
-                dispatch(updateNodeData({ nodeId: selectedNode.id, data }))
+          {/* Canvas */}
+          <Box
+            sx={styles.canvasContainer}
+            ref={canvasRef}
+            onDrop={handleCanvasDrop}
+            onDragOver={handleCanvasDragOver}
+          >
+            <NodeCanvas
+              nodes={nodes}
+              connections={connections}
+              selectedNodeId={selectedNodeId}
+              onNodeSelect={handleNodeSelect}
+              onNodeMove={(nodeId, position) =>
+                dispatch(updateNodePosition({ nodeId, position }))
               }
+              onConnect={(sourceId, targetId, sourcePort, targetPort) =>
+                dispatch(
+                  connectNodes({ sourceId, targetId, sourcePort, targetPort })
+                )
+              }
+              onDisconnect={(connectionId) =>
+                dispatch(disconnectNodes(connectionId))
+              }
+              viewportOffset={viewportOffset}
+              zoom={zoom}
+              onViewportChange={setViewportOffset}
+              onZoomChange={setZoom}
             />
           </Box>
-        )}
-      </Box>
+
+          {/* Properties Panel */}
+          {selectedNode && (
+            <Box sx={styles.propertiesPanel}>
+              <NodeProperties
+                node={selectedNode}
+                onUpdateData={(data) =>
+                  dispatch(updateNodeData({ nodeId: selectedNode.id, data }))
+                }
+              />
+            </Box>
+          )}
+        </Box>
+      </Collapse>
     </Box>
   );
 };
@@ -204,6 +252,16 @@ const getDefaultNodeData = (type: NodeType): NodeData => {
       return { materialType: "standard", color: "#ffffff", roughness: 0.5 };
     case "geometry":
       return { geometryType: "box", dimensions: [1, 1, 1] };
+    case "mesh":
+      return { meshSource: "geometry", subdivision: 0 };
+    case "texture":
+      return { textureSource: "file", textureType: "diffuse", textureFile: "" };
+    case "light":
+      return { lightType: "directional", intensity: 1.0, castShadows: true };
+    case "camera":
+      return { cameraType: "perspective", fov: 75, near: 0.1, far: 1000 };
+    case "script":
+      return { scriptContent: "", scriptLanguage: "javascript" };
     case "filter":
       return { filterType: "blur", strength: 1.0 };
     case "condition":
@@ -227,6 +285,16 @@ const getNodeInputs = (type: NodeType): string[] => {
       return ["color", "roughness", "metalness"];
     case "geometry":
       return ["dimensions"];
+    case "mesh":
+      return ["geometry"];
+    case "texture":
+      return [];
+    case "light":
+      return ["intensity", "color"];
+    case "camera":
+      return ["fov", "near", "far"];
+    case "script":
+      return ["input"];
     case "filter":
       return ["input", "strength"];
     case "condition":
@@ -250,6 +318,16 @@ const getNodeOutputs = (type: NodeType): string[] => {
       return ["material"];
     case "geometry":
       return ["geometry"];
+    case "mesh":
+      return ["mesh"];
+    case "texture":
+      return ["texture"];
+    case "light":
+      return ["light"];
+    case "camera":
+      return ["camera"];
+    case "script":
+      return ["output"];
     case "filter":
       return ["output"];
     case "condition":

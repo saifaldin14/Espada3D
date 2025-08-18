@@ -7,7 +7,12 @@ export type NodeType =
   | 'material' 
   | 'geometry' 
   | 'filter' 
-  | 'condition';
+  | 'condition'
+  | 'script'
+  | 'mesh'
+  | 'light'
+  | 'camera'
+  | 'texture';
 
 export interface Position {
   x: number;
@@ -43,6 +48,31 @@ export interface NodeData {
   
   // Condition node
   condition?: 'equals' | 'greater' | 'less' | 'not';
+  
+  // Script node
+  scriptContent?: string;
+  scriptLanguage?: 'javascript' | 'glsl';
+  
+  // Mesh node
+  meshSource?: 'geometry' | 'file' | 'generated';
+  meshFile?: string;
+  subdivision?: number;
+  
+  // Light node
+  lightType?: 'directional' | 'point' | 'spot' | 'ambient';
+  intensity?: number;
+  castShadows?: boolean;
+  
+  // Camera node
+  cameraType?: 'perspective' | 'orthographic';
+  fov?: number;
+  near?: number;
+  far?: number;
+  
+  // Texture node
+  textureSource?: 'file' | 'generated' | 'procedural';
+  textureFile?: string;
+  textureType?: 'diffuse' | 'normal' | 'roughness' | 'metalness';
   
   // Custom data
   [key: string]: any;
@@ -82,7 +112,7 @@ export interface NodeLibraryItem {
   type: NodeType;
   name: string;
   description: string;
-  category: 'input' | 'output' | 'math' | 'geometry' | 'material' | 'utility' | 'logic';
+  category: 'input' | 'output' | 'math' | 'geometry' | 'material' | 'utility' | 'logic' | 'lighting' | 'effects';
   icon: string;
   color: string;
 }
