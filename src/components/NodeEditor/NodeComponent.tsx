@@ -38,6 +38,8 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
     switch (type) {
       case "input":
         return <Input sx={{ fontSize: 18 }} />;
+      case "color":
+        return <Palette sx={{ fontSize: 18 }} />;
       case "output":
         return <Output sx={{ fontSize: 18 }} />;
       case "math":
@@ -72,6 +74,12 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
           primary: "#43e97b",
           secondary: "#38f9d7",
           accent: "#2dd4bf",
+        };
+      case "color":
+        return {
+          primary: "#E91E63",
+          secondary: "#F06292",
+          accent: "#EC407A",
         };
       case "output":
         return {
@@ -263,6 +271,12 @@ const renderNodeContent = (node: Node) => {
           secondary: "#38f9d7",
           accent: "#2dd4bf",
         };
+      case "color":
+        return {
+          primary: "#E91E63",
+          secondary: "#F06292",
+          accent: "#EC407A",
+        };
       case "output":
         return {
           primary: "#fa709a",
@@ -361,6 +375,29 @@ const renderNodeContent = (node: Node) => {
           >
             <Typography variant="caption" sx={styles.contentValue}>
               {node.data.value || 0}
+            </Typography>
+          </Box>
+        </Box>
+      );
+    case "color":
+      return (
+        <Box sx={styles.contentContainer}>
+          <Typography variant="caption" sx={styles.contentLabel}>
+            Color
+          </Typography>
+          <Box sx={styles.colorPreview}>
+            <Box
+              sx={{
+                width: 40,
+                height: 24,
+                backgroundColor: String(node.data.value || "#ffffff"),
+                borderRadius: "6px",
+                border: "2px solid rgba(255, 255, 255, 0.3)",
+                boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.2)",
+              }}
+            />
+            <Typography variant="caption" sx={styles.contentValue}>
+              {String(node.data.value || "#ffffff").toUpperCase()}
             </Typography>
           </Box>
         </Box>
@@ -765,6 +802,12 @@ const styles = {
     boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.1)",
   },
   materialPreview: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "4px",
+  },
+  colorPreview: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",

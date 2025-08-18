@@ -25,6 +25,14 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       color: "#4CAF50",
     },
     {
+      type: "color",
+      name: "Color",
+      description: "Color picker input",
+      category: "input",
+      icon: "🎨",
+      color: "#E91E63",
+    },
+    {
       type: "output",
       name: "Output",
       description: "Output result node",
@@ -213,7 +221,10 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
           🔗 Connect output to input ports
         </Typography>
         <Typography variant="caption" sx={styles.instructionText}>
-          ⌫ Double-click connections to delete
+          ⌫ Right-click or double-click to delete connections
+        </Typography>
+        <Typography variant="caption" sx={styles.instructionText}>
+          🎯 Click connections to select and show delete button
         </Typography>
       </Box>
     </Box>
@@ -226,6 +237,7 @@ const styles = {
     flexDirection: "column",
     height: "100%",
     overflow: "hidden",
+    backgroundColor: "#2a2a2a",
   },
   header: {
     color: "#fff",
@@ -238,6 +250,25 @@ const styles = {
     flex: 1,
     overflow: "auto",
     padding: "8px 0",
+    scrollBehavior: "smooth",
+    // Custom scrollbar styling
+    "&::-webkit-scrollbar": {
+      width: "6px",
+    },
+    "&::-webkit-scrollbar-track": {
+      background: "rgba(255, 255, 255, 0.05)",
+      borderRadius: "3px",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      background: "rgba(255, 255, 255, 0.2)",
+      borderRadius: "3px",
+      "&:hover": {
+        background: "rgba(255, 255, 255, 0.3)",
+      },
+    },
+    // Firefox scrollbar styling
+    scrollbarWidth: "thin",
+    scrollbarColor: "rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05)",
   },
   accordion: {
     backgroundColor: "transparent",

@@ -242,6 +242,8 @@ const getDefaultNodeData = (type: NodeType): NodeData => {
   switch (type) {
     case "input":
       return { value: 0, name: "Input" };
+    case "color":
+      return { value: "#ffffff", name: "Color" };
     case "output":
       return { name: "Output" };
     case "math":
@@ -275,6 +277,8 @@ const getNodeInputs = (type: NodeType): string[] => {
   switch (type) {
     case "input":
       return [];
+    case "color":
+      return [];
     case "output":
       return ["value"];
     case "math":
@@ -286,7 +290,7 @@ const getNodeInputs = (type: NodeType): string[] => {
     case "geometry":
       return ["dimensions"];
     case "mesh":
-      return ["geometry"];
+      return ["geometry", "material"];
     case "texture":
       return [];
     case "light":
@@ -308,6 +312,8 @@ const getNodeOutputs = (type: NodeType): string[] => {
   switch (type) {
     case "input":
       return ["value"];
+    case "color":
+      return ["color"];
     case "output":
       return [];
     case "math":
@@ -377,7 +383,10 @@ const styles = {
     width: "200px",
     backgroundColor: "#2a2a2a",
     borderRight: "1px solid #333",
-    overflow: "auto",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
   },
   canvasContainer: {
     flex: 1,

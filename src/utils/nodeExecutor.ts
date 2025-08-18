@@ -98,6 +98,8 @@ export class NodeExecutor {
     switch (node.type) {
       case 'input':
         return this.executeInputNode(node, inputValues);
+      case 'color':
+        return this.executeColorNode(node, inputValues);
       case 'math':
         return this.executeMathNode(node, inputValues);
       case 'geometry':
@@ -149,6 +151,11 @@ export class NodeExecutor {
   private executeInputNode(node: Node, inputs: Record<string, any>): Record<string, any> {
     const { value = 0 } = node.data;
     return { value };
+  }
+
+  private executeColorNode(node: Node, inputs: Record<string, any>): Record<string, any> {
+    const { value = '#ffffff' } = node.data;
+    return { color: value };
   }
 
   private executeMathNode(node: Node, inputs: Record<string, any>): Record<string, any> {
@@ -294,18 +301,26 @@ export class NodeExecutor {
   private executeMeshNode(node: Node, inputs: Record<string, any>): Record<string, any> {
     const { meshSource = 'geometry', subdivision = 0 } = node.data;
     const geometry = inputs.geometry;
+    const material = inputs.material;
 
     if (!geometry && meshSource === 'geometry') {
       throw new Error('Mesh node requires geometry input when source is "geometry"');
     }
 
+    const meshData = {
+      ...geometry,
+      source: meshSource,
+      subdivision,
+      nodeId: node.id,
+    };
+
+    // Include material data if connected
+    if (material) {
+      meshData.material = material;
+    }
+
     return {
-      mesh: {
-        ...geometry,
-        source: meshSource,
-        subdivision,
-        nodeId: node.id,
-      }
+      mesh: meshData
     };
   }
 
@@ -383,13 +398,95 @@ export class NodeExecutor {
     const state = store.getState();
     const existingModels = state.models.models;
 
-    // Find all geometry nodes and create/update corresponding models
-    const geometryOutputs = new Map<string, any>();
+    // Find all mesh nodes and create/update corresponding models
+    const meshOutputs = new Map<string, any>();
+    const materialOutputs = new Map<string, any>();
     
     // Convert Map.entries() to Array for iteration
     const executionEntries = Array.from(this.executionResults.entries());
+    
+    // Collect all mesh and material outputs
     for (const [nodeId, outputs] of executionEntries) {
-      if (outputs.geometry) {
+      if (outputs.mesh) {
+        meshOutputs.set(nodeId, outputs.mesh);
+      }
+      if (outputs.material) {
+        materialOutputs.set(nodeId, outputs.material);
+      }
+    }
+
+    // Process mesh nodes and apply materials through connections
+    const meshEntries = Array.from(meshOutputs.entries());
+    for (const [nodeId, mesh] of meshEntries) {
+      const modelId = `node_generated_${nodeId}`;
+      const existingModel = existingModels.find((m: ModelMetadata) => m.id === modelId);
+
+      // Find connected material node or use material from mesh data
+      const meshNode = this.nodes.find(n => n.id === nodeId);
+      let appliedMaterial = {
+        type: 'standard' as MaterialType,
+        color: '#ffffff',
+        roughness: 0.5,
+        metalness: 0.1,
+      };
+
+      // First priority: material directly embedded in mesh data
+      if (mesh.material) {
+        appliedMaterial = {
+          ...appliedMaterial,
+          ...mesh.material,
+        };
+      } else if (meshNode) {
+        // Second priority: material connections to this mesh node
+        const materialConnections = this.connections.filter(
+          conn => conn.targetNodeId === nodeId && conn.targetPort === 'material'
+        );
+
+        if (materialConnections.length > 0) {
+          const materialConnection = materialConnections[0]; // Use first material connection
+          const materialNodeId = materialConnection.sourceNodeId;
+          const materialData = materialOutputs.get(materialNodeId);
+          
+          if (materialData) {
+            appliedMaterial = {
+              ...appliedMaterial,
+              ...materialData,
+            };
+          }
+        }
+      }
+
+      const modelData: ModelMetadata = {
+        id: modelId,
+        name: `${mesh.type || 'mesh'}_${nodeId.slice(-4)}`,
+        type: (mesh.type || 'box') as GeometryType,
+        position: mesh.transform?.type === 'translate' ? mesh.transform.value : [0, 0, 0],
+        rotation: mesh.transform?.type === 'rotate' ? mesh.transform.value : [0, 0, 0],
+        scale: mesh.transform?.type === 'scale' ? mesh.transform.value : mesh.dimensions || [1, 1, 1],
+        material: appliedMaterial,
+        parentId: null,
+        visible: true,
+        locked: false,
+        createdAt: existingModel?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (existingModel) {
+        store.dispatch(updateModelMetadata({ 
+          id: modelId, 
+          name: modelData.name,
+          visible: modelData.visible,
+          locked: modelData.locked 
+        }));
+      } else {
+        store.dispatch(addModel(modelData));
+      }
+    }
+
+    // Also handle geometry nodes that don't have mesh nodes
+    const geometryOutputs = new Map<string, any>();
+    for (const [nodeId, outputs] of executionEntries) {
+      if (outputs.geometry && !meshOutputs.has(nodeId)) {
         geometryOutputs.set(nodeId, outputs.geometry);
       }
     }
@@ -419,17 +516,6 @@ export class NodeExecutor {
         updatedAt: new Date().toISOString(),
       };
 
-      // Apply material data if available
-      const materialOutputs = Array.from(this.executionResults.values())
-        .find(outputs => outputs.material);
-      
-      if (materialOutputs?.material) {
-        modelData.material = {
-          ...modelData.material,
-          ...materialOutputs.material,
-        };
-      }
-
       if (existingModel) {
         store.dispatch(updateModelMetadata({ 
           id: modelId, 
@@ -442,11 +528,11 @@ export class NodeExecutor {
       }
     }
 
-    // Clean up models that no longer have corresponding geometry nodes
+    // Clean up models that no longer have corresponding nodes
     const nodeGeneratedModels = existingModels.filter((m: ModelMetadata) => m.id.startsWith('node_generated_'));
     for (const model of nodeGeneratedModels) {
       const nodeId = model.id.replace('node_generated_', '');
-      if (!geometryOutputs.has(nodeId)) {
+      if (!meshOutputs.has(nodeId) && !geometryOutputs.has(nodeId)) {
         store.dispatch(removeModel(model.id));
       }
     }

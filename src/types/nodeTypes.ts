@@ -12,7 +12,8 @@ export type NodeType =
   | 'mesh'
   | 'light'
   | 'camera'
-  | 'texture';
+  | 'texture'
+  | 'color';
 
 export interface Position {
   x: number;

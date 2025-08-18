@@ -101,10 +101,18 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
   // Handle connection click for selection/deletion
   const handleConnectionClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-    if (event.detail === 2) {
-      // Double click to delete
-      onDisconnect(connection.id);
-    }
+    // Single click to select, right click to delete
+  };
+
+  const handleConnectionRightClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onDisconnect(connection.id);
+  };
+
+  const handleConnectionDoubleClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onDisconnect(connection.id);
   };
 
   const getConnectionGradient = (selected: boolean) => {
@@ -143,30 +151,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
           <stop offset="100%" stopColor="rgba(59, 130, 246, 1)" />
         </linearGradient>
 
-        {/* Arrowhead marker */}
-        <marker
-          id={`arrowhead-${connection.id}`}
-          markerWidth="12"
-          markerHeight="8"
-          refX="11"
-          refY="4"
-          orient="auto"
-          markerUnits="strokeWidth"
-        >
-          <polygon
-            points="0 0, 12 4, 0 8"
-            fill={
-              connection.selected
-                ? "rgba(67, 233, 123, 1)"
-                : "rgba(67, 233, 123, 0.8)"
-            }
-            stroke={
-              connection.selected ? "rgba(255, 255, 255, 0.3)" : "transparent"
-            }
-            strokeWidth="0.5"
-          />
-        </marker>
-
         {/* Glow filter */}
         <filter id={`connectionGlow-${connection.id}`}>
           <feGaussianBlur stdDeviation="3" result="coloredBlur" />
@@ -200,8 +184,8 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
           transition: "all 0.2s ease-in-out",
         }}
         onClick={handleConnectionClick}
-        onDoubleClick={handleConnectionClick}
-        markerEnd={`url(#arrowhead-${connection.id})`}
+        onDoubleClick={handleConnectionDoubleClick}
+        onContextMenu={handleConnectionRightClick}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -214,8 +198,45 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
         fill="none"
         style={{ cursor: "pointer" }}
         onClick={handleConnectionClick}
-        onDoubleClick={handleConnectionClick}
+        onDoubleClick={handleConnectionDoubleClick}
+        onContextMenu={handleConnectionRightClick}
       />
+
+      {/* Delete button for selected connections */}
+      {connection.selected && (
+        <g>
+          {/* Delete button background */}
+          <circle
+            cx={
+              screenSourcePos.x + (screenTargetPos.x - screenSourcePos.x) * 0.5
+            }
+            cy={
+              screenSourcePos.y + (screenTargetPos.y - screenSourcePos.y) * 0.5
+            }
+            r="12"
+            fill="rgba(220, 38, 38, 0.9)"
+            stroke="rgba(255, 255, 255, 0.8)"
+            strokeWidth="2"
+            style={{ cursor: "pointer" }}
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onDisconnect(connection.id);
+            }}
+          />
+          {/* Delete icon (X) */}
+          <g
+            transform={`translate(${screenSourcePos.x + (screenTargetPos.x - screenSourcePos.x) * 0.5 - 6}, ${screenSourcePos.y + (screenTargetPos.y - screenSourcePos.y) * 0.5 - 6})`}
+            style={{ cursor: "pointer", pointerEvents: "none" }}
+          >
+            <path
+              d="M2 2L10 10M10 2L2 10"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </g>
+        </g>
+      )}
 
       {/* Data flow animation */}
       {connection.selected && (
