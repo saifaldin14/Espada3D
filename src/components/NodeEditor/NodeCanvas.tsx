@@ -188,7 +188,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
 
   // Grid rendering
   const renderGrid = () => {
-    const gridSize = 20;
+    const gridSize = 30;
     const offsetX = viewportOffset.x % (gridSize * zoom);
     const offsetY = viewportOffset.y % (gridSize * zoom);
 
@@ -196,7 +196,12 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
     const canvasWidth = canvasRef.current?.clientWidth || 1000;
     const canvasHeight = canvasRef.current?.clientHeight || 1000;
 
-    // Vertical lines
+    // Major grid lines (every 5th line)
+    const majorGridSize = gridSize * 5;
+    const majorOffsetX = viewportOffset.x % (majorGridSize * zoom);
+    const majorOffsetY = viewportOffset.y % (majorGridSize * zoom);
+
+    // Minor vertical lines
     for (let x = offsetX; x < canvasWidth; x += gridSize * zoom) {
       lines.push(
         <line
@@ -205,13 +210,13 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           y1={0}
           x2={x}
           y2={canvasHeight}
-          stroke="rgba(255, 255, 255, 0.1)"
-          strokeWidth={1}
+          stroke="rgba(67, 233, 123, 0.05)"
+          strokeWidth={0.5}
         />
       );
     }
 
-    // Horizontal lines
+    // Minor horizontal lines
     for (let y = offsetY; y < canvasHeight; y += gridSize * zoom) {
       lines.push(
         <line
@@ -220,7 +225,37 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           y1={y}
           x2={canvasWidth}
           y2={y}
-          stroke="rgba(255, 255, 255, 0.1)"
+          stroke="rgba(67, 233, 123, 0.05)"
+          strokeWidth={0.5}
+        />
+      );
+    }
+
+    // Major vertical lines
+    for (let x = majorOffsetX; x < canvasWidth; x += majorGridSize * zoom) {
+      lines.push(
+        <line
+          key={`major-v-${x}`}
+          x1={x}
+          y1={0}
+          x2={x}
+          y2={canvasHeight}
+          stroke="rgba(67, 233, 123, 0.1)"
+          strokeWidth={1}
+        />
+      );
+    }
+
+    // Major horizontal lines
+    for (let y = majorOffsetY; y < canvasHeight; y += majorGridSize * zoom) {
+      lines.push(
+        <line
+          key={`major-h-${y}`}
+          x1={0}
+          y1={y}
+          x2={canvasWidth}
+          y2={y}
+          stroke="rgba(67, 233, 123, 0.1)"
           strokeWidth={1}
         />
       );
@@ -282,11 +317,26 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
             y1={connectionStart.position.y * zoom + viewportOffset.y}
             x2={mousePosition.x * zoom + viewportOffset.x}
             y2={mousePosition.y * zoom + viewportOffset.y}
-            stroke="#00ccff"
-            strokeWidth={2}
-            strokeDasharray="5,5"
+            stroke="url(#connectionGradient)"
+            strokeWidth={3}
+            strokeDasharray="8,4"
+            strokeLinecap="round"
           />
         )}
+
+        {/* Gradient definition for connection lines */}
+        <defs>
+          <linearGradient
+            id="connectionGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="0%"
+          >
+            <stop offset="0%" stopColor="#43e97b" />
+            <stop offset="100%" stopColor="#38f9d7" />
+          </linearGradient>
+        </defs>
       </svg>
 
       {/* Nodes */}
@@ -324,7 +374,11 @@ const styles = {
     height: "100%",
     overflow: "hidden",
     cursor: "default",
-    backgroundColor: "#1e1e1e",
+    background: `
+      radial-gradient(circle at 25% 25%, rgba(67, 233, 123, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(56, 249, 215, 0.05) 0%, transparent 50%),
+      linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)
+    `,
     "&:active": {
       cursor: "grabbing",
     },

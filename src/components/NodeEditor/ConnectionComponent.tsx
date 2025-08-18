@@ -107,73 +107,154 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
     }
   };
 
+  const getConnectionGradient = (selected: boolean) => {
+    return selected
+      ? "url(#selectedConnectionGradient)"
+      : "url(#defaultConnectionGradient)";
+  };
+
   return (
     <g>
-      {/* Connection shadow for better visibility */}
+      {/* Gradient definitions */}
+      <defs>
+        {/* Default connection gradient */}
+        <linearGradient
+          id="defaultConnectionGradient"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="0%"
+        >
+          <stop offset="0%" stopColor="rgba(67, 233, 123, 0.8)" />
+          <stop offset="50%" stopColor="rgba(83, 109, 254, 0.7)" />
+          <stop offset="100%" stopColor="rgba(248, 113, 113, 0.8)" />
+        </linearGradient>
+
+        {/* Selected connection gradient */}
+        <linearGradient
+          id="selectedConnectionGradient"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="0%"
+        >
+          <stop offset="0%" stopColor="rgba(67, 233, 123, 1)" />
+          <stop offset="50%" stopColor="rgba(139, 92, 246, 1)" />
+          <stop offset="100%" stopColor="rgba(59, 130, 246, 1)" />
+        </linearGradient>
+
+        {/* Arrowhead marker */}
+        <marker
+          id={`arrowhead-${connection.id}`}
+          markerWidth="12"
+          markerHeight="8"
+          refX="11"
+          refY="4"
+          orient="auto"
+          markerUnits="strokeWidth"
+        >
+          <polygon
+            points="0 0, 12 4, 0 8"
+            fill={
+              connection.selected
+                ? "rgba(67, 233, 123, 1)"
+                : "rgba(67, 233, 123, 0.8)"
+            }
+            stroke={
+              connection.selected ? "rgba(255, 255, 255, 0.3)" : "transparent"
+            }
+            strokeWidth="0.5"
+          />
+        </marker>
+
+        {/* Glow filter */}
+        <filter id={`connectionGlow-${connection.id}`}>
+          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Connection shadow/glow for better visibility */}
       <path
         d={pathData}
-        stroke="rgba(0, 0, 0, 0.3)"
-        strokeWidth={6}
+        stroke="rgba(67, 233, 123, 0.3)"
+        strokeWidth={connection.selected ? 8 : 6}
         fill="none"
         pointerEvents="none"
+        filter={
+          connection.selected ? `url(#connectionGlow-${connection.id})` : "none"
+        }
       />
 
       {/* Main connection line */}
       <path
         d={pathData}
-        stroke={connection.selected ? "#00ccff" : "#666"}
-        strokeWidth={connection.selected ? 3 : 2}
+        stroke={getConnectionGradient(!!connection.selected)}
+        strokeWidth={connection.selected ? 4 : 3}
         fill="none"
-        style={{ cursor: "pointer" }}
+        style={{
+          cursor: "pointer",
+          transition: "all 0.2s ease-in-out",
+        }}
         onClick={handleConnectionClick}
         onDoubleClick={handleConnectionClick}
+        markerEnd={`url(#arrowhead-${connection.id})`}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
 
       {/* Connection hover area (invisible but clickable) */}
       <path
         d={pathData}
         stroke="transparent"
-        strokeWidth={12}
+        strokeWidth={16}
         fill="none"
         style={{ cursor: "pointer" }}
         onClick={handleConnectionClick}
         onDoubleClick={handleConnectionClick}
       />
 
-      {/* Arrowhead */}
-      <defs>
-        <marker
-          id={`arrowhead-${connection.id}`}
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill={connection.selected ? "#00ccff" : "#666"}
-          />
-        </marker>
-      </defs>
-
-      {/* Arrow line */}
-      <path
-        d={pathData}
-        stroke={connection.selected ? "#00ccff" : "#666"}
-        strokeWidth={connection.selected ? 3 : 2}
-        fill="none"
-        markerEnd={`url(#arrowhead-${connection.id})`}
-        pointerEvents="none"
-      />
-
       {/* Data flow animation */}
       {connection.selected && (
-        <circle r="4" fill="#00ccff">
-          <animateMotion dur="2s" repeatCount="indefinite">
-            <mpath href={`#connection-path-${connection.id}`} />
-          </animateMotion>
-        </circle>
+        <>
+          <circle
+            r="5"
+            fill="rgba(67, 233, 123, 0.9)"
+            stroke="rgba(255, 255, 255, 0.6)"
+            strokeWidth="1"
+          >
+            <animateMotion dur="1.5s" repeatCount="indefinite">
+              <mpath href={`#connection-path-${connection.id}`} />
+            </animateMotion>
+          </circle>
+          <circle r="3" fill="rgba(255, 255, 255, 0.8)">
+            <animateMotion dur="1.5s" repeatCount="indefinite">
+              <mpath href={`#connection-path-${connection.id}`} />
+            </animateMotion>
+          </circle>
+        </>
+      )}
+
+      {/* Pulse animation for active connections */}
+      {connection.selected && (
+        <path
+          d={pathData}
+          stroke="rgba(67, 233, 123, 0.6)"
+          strokeWidth="6"
+          fill="none"
+          pointerEvents="none"
+          strokeLinecap="round"
+        >
+          <animate
+            attributeName="stroke-opacity"
+            values="0.3;0.8;0.3"
+            dur="2s"
+            repeatCount="indefinite"
+          />
+        </path>
       )}
 
       {/* Hidden path for animation reference */}
