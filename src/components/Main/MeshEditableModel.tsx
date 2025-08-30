@@ -29,6 +29,10 @@ interface MeshEditableModelProps {
   position?: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
+  // New: original child mesh local transform so editing view matches normal view
+  meshLocalPosition?: [number, number, number];
+  meshLocalRotation?: [number, number, number];
+  meshLocalScale?: [number, number, number];
   onGeometryUpdate?: (geometry: THREE.BufferGeometry) => void;
 }
 
@@ -39,6 +43,9 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
+  meshLocalPosition = [0, 0, 0],
+  meshLocalRotation = [0, 0, 0],
+  meshLocalScale = [1, 1, 1],
   onGeometryUpdate,
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -409,76 +416,87 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
 
   return (
     <group position={position} rotation={rotation} scale={scale}>
-      <mesh
-        ref={meshRef}
-        geometry={geometryRef.current}
-        material={meshEditingMaterial}
-        onPointerDown={handlePointerDown}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-      />
+      {/* Preserve original child mesh local transform so world position stays identical */}
+      <group
+        position={meshLocalPosition}
+        rotation={meshLocalRotation}
+        scale={meshLocalScale}
+      >
+        <mesh
+          ref={meshRef}
+          geometry={geometryRef.current}
+          material={meshEditingMaterial}
+          onPointerDown={handlePointerDown}
+          onPointerOver={handlePointerOver}
+          onPointerOut={handlePointerOut}
+        />
 
-      {/* Transform Gizmo */}
-      <TransformGizmo
-        modelId={modelId}
-        visible={MeshEditModes.includes(editMode)}
-        mode={
-          activeTool === "translate"
-            ? "translate"
-            : activeTool === "rotate"
-              ? "rotate"
-              : activeTool === "scale"
-                ? "scale"
-                : "translate"
-        }
-      />
+        {/* Transform Gizmo */}
+        <TransformGizmo
+          modelId={modelId}
+          visible={MeshEditModes.includes(editMode)}
+          mode={
+            activeTool === "translate"
+              ? "translate"
+              : activeTool === "rotate"
+                ? "rotate"
+                : activeTool === "scale"
+                  ? "scale"
+                  : "translate"
+          }
+          getTargetMatrixWorld={() =>
+            meshRef.current ? meshRef.current.matrixWorld.clone() : null
+          }
+          getMeshObject={() => meshRef.current}
+        />
 
-      {/* Box Selection Component */}
-      <BoxSelection
-        onBoxSelect={handleBoxSelect}
-        isActive={MeshEditModes.includes(editMode)}
-      />
+        {/* Box Selection Component */}
+        <BoxSelection
+          onBoxSelect={handleBoxSelect}
+          isActive={MeshEditModes.includes(editMode)}
+        />
 
-      {/* Helper geometries for sub-object visualization */}
-      {MeshEditModes.includes(editMode) && (
-        <group ref={helperGroupRef}>
-          {/* Render vertex helpers */}
-          {currentSubObjectType === EditModes.vertex &&
-            helpers.vertices.map((helper, index) => (
-              <primitive
-                key={`vertex-${helper.userData.index}`}
-                object={helper}
-                onPointerDown={handlePointerDown}
-                onPointerOver={handlePointerOver}
-                onPointerOut={handlePointerOut}
-              />
-            ))}
+        {/* Helper geometries for sub-object visualization */}
+        {MeshEditModes.includes(editMode) && (
+          <group ref={helperGroupRef}>
+            {/* Render vertex helpers */}
+            {currentSubObjectType === EditModes.vertex &&
+              helpers.vertices.map((helper) => (
+                <primitive
+                  key={`vertex-${helper.userData.index}`}
+                  object={helper}
+                  onPointerDown={handlePointerDown}
+                  onPointerOver={handlePointerOver}
+                  onPointerOut={handlePointerOut}
+                />
+              ))}
 
-          {/* Render edge helpers */}
-          {currentSubObjectType === EditModes.edge &&
-            helpers.edges.map((helper, index) => (
-              <primitive
-                key={`edge-${helper.userData.index}`}
-                object={helper}
-                onPointerDown={handlePointerDown}
-                onPointerOver={handlePointerOver}
-                onPointerOut={handlePointerOut}
-              />
-            ))}
+            {/* Render edge helpers */}
+            {currentSubObjectType === EditModes.edge &&
+              helpers.edges.map((helper) => (
+                <primitive
+                  key={`edge-${helper.userData.index}`}
+                  object={helper}
+                  onPointerDown={handlePointerDown}
+                  onPointerOver={handlePointerOver}
+                  onPointerOut={handlePointerOut}
+                />
+              ))}
 
-          {/* Render face helpers */}
-          {currentSubObjectType === EditModes.face &&
-            helpers.faces.map((helper, index) => (
-              <primitive
-                key={`face-${helper.userData.index}-${index}`}
-                object={helper}
-                onPointerDown={handlePointerDown}
-                onPointerOver={handlePointerOver}
-                onPointerOut={handlePointerOut}
-              />
-            ))}
-        </group>
-      )}
+            {/* Render face helpers */}
+            {currentSubObjectType === EditModes.face &&
+              helpers.faces.map((helper, index) => (
+                <primitive
+                  key={`face-${helper.userData.index}-${index}`}
+                  object={helper}
+                  onPointerDown={handlePointerDown}
+                  onPointerOver={handlePointerOver}
+                  onPointerOut={handlePointerOut}
+                />
+              ))}
+          </group>
+        )}
+      </group>
     </group>
   );
 };

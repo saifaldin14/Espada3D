@@ -257,6 +257,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
 
         // For sub-object editing modes, use MeshEditableModel
         if (isSelected && isSubObjectEditMode && mesh?.geometry) {
+          const childLocal = mesh; // mesh is already the child under group (model)
           return (
             <MeshEditableModel
               key={modelId}
@@ -270,6 +271,19 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
                 model.rotation.toArray().slice(0, 3) as [number, number, number]
               }
               scale={model.scale.toArray() as [number, number, number]}
+              meshLocalPosition={
+                childLocal.position.toArray() as [number, number, number]
+              }
+              meshLocalRotation={
+                childLocal.rotation.toArray().slice(0, 3) as [
+                  number,
+                  number,
+                  number,
+                ]
+              }
+              meshLocalScale={
+                childLocal.scale.toArray() as [number, number, number]
+              }
               onGeometryUpdate={(updatedGeometry) => {
                 // Copy updated geometry attributes to the mesh geometry
                 if (updatedGeometry.getAttribute("position")) {
@@ -293,18 +307,13 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
                 if (updatedGeometry.getIndex()) {
                   mesh.geometry.setIndex(updatedGeometry.getIndex());
                 }
-
-                // Mark attributes as needing update
-                const position = mesh.geometry.getAttribute("position");
-                const normal = mesh.geometry.getAttribute("normal");
-                if (position) position.needsUpdate = true;
-                if (normal) normal.needsUpdate = true;
-
+                const positionAttr = mesh.geometry.getAttribute("position");
+                const normalAttr = mesh.geometry.getAttribute("normal");
+                if (positionAttr) positionAttr.needsUpdate = true;
+                if (normalAttr) normalAttr.needsUpdate = true;
                 mesh.geometry.computeVertexNormals();
                 mesh.geometry.computeBoundingBox();
                 mesh.geometry.computeBoundingSphere();
-
-                // Ensure the material is double-sided for mesh editing
                 const currentMaterial = Array.isArray(mesh.material)
                   ? mesh.material[0]
                   : mesh.material;

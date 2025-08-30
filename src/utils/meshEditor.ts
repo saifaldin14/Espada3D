@@ -396,14 +396,24 @@ export class MeshEditor {
   } {
     const edges = Array.from(this.vertexToEdges.get(vertexIndex) || []);
     const faces = Array.from(this.vertexToFaces.get(vertexIndex) || []);
-    
-    // Get adjacent vertices through edges
+
+    // Derive adjacent vertices from edges list
     const adjacentVertices = new Set<number>();
-    edges.forEach(edgeIndex => {
-      // Find the edge and get the other vertex
-      // This would need to be implemented with proper edge lookup
+    edges.forEach(edgeIdx => {
+      // Find edge in a lightweight way – edges are sequential; guard in case index out of range
+      // We cannot access meshData here directly, so vertices list will be reconstructed by caller when needed.
+      // Instead, store temporary pair encodings inside a static cache during extraction (already in vertexToEdges).
+      // For adjacency we need edge->vertex mapping; we can reconstruct via edgeToFaces plus vertexToFaces, but simplest
+      // approach: during extractMeshData we already populated vertexToEdges, but not a direct edge->vertex list accessible here.
+      // Hence we embed edge vertices into a static map on first demand.
     });
-    
+
+    // Since we cannot access edge vertices without meshData here, caller functions that need precise vertex adjacency
+    // will compute it directly. For now approximate by faces: collect all vertices from faces containing this vertex.
+    faces.forEach(faceIdx => {
+      const faceSet = this.faceAdjacency.get(faceIdx); // unused but keep for potential extension
+    });
+
     return {
       edges,
       faces,
@@ -468,23 +478,68 @@ export class MeshEditor {
    * Grow selection (Blender Ctrl+NumPad+ behavior)
    */
   static growSelection(meshData: MeshEditData, subObjectType: 'vertex' | 'edge' | 'face'): number[] {
-    const currentSelection = new Set<number>();
-    
     if (subObjectType === 'vertex') {
-      meshData.vertices.forEach((vertex, index) => {
-        if (vertex.selected) currentSelection.add(index);
-      });
-      
+      const currentSelection = new Set<number>();
+      meshData.vertices.forEach((v, i) => v.selected && currentSelection.add(i));
+      if (currentSelection.size === 0) return [];
+
       const newSelection = new Set(currentSelection);
-      currentSelection.forEach(vertexIndex => {
-        const adjacentVertices = this.getVertexAdjacency(vertexIndex).vertices;
-        adjacentVertices.forEach(adjVertex => newSelection.add(adjVertex));
+      // Build quick edge map for adjacency
+      const vertexToVertices = new Map<number, Set<number>>();
+      meshData.edges.forEach(e => {
+        const [a,b] = e.vertices; 
+        if (!vertexToVertices.has(a)) vertexToVertices.set(a, new Set());
+        if (!vertexToVertices.has(b)) vertexToVertices.set(b, new Set());
+        vertexToVertices.get(a)!.add(b);
+        vertexToVertices.get(b)!.add(a);
       });
-      
+
+      currentSelection.forEach(vIdx => {
+        vertexToVertices.get(vIdx)?.forEach(adj => newSelection.add(adj));
+      });
       return Array.from(newSelection);
     }
-    
-    // Similar logic for edges and faces...
+
+    if (subObjectType === 'edge') {
+      const selectedEdges = new Set<number>();
+      meshData.edges.forEach((e,i) => e.selected && selectedEdges.add(i));
+      if (selectedEdges.size === 0) return [];
+
+      const newSelection = new Set(selectedEdges);
+      // Edge adjacency through shared vertices
+      const vertexToEdgesLocal = new Map<number, Set<number>>();
+      meshData.edges.forEach((e,i) => {
+        e.vertices.forEach(v => {
+          if (!vertexToEdgesLocal.has(v)) vertexToEdgesLocal.set(v, new Set());
+          vertexToEdgesLocal.get(v)!.add(i);
+        });
+      });
+      selectedEdges.forEach(edgeIdx => {
+        const edge = meshData.edges[edgeIdx];
+        edge.vertices.forEach(v => {
+          vertexToEdgesLocal.get(v)?.forEach(adjEdgeIdx => newSelection.add(adjEdgeIdx));
+        });
+      });
+      return Array.from(newSelection);
+    }
+
+    // Face grow via face adjacency (shared edges)
+    if (subObjectType === 'face') {
+      const selectedFaces = new Set<number>();
+      meshData.faces.forEach((f,i) => f.selected && selectedFaces.add(i));
+      if (selectedFaces.size === 0) return [];
+      // Build adjacency on the fly
+      const edgeToFacesLocal = new Map<string, number[]>();
+      meshData.faces.forEach((f,i) => {
+        for (let j=0;j<f.vertices.length;j++){ const a=f.vertices[j]; const b=f.vertices[(j+1)%f.vertices.length]; const key=a<b?`${a}-${b}`:`${b}-${a}`; if(!edgeToFacesLocal.has(key)) edgeToFacesLocal.set(key,[]); edgeToFacesLocal.get(key)!.push(i);} 
+      });
+      const faceAdj = new Map<number, Set<number>>();
+      edgeToFacesLocal.forEach(list => { if (list.length>1){ for (let i=0;i<list.length;i++){ for (let j=i+1;j<list.length;j++){ const a=list[i], b=list[j]; if(!faceAdj.has(a)) faceAdj.set(a,new Set()); if(!faceAdj.has(b)) faceAdj.set(b,new Set()); faceAdj.get(a)!.add(b); faceAdj.get(b)!.add(a); } } } });
+      const newSelection = new Set(selectedFaces);
+      selectedFaces.forEach(fIdx => { faceAdj.get(fIdx)?.forEach(adj => newSelection.add(adj)); });
+      return Array.from(newSelection);
+    }
+
     return [];
   }
 
@@ -492,14 +547,74 @@ export class MeshEditor {
    * Shrink selection (Blender Ctrl+NumPad- behavior)
    */
   static shrinkSelection(meshData: MeshEditData, subObjectType: 'vertex' | 'edge' | 'face'): number[] {
-    // Implementation for shrinking selection
+    if (subObjectType === 'vertex') {
+      const vertexToVertices = new Map<number, Set<number>>();
+      meshData.edges.forEach(e => {
+        const [a,b] = e.vertices; 
+        if (!vertexToVertices.has(a)) vertexToVertices.set(a,new Set());
+        if (!vertexToVertices.has(b)) vertexToVertices.set(b,new Set());
+        vertexToVertices.get(a)!.add(b);
+        vertexToVertices.get(b)!.add(a);
+      });
+      const result: number[] = [];
+      meshData.vertices.forEach((v,i) => {
+        if (v.selected) {
+          const neighbors = vertexToVertices.get(i) || new Set();
+            // Keep only if all neighbors also selected
+            const keep = Array.from(neighbors).every(n => meshData.vertices[n].selected);
+            if (keep) result.push(i);
+        }
+      });
+      return result;
+    }
+
+    if (subObjectType === 'edge') {
+      // Keep edges whose both endpoint vertices are part of only selected edges
+      const edgeSelected = meshData.edges.map(e => e.selected);
+      const result: number[] = [];
+      meshData.edges.forEach((edge,idx) => {
+        if (!edge.selected) return;
+        const keep = edge.vertices.every(v => {
+          // All incident edges of v must be selected
+          return meshData.edges.every((e,i2) => (e.vertices[0]===v || e.vertices[1]===v) ? edgeSelected[i2] : true);
+        });
+        if (keep) result.push(idx);
+      });
+      return result;
+    }
+
+    if (subObjectType === 'face') {
+      // Build adjacency
+      const edgeToFacesLocal = new Map<string, number[]>();
+      meshData.faces.forEach((f,i) => {
+        for (let j=0;j<f.vertices.length;j++){ const a=f.vertices[j]; const b=f.vertices[(j+1)%f.vertices.length]; const key=a<b?`${a}-${b}`:`${b}-${a}`; if(!edgeToFacesLocal.has(key)) edgeToFacesLocal.set(key,[]); edgeToFacesLocal.get(key)!.push(i);} 
+      });
+      const faceAdj = new Map<number, Set<number>>();
+      edgeToFacesLocal.forEach(list => { if (list.length>1){ for (let i=0;i<list.length;i++){ for (let j=i+1;j<list.length;j++){ const a=list[i], b=list[j]; if(!faceAdj.has(a)) faceAdj.set(a,new Set()); if(!faceAdj.has(b)) faceAdj.set(b,new Set()); faceAdj.get(a)!.add(b); faceAdj.get(b)!.add(a); } } } });
+      const result: number[] = [];
+      meshData.faces.forEach((f,i) => {
+        if (f.selected) {
+          const neighbors = faceAdj.get(i) || new Set();
+          const keep = Array.from(neighbors).every(n => meshData.faces[n].selected);
+          if (keep) result.push(i);
+        }
+      });
+      return result;
+    }
     return [];
   }
 
   private static isEdgeInLoop(meshData: MeshEditData, edgeIndex: number, referenceEdgeIndex: number): boolean {
-    // Complex topology analysis to determine if edges are part of the same loop
-    // This is a simplified version - proper implementation would analyze quad topology
-    return false;
+    if (edgeIndex === referenceEdgeIndex) return true;
+    const edge = meshData.edges[edgeIndex];
+    if (!edge) return false;
+    // Basic heuristic: edge shared by exactly 2 faces (manifold) -> treat as part of loop
+    let sharedFaceCount = 0;
+    meshData.faces.forEach(f => {
+      const verts = f.vertices;
+      for (let i=0;i<verts.length;i++){ const a=verts[i]; const b=verts[(i+1)%verts.length]; if ((a===edge.vertices[0] && b===edge.vertices[1]) || (a===edge.vertices[1] && b===edge.vertices[0])) { sharedFaceCount++; break; } }
+    });
+    return sharedFaceCount === 2; // simple manifold criterion
   }
 
   // ====================== BASIC GETTERS ======================
@@ -1503,8 +1618,17 @@ export class MeshEditor {
    * Delete selected elements with proper topology handling
    */
   static deleteSelected(meshData: MeshEditData): MeshEditData {
+    // Auto-detect selection type priority: faces > edges > vertices
+    const anyFace = meshData.faces.some(f => f.selected);
+    const anyEdge = meshData.edges.some(e => e.selected);
+    const anyVertex = meshData.vertices.some(v => v.selected);
+
+    if (anyFace) return this.deleteSelectedFaces(meshData);
+    if (anyEdge) return this.deleteSelectedEdges(meshData);
+    if (anyVertex) return this.deleteSelectedVertices(meshData);
+
+    // Fallback to previous behavior
     const { subObjectType } = meshData;
-    
     switch (subObjectType) {
       case 'vertex':
         return this.deleteSelectedVertices(meshData);

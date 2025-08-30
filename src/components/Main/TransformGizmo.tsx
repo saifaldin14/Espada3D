@@ -15,6 +15,10 @@ interface TransformGizmoProps {
   mode: "translate" | "rotate" | "scale";
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
+  // Matrix of the editable mesh (its local space) for converting world gizmo movement to mesh local deltas
+  getTargetMatrixWorld?: () => THREE.Matrix4 | null;
+  // New: direct access to mesh object for robust world position calculation
+  getMeshObject?: () => THREE.Object3D | null;
 }
 
 const TransformGizmo: React.FC<TransformGizmoProps> = ({
@@ -23,6 +27,8 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   mode,
   onTransformStart,
   onTransformEnd,
+  getTargetMatrixWorld,
+  getMeshObject,
 }) => {
   const dispatch = useDispatch();
   const { camera, gl, scene } = useThree();
@@ -56,7 +62,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     scaleFaces,
   } = useMeshEditor(modelId);
 
-  // Calculate selection center for gizmo positioning
+  // Calculate selection center in local mesh space (existing logic)
   const selectionCenter = React.useMemo(() => {
     if (!meshData || !MeshEditModes.includes(editMode)) {
       return new THREE.Vector3(0, 0, 0);
@@ -108,6 +114,64 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     return count > 0 ? center.divideScalar(count) : new THREE.Vector3(0, 0, 0);
   }, [meshData, editMode, currentSubObjectType]);
 
+  // Compute corrected gizmo position accounting for full world transform of mesh
+  const correctedGizmoPosition = React.useMemo(() => {
+    if (!meshData || !MeshEditModes.includes(editMode))
+      return new THREE.Vector3(0, 0, 0);
+    const targetMatrix = getTargetMatrixWorld?.();
+    if (!targetMatrix) return selectionCenter.clone();
+
+    // Collect selected vertex indices depending on sub-object type
+    const selectedVertexIndices: number[] = [];
+    if (currentSubObjectType === EditModes.vertex) {
+      meshData.vertices.forEach((v) => {
+        if (v.selected) selectedVertexIndices.push(v.index);
+      });
+    } else if (currentSubObjectType === EditModes.edge) {
+      meshData.edges.forEach((e) => {
+        if (e.selected)
+          e.vertices.forEach((v) => selectedVertexIndices.push(v));
+      });
+    } else if (currentSubObjectType === EditModes.face) {
+      meshData.faces.forEach((f) => {
+        if (f.selected)
+          f.vertices.forEach((v) => selectedVertexIndices.push(v));
+      });
+    }
+    if (selectedVertexIndices.length === 0) return selectionCenter.clone();
+
+    // Average in WORLD space
+    const worldCenter = new THREE.Vector3();
+    selectedVertexIndices.forEach((idx) => {
+      const v = meshData.vertices[idx];
+      if (!v) return;
+      const local = new THREE.Vector3(
+        v.position[0],
+        v.position[1],
+        v.position[2]
+      );
+      worldCenter.add(local.applyMatrix4(targetMatrix));
+    });
+    worldCenter.multiplyScalar(1 / selectedVertexIndices.length);
+
+    // Convert world center to the parent local space where helperGroupRef will be attached
+    // (parent is the group that contains mesh & gizmo inside MeshEditableModel)
+    // If no parent yet, fallback
+    if (helperGroupRef.current?.parent) {
+      const parentInv = new THREE.Matrix4()
+        .copy(helperGroupRef.current.parent.matrixWorld)
+        .invert();
+      return worldCenter.clone().applyMatrix4(parentInv);
+    }
+    return worldCenter; // parent not ready yet
+  }, [
+    meshData,
+    editMode,
+    currentSubObjectType,
+    selectionCenter,
+    getTargetMatrixWorld,
+  ]);
+
   // Handle transform start
   const handleTransformStart = useCallback(() => {
     if (!transformRef.current) return;
@@ -121,8 +185,15 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
       scale: object.scale.clone(),
     });
 
+    // Capture world position for precise world delta computation
+    const wp = new THREE.Vector3();
+    object.getWorldPosition(wp);
+    startWorldPosRef.current = wp.clone();
+
     onTransformStart?.();
   }, [onTransformStart]);
+
+  const startWorldPosRef = useRef<THREE.Vector3 | null>(null);
 
   // Handle transform change
   const handleTransformChange = useCallback(() => {
@@ -134,15 +205,27 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     const currentRotation = object.rotation;
     const currentScale = object.scale;
 
-    if (mode === "translate" && startValues.position) {
-      const delta: Vector3Tuple = [
-        currentPosition.x - startValues.position.x,
-        currentPosition.y - startValues.position.y,
-        currentPosition.z - startValues.position.z,
-      ];
+    // World -> local conversion helper
+    const convertWorldDeltaToLocal = (
+      deltaWorld: THREE.Vector3
+    ): THREE.Vector3 => {
+      const targetMatrix = getTargetMatrixWorld?.();
+      if (!targetMatrix) return deltaWorld; // Fallback
+      const inv = new THREE.Matrix4().copy(targetMatrix).invert();
+      // Remove translation component so pure direction/offset is transformed by rotation & scale only
+      inv.elements[12] = 0;
+      inv.elements[13] = 0;
+      inv.elements[14] = 0;
+      return deltaWorld.clone().applyMatrix4(inv);
+    };
 
-      // Apply the translation to selected elements based on sub-object type
-      if (delta[0] !== 0 || delta[1] !== 0 || delta[2] !== 0) {
+    if (mode === "translate" && startWorldPosRef.current) {
+      const currentWorldPos = new THREE.Vector3();
+      object.getWorldPosition(currentWorldPos);
+      const deltaWorld = currentWorldPos.clone().sub(startWorldPosRef.current);
+      if (deltaWorld.lengthSq() !== 0) {
+        const deltaLocal = convertWorldDeltaToLocal(deltaWorld);
+        const delta: Vector3Tuple = [deltaLocal.x, deltaLocal.y, deltaLocal.z];
         if (currentSubObjectType === EditModes.vertex) {
           moveVertices(
             delta,
@@ -162,8 +245,36 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
             startValues.position.toArray() as Vector3Tuple
           );
         }
-
-        // Reset position for next delta calculation
+        // Reset world pos baseline
+        startWorldPosRef.current = currentWorldPos.clone();
+      }
+    } else if (mode === "translate") {
+      // Legacy local delta fallback (should rarely happen)
+      const delta: Vector3Tuple = [
+        currentPosition.x - startValues.position.x,
+        currentPosition.y - startValues.position.y,
+        currentPosition.z - startValues.position.z,
+      ];
+      if (delta[0] || delta[1] || delta[2]) {
+        if (currentSubObjectType === EditModes.vertex) {
+          moveVertices(
+            delta,
+            undefined,
+            startValues.position.toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === EditModes.edge) {
+          moveEdges(
+            delta,
+            undefined,
+            startValues.position.toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === EditModes.face) {
+          moveFaces(
+            delta,
+            undefined,
+            startValues.position.toArray() as Vector3Tuple
+          );
+        }
         setStartValues({ ...startValues, position: currentPosition.clone() });
       }
     } else if (mode === "rotate" && startValues.rotation) {
@@ -246,6 +357,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     scaleVertices,
     scaleEdges,
     scaleFaces,
+    getTargetMatrixWorld,
   ]);
 
   // Handle transform end
@@ -255,13 +367,68 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     onTransformEnd?.();
   }, [onTransformEnd]);
 
-  // Update gizmo position
+  // Frame update: compute selection world center every frame to stay in sync with moved/rotated/scaled model
+  useFrame(() => {
+    if (
+      !helperGroupRef.current ||
+      !meshData ||
+      !MeshEditModes.includes(editMode)
+    )
+      return;
+    const meshObj = getMeshObject?.();
+    if (!meshObj) return;
+
+    const selectedVertexIndices = new Set<number>();
+    if (currentSubObjectType === EditModes.vertex) {
+      meshData.vertices.forEach((v: any) => {
+        if (v.selected) selectedVertexIndices.add(v.index);
+      });
+    } else if (currentSubObjectType === EditModes.edge) {
+      meshData.edges.forEach((e: any) => {
+        if (e.selected)
+          e.vertices.forEach((v: number) => selectedVertexIndices.add(v));
+      });
+    } else if (currentSubObjectType === EditModes.face) {
+      meshData.faces.forEach((f: any) => {
+        if (f.selected)
+          f.vertices.forEach((v: number) => selectedVertexIndices.add(v));
+      });
+    }
+    if (selectedVertexIndices.size === 0) return;
+
+    const worldCenter = new THREE.Vector3();
+    selectedVertexIndices.forEach((idx) => {
+      const v = meshData.vertices[idx];
+      if (!v) return;
+      const local = new THREE.Vector3(
+        v.position[0],
+        v.position[1],
+        v.position[2]
+      );
+      meshObj.localToWorld(local); // reliable conversion
+      worldCenter.add(local);
+    });
+    worldCenter.multiplyScalar(1 / selectedVertexIndices.size);
+
+    // Convert worldCenter into parent local space (parent of mesh & gizmo)
+    const parent = meshObj.parent;
+    if (parent) {
+      const parentInv = new THREE.Matrix4().copy(parent.matrixWorld).invert();
+      const localCenter = worldCenter.clone().applyMatrix4(parentInv);
+      helperGroupRef.current.position.copy(localCenter);
+      helperGroupRef.current.updateMatrix();
+      helperGroupRef.current.updateMatrixWorld(true);
+      if (transformRef.current)
+        transformRef.current.object = helperGroupRef.current;
+    }
+  });
+
+  // Update gizmo position (legacy effect) -- now simplified, rely on frame updates
   useEffect(() => {
     if (transformRef.current && helperGroupRef.current) {
-      helperGroupRef.current.position.copy(selectionCenter);
       transformRef.current.object = helperGroupRef.current;
     }
-  }, [selectionCenter]);
+  }, [meshData, editMode, currentSubObjectType]);
 
   // Show/hide gizmo based on selection
   const hasSelection =
@@ -281,7 +448,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   return (
     <>
       {/* Invisible helper object for transform controls */}
-      <group ref={helperGroupRef} position={selectionCenter}>
+      <group ref={helperGroupRef} /* position now driven per-frame */>
         <mesh visible={false}>
           <boxGeometry args={[0.1, 0.1, 0.1]} />
           <meshBasicMaterial />
