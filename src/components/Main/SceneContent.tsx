@@ -243,13 +243,16 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   return (
     <>
       <OrbitControls ref={orbitControlsRef} makeDefault />
-      <TransformControls
-        ref={transformControlsRef}
-        mode={
-          activeTool === "select" ? "translate" : (activeTool ?? "translate")
-        }
-        onObjectChange={handleTransformChange}
-      />
+      {/* Hide / disable model-level transform controls in sub-object edit modes */}
+      {!MeshEditModes.includes(editMode) && (
+        <TransformControls
+          ref={transformControlsRef}
+          mode={
+            activeTool === "select" ? "translate" : (activeTool ?? "translate")
+          }
+          onObjectChange={handleTransformChange}
+        />
+      )}
       {Object.entries(renderedModels).map(([modelId, model]) => {
         const mesh = model.children[0] as Mesh;
         const isSelected = selectedModelId === modelId;

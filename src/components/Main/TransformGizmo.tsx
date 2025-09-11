@@ -185,7 +185,8 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
       scale: object.scale.clone(),
     });
 
-    // Capture world position for precise world delta computation
+    // Capture starting local pivot position & world position
+    pivotLocalStartRef.current = object.position.clone();
     const wp = new THREE.Vector3();
     object.getWorldPosition(wp);
     startWorldPosRef.current = wp.clone();
@@ -194,119 +195,87 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   }, [onTransformStart]);
 
   const startWorldPosRef = useRef<THREE.Vector3 | null>(null);
+  const pivotLocalStartRef = useRef<THREE.Vector3 | null>(null);
 
   // Handle transform change
   const handleTransformChange = useCallback(() => {
-    if (!transformRef.current || !isTransforming || !startValues.position)
-      return;
+    if (!transformRef.current || !isTransforming) return;
 
-    const object = transformRef.current.object;
-    const currentPosition = object.position;
+    const object = transformRef.current.object as THREE.Object3D;
     const currentRotation = object.rotation;
     const currentScale = object.scale;
 
-    // World -> local conversion helper
-    const convertWorldDeltaToLocal = (
-      deltaWorld: THREE.Vector3
-    ): THREE.Vector3 => {
-      const targetMatrix = getTargetMatrixWorld?.();
-      if (!targetMatrix) return deltaWorld; // Fallback
-      const inv = new THREE.Matrix4().copy(targetMatrix).invert();
-      // Remove translation component so pure direction/offset is transformed by rotation & scale only
-      inv.elements[12] = 0;
-      inv.elements[13] = 0;
-      inv.elements[14] = 0;
-      return deltaWorld.clone().applyMatrix4(inv);
-    };
+    // PURE LOCAL TRANSLATION (eliminates axis drift) ----------------------------------
+    if (mode === "translate") {
+      if (!pivotLocalStartRef.current)
+        pivotLocalStartRef.current = object.position.clone();
+      const currentLocalPos = object.position.clone();
+      const deltaLocalVec = currentLocalPos
+        .clone()
+        .sub(pivotLocalStartRef.current);
+      if (deltaLocalVec.lengthSq() !== 0) {
+        const delta: Vector3Tuple = [
+          deltaLocalVec.x,
+          deltaLocalVec.y,
+          deltaLocalVec.z,
+        ];
+        if (currentSubObjectType === EditModes.vertex) {
+          moveVertices(
+            delta,
+            undefined,
+            (
+              pivotLocalStartRef.current as THREE.Vector3
+            ).toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === EditModes.edge) {
+          moveEdges(
+            delta,
+            undefined,
+            (
+              pivotLocalStartRef.current as THREE.Vector3
+            ).toArray() as Vector3Tuple
+          );
+        } else if (currentSubObjectType === EditModes.face) {
+          moveFaces(
+            delta,
+            undefined,
+            (
+              pivotLocalStartRef.current as THREE.Vector3
+            ).toArray() as Vector3Tuple
+          );
+        }
+        // Reset baseline to current for incremental deltas
+        pivotLocalStartRef.current = currentLocalPos;
+      }
+      return; // translation handled
+    }
+    // -------------------------------------------------------------------------------
 
-    if (mode === "translate" && startWorldPosRef.current) {
-      const currentWorldPos = new THREE.Vector3();
-      object.getWorldPosition(currentWorldPos);
-      const deltaWorld = currentWorldPos.clone().sub(startWorldPosRef.current);
-      if (deltaWorld.lengthSq() !== 0) {
-        const deltaLocal = convertWorldDeltaToLocal(deltaWorld);
-        const delta: Vector3Tuple = [deltaLocal.x, deltaLocal.y, deltaLocal.z];
-        if (currentSubObjectType === EditModes.vertex) {
-          moveVertices(
-            delta,
-            undefined,
-            startValues.position.toArray() as Vector3Tuple
-          );
-        } else if (currentSubObjectType === EditModes.edge) {
-          moveEdges(
-            delta,
-            undefined,
-            startValues.position.toArray() as Vector3Tuple
-          );
-        } else if (currentSubObjectType === EditModes.face) {
-          moveFaces(
-            delta,
-            undefined,
-            startValues.position.toArray() as Vector3Tuple
-          );
-        }
-        // Reset world pos baseline
-        startWorldPosRef.current = currentWorldPos.clone();
-      }
-    } else if (mode === "translate") {
-      // Legacy local delta fallback (should rarely happen)
-      const delta: Vector3Tuple = [
-        currentPosition.x - startValues.position.x,
-        currentPosition.y - startValues.position.y,
-        currentPosition.z - startValues.position.z,
-      ];
-      if (delta[0] || delta[1] || delta[2]) {
-        if (currentSubObjectType === EditModes.vertex) {
-          moveVertices(
-            delta,
-            undefined,
-            startValues.position.toArray() as Vector3Tuple
-          );
-        } else if (currentSubObjectType === EditModes.edge) {
-          moveEdges(
-            delta,
-            undefined,
-            startValues.position.toArray() as Vector3Tuple
-          );
-        } else if (currentSubObjectType === EditModes.face) {
-          moveFaces(
-            delta,
-            undefined,
-            startValues.position.toArray() as Vector3Tuple
-          );
-        }
-        setStartValues({ ...startValues, position: currentPosition.clone() });
-      }
-    } else if (mode === "rotate" && startValues.rotation) {
+    if (!startValues.position) return; // for rotate/scale logic below
+
+    if (mode === "rotate" && startValues.rotation) {
       const deltaRotation: Vector3Tuple = [
         currentRotation.x - startValues.rotation.x,
         currentRotation.y - startValues.rotation.y,
         currentRotation.z - startValues.rotation.z,
       ];
-
-      if (
-        deltaRotation[0] !== 0 ||
-        deltaRotation[1] !== 0 ||
-        deltaRotation[2] !== 0
-      ) {
+      if (deltaRotation[0] || deltaRotation[1] || deltaRotation[2]) {
         if (currentSubObjectType === EditModes.vertex) {
           rotateVertices(
             deltaRotation,
-            startValues.position?.toArray() as Vector3Tuple
+            startValues.position.toArray() as Vector3Tuple
           );
         } else if (currentSubObjectType === EditModes.edge) {
           rotateEdges(
             deltaRotation,
-            startValues.position?.toArray() as Vector3Tuple
+            startValues.position.toArray() as Vector3Tuple
           );
         } else if (currentSubObjectType === EditModes.face) {
           rotateFaces(
             deltaRotation,
-            startValues.position?.toArray() as Vector3Tuple
+            startValues.position.toArray() as Vector3Tuple
           );
         }
-
-        // Reset rotation for next delta calculation
         setStartValues({ ...startValues, rotation: currentRotation.clone() });
       }
     } else if (mode === "scale" && startValues.scale) {
@@ -315,7 +284,6 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
         currentScale.y / startValues.scale.y,
         currentScale.z / startValues.scale.z,
       ];
-
       if (
         scaleFactors[0] !== 1 ||
         scaleFactors[1] !== 1 ||
@@ -325,21 +293,19 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
           scaleVertices(
             scaleFactors,
             undefined,
-            startValues.position?.toArray() as Vector3Tuple
+            startValues.position.toArray() as Vector3Tuple
           );
         } else if (currentSubObjectType === EditModes.edge) {
           scaleEdges(
             scaleFactors,
-            startValues.position?.toArray() as Vector3Tuple
+            startValues.position.toArray() as Vector3Tuple
           );
         } else if (currentSubObjectType === EditModes.face) {
           scaleFaces(
             scaleFactors,
-            startValues.position?.toArray() as Vector3Tuple
+            startValues.position.toArray() as Vector3Tuple
           );
         }
-
-        // Reset scale for next delta calculation
         setStartValues({ ...startValues, scale: currentScale.clone() });
       }
     }
@@ -357,7 +323,6 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     scaleVertices,
     scaleEdges,
     scaleFaces,
-    getTargetMatrixWorld,
   ]);
 
   // Handle transform end
@@ -367,7 +332,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     onTransformEnd?.();
   }, [onTransformEnd]);
 
-  // Frame update: compute selection world center every frame to stay in sync with moved/rotated/scaled model
+  // Frame update: compute selection center in mesh local space
   useFrame(() => {
     if (
       !helperGroupRef.current ||
@@ -375,60 +340,89 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
       !MeshEditModes.includes(editMode)
     )
       return;
+
+    // Do NOT recenter while actively transforming to keep stable pivot
+    if (isTransforming) return;
+
     const meshObj = getMeshObject?.();
     if (!meshObj) return;
 
-    const selectedVertexIndices = new Set<number>();
+    // Ensure helper group is parented to mesh for local positioning
+    if (helperGroupRef.current.parent !== meshObj) {
+      meshObj.add(helperGroupRef.current);
+    }
+
+    const selected = new Set<number>();
     if (currentSubObjectType === EditModes.vertex) {
       meshData.vertices.forEach((v: any) => {
-        if (v.selected) selectedVertexIndices.add(v.index);
+        if (v.selected) selected.add(v.index);
       });
     } else if (currentSubObjectType === EditModes.edge) {
       meshData.edges.forEach((e: any) => {
-        if (e.selected)
-          e.vertices.forEach((v: number) => selectedVertexIndices.add(v));
+        if (e.selected) e.vertices.forEach((v: number) => selected.add(v));
       });
     } else if (currentSubObjectType === EditModes.face) {
       meshData.faces.forEach((f: any) => {
-        if (f.selected)
-          f.vertices.forEach((v: number) => selectedVertexIndices.add(v));
+        if (f.selected) f.vertices.forEach((v: number) => selected.add(v));
       });
     }
-    if (selectedVertexIndices.size === 0) return;
+    if (selected.size === 0) return;
 
-    const worldCenter = new THREE.Vector3();
-    selectedVertexIndices.forEach((idx) => {
-      const v = meshData.vertices[idx];
+    // Exact vertex position if single vertex selected, else average center
+    const localCenter = new THREE.Vector3();
+    if (selected.size === 1) {
+      let only: number | undefined;
+      selected.forEach((val) => {
+        if (only === undefined) only = val;
+      });
+      if (only === undefined) return;
+      const v = meshData.vertices[only];
       if (!v) return;
-      const local = new THREE.Vector3(
-        v.position[0],
-        v.position[1],
-        v.position[2]
-      );
-      meshObj.localToWorld(local); // reliable conversion
-      worldCenter.add(local);
-    });
-    worldCenter.multiplyScalar(1 / selectedVertexIndices.size);
+      localCenter.set(v.position[0], v.position[1], v.position[2]);
+    } else {
+      selected.forEach((idx) => {
+        const v = meshData.vertices[idx];
+        if (!v) return;
+        localCenter.x += v.position[0];
+        localCenter.y += v.position[1];
+        localCenter.z += v.position[2];
+      });
+      localCenter.multiplyScalar(1 / selected.size);
+    }
 
-    // Convert worldCenter into parent local space (parent of mesh & gizmo)
-    const parent = meshObj.parent;
-    if (parent) {
-      const parentInv = new THREE.Matrix4().copy(parent.matrixWorld).invert();
-      const localCenter = worldCenter.clone().applyMatrix4(parentInv);
-      helperGroupRef.current.position.copy(localCenter);
-      helperGroupRef.current.updateMatrix();
-      helperGroupRef.current.updateMatrixWorld(true);
-      if (transformRef.current)
-        transformRef.current.object = helperGroupRef.current;
+    helperGroupRef.current.position.copy(localCenter);
+    helperGroupRef.current.updateMatrix();
+    helperGroupRef.current.updateMatrixWorld(true);
+    if (transformRef.current) {
+      transformRef.current.object = helperGroupRef.current;
+      // Force sync of control position
+      if (transformRef.current.updateMatrixWorld) {
+        transformRef.current.object.updateWorldMatrix?.(true, false);
+        transformRef.current.updateMatrixWorld(true);
+      }
     }
   });
 
   // Update gizmo position (legacy effect) -- now simplified, rely on frame updates
   useEffect(() => {
     if (transformRef.current && helperGroupRef.current) {
+      const meshObj = getMeshObject?.();
+      if (meshObj && helperGroupRef.current.parent !== meshObj) {
+        meshObj.add(helperGroupRef.current);
+      }
       transformRef.current.object = helperGroupRef.current;
     }
-  }, [meshData, editMode, currentSubObjectType]);
+    return () => {
+      const meshObj = getMeshObject?.();
+      if (
+        meshObj &&
+        helperGroupRef.current &&
+        helperGroupRef.current.parent === meshObj
+      ) {
+        meshObj.remove(helperGroupRef.current);
+      }
+    };
+  }, [meshData, editMode, currentSubObjectType, getMeshObject]);
 
   // Show/hide gizmo based on selection
   const hasSelection =
@@ -448,7 +442,11 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   return (
     <>
       {/* Invisible helper object for transform controls */}
-      <group ref={helperGroupRef} /* position now driven per-frame */>
+      <group
+        ref={
+          helperGroupRef
+        } /* now parented under mesh; position set in local space */
+      >
         <mesh visible={false}>
           <boxGeometry args={[0.1, 0.1, 0.1]} />
           <meshBasicMaterial />
