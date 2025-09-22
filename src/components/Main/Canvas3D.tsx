@@ -1,12 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { GizmoHelper, GizmoViewcube } from "@react-three/drei";
 import { useDispatch } from "react-redux";
 import {
   Group,
-  BoxGeometry,
-  SphereGeometry,
-  CylinderGeometry,
   Mesh,
   MeshStandardMaterial,
   MeshPhongMaterial,
@@ -18,6 +15,7 @@ import { ModelProvider } from "./ModelContext";
 import SceneContent from "./SceneContent";
 import SelectionModeIndicator from "./SelectionModeIndicator";
 import ErrorBoundary from "../ErrorBoundary";
+import { createGeometry, createMaterial } from "../../utils/geometryFactory";
 import { useAppSelector } from "../../hooks/useRedux";
 import { MeshEditor } from "../../utils/meshEditor";
 import { APP_CONFIG } from "../../config/constants";
@@ -31,26 +29,6 @@ const Canvas3D: React.FC = () => {
   const showGrid = useAppSelector((state) => state.ui.showGrid);
   const showWireframe = useAppSelector((state) => state.ui.showWireframe);
   const [models, setModels] = useState<{ [id: string]: Group }>({});
-
-  // Memoize material creation to avoid recreating on every render
-  const createMaterial = useMemo(() => {
-    return (materialType: string, color: string, wireframe: boolean) => {
-      const materialProps = {
-        color: color || APP_CONFIG.MATERIALS.DEFAULT_COLOR,
-        wireframe,
-      } as any;
-
-      switch (materialType) {
-        case "phong":
-          return new MeshPhongMaterial(materialProps);
-        case "lambert":
-          return new MeshLambertMaterial(materialProps);
-        case "standard":
-        default:
-          return new MeshStandardMaterial(materialProps);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const newModels: { [id: string]: Group } = {};
@@ -75,18 +53,14 @@ const Canvas3D: React.FC = () => {
       let modelGroup = models[meta.id];
 
       if (!modelGroup) {
-        // Create new model if it doesn't exist
+        // Create new model using geometry factory
         let geometry;
-        switch (meta.type) {
-          case "sphere":
-            geometry = new SphereGeometry(0.5, 32, 32);
-            break;
-          case "cylinder":
-            geometry = new CylinderGeometry(0.5, 0.5, 1, 32);
-            break;
-          case "box":
-          default:
-            geometry = new BoxGeometry(1, 1, 1);
+        if (meta.type === "imported" && meta.userData?.geometry) {
+          // Use imported geometry
+          geometry = meta.userData.geometry;
+        } else {
+          // Create geometry using factory
+          geometry = createGeometry(meta.type);
         }
 
         // Cache geometry data for mesh editing
@@ -105,11 +79,10 @@ const Canvas3D: React.FC = () => {
           );
         }
 
-        const material = createMaterial(
-          meta.material.type,
-          meta.material.color || APP_CONFIG.MATERIALS.DEFAULT_COLOR,
-          showWireframe
-        );
+        const material = createMaterial({
+          ...meta.material,
+          wireframe: showWireframe,
+        });
 
         const mesh = new Mesh(geometry, material);
         mesh.castShadow = true;
@@ -191,7 +164,7 @@ const Canvas3D: React.FC = () => {
     return () => {
       Object.values(newModels).forEach(disposeGroup);
     };
-  }, [modelsMetadata, showWireframe, createMaterial]);
+  }, [modelsMetadata, showWireframe]);
 
   return (
     <ErrorBoundary>

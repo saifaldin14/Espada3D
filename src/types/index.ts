@@ -4,7 +4,7 @@ import { NodeGraphState } from './nodeTypes';
 
 export type Vector3Tuple = [number, number, number];
 
-export type GeometryType = 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone' | 'torus' | 'dodecahedron';
+export type GeometryType = 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone' | 'torus' | 'dodecahedron' | 'imported';
 export type MaterialType = 'standard' | 'phong' | 'lambert' | 'basic' | 'physical' | 'toon';
 export type ToolType = 'translate' | 'rotate' | 'scale' | 'select';
 export type EditMode = EditModes.model |

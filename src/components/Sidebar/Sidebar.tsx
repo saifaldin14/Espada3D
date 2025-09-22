@@ -32,20 +32,37 @@ import {
   GridOff,
   Palette,
   Category,
+  CloudUpload as UploadIcon,
+  CloudDownload as DownloadIcon,
 } from "@mui/icons-material";
 import CreateModelModal from "./CreateModelModal";
+import FileManager from "../FileManager/FileManager";
 import { glassStyles } from "../../config/theme";
+import { RootState } from "../../store";
+import * as THREE from "three";
 
 const Sidebar: React.FC = () => {
-  const models = useSelector((state: any) => state.models.models);
+  const models = useSelector((state: RootState) => state.models.models);
   const selectedModelId = useSelector(
-    (state: any) => state.models.selectedModelId
+    (state: RootState) => state.models.selectedModelId
   );
-  const showGrid = useSelector((state: any) => state.ui.showGrid);
-  const showWireframe = useSelector((state: any) => state.ui.showWireframe);
+  const showGrid = useSelector((state: RootState) => state.ui.showGrid);
+  const showWireframe = useSelector(
+    (state: RootState) => state.ui.showWireframe
+  );
   const dispatch = useDispatch();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [fileManagerOpen, setFileManagerOpen] = useState(false);
+  const [fileManagerMode, setFileManagerMode] = useState<"import" | "export">(
+    "import"
+  );
+
+  // Get current selected model's geometry for export
+  const selectedModel = models.find((model) => model.id === selectedModelId);
+  const currentGeometry = selectedModel?.userData?.geometry as
+    | THREE.BufferGeometry
+    | undefined;
 
   const handleModelSelect = (id: string) => {
     dispatch(selectModel(id));
@@ -53,6 +70,21 @@ const Sidebar: React.FC = () => {
 
   const toggleVisibility = (id: string, visible: boolean) => {
     dispatch(updateModelMetadata({ id, visible: !visible }));
+  };
+
+  const handleImportClick = () => {
+    setFileManagerMode("import");
+    setFileManagerOpen(true);
+  };
+
+  const handleExportClick = () => {
+    if (!selectedModelId) {
+      // Could show a toast notification here
+      console.warn("No model selected for export");
+      return;
+    }
+    setFileManagerMode("export");
+    setFileManagerOpen(true);
   };
 
   return (
@@ -82,6 +114,29 @@ const Sidebar: React.FC = () => {
         >
           Create Model
         </Button>
+
+        {/* File Operations */}
+        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadIcon />}
+            onClick={handleImportClick}
+            sx={{ flex: 1 }}
+            className="hover-lift"
+          >
+            Import
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleExportClick}
+            disabled={!selectedModelId}
+            sx={{ flex: 1 }}
+            className="hover-lift"
+          >
+            Export
+          </Button>
+        </Stack>
       </Box>
 
       {/* Models List */}
@@ -207,6 +262,15 @@ const Sidebar: React.FC = () => {
       </Box>
 
       <CreateModelModal open={modalOpen} onClose={() => setModalOpen(false)} />
+
+      {/* File Manager Dialog */}
+      <FileManager
+        open={fileManagerOpen}
+        onClose={() => setFileManagerOpen(false)}
+        mode={fileManagerMode}
+        currentGeometry={currentGeometry}
+        currentModelId={selectedModelId || undefined}
+      />
     </Box>
   );
 };

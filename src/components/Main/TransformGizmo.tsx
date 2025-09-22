@@ -5,7 +5,7 @@ import { TransformControls } from "@react-three/drei";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
-import { Vector3Tuple, TransformConstraint } from "../../types";
+import { Vector3Tuple } from "../../types";
 import { MeshEditModes } from "../../consts";
 import { EditModes } from "../../Enums";
 
