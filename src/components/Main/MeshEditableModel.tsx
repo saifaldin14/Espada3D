@@ -415,89 +415,91 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
   }, [meshEditingMaterial, material]);
 
   return (
-    <group position={position} rotation={rotation} scale={scale}>
-      {/* Preserve original child mesh local transform so world position stays identical */}
-      <group
-        position={meshLocalPosition}
-        rotation={meshLocalRotation}
-        scale={meshLocalScale}
-      >
-        <mesh
-          ref={meshRef}
-          geometry={geometryRef.current}
-          material={meshEditingMaterial}
-          onPointerDown={handlePointerDown}
-          onPointerOver={handlePointerOver}
-          onPointerOut={handlePointerOut}
-        />
+    <>
+      <group position={position} rotation={rotation} scale={scale}>
+        {/* Preserve original child mesh local transform so world position stays identical */}
+        <group
+          position={meshLocalPosition}
+          rotation={meshLocalRotation}
+          scale={meshLocalScale}
+        >
+          <mesh
+            ref={meshRef}
+            geometry={geometryRef.current}
+            material={meshEditingMaterial}
+            onPointerDown={handlePointerDown}
+            onPointerOver={handlePointerOver}
+            onPointerOut={handlePointerOut}
+          />
 
-        {/* Transform Gizmo */}
-        <TransformGizmo
-          modelId={modelId}
-          visible={MeshEditModes.includes(editMode)}
-          mode={
-            activeTool === "translate"
-              ? "translate"
-              : activeTool === "rotate"
-                ? "rotate"
-                : activeTool === "scale"
-                  ? "scale"
-                  : "translate"
-          }
-          getTargetMatrixWorld={() =>
-            meshRef.current ? meshRef.current.matrixWorld.clone() : null
-          }
-          getMeshObject={() => meshRef.current}
-        />
+          {/* Box Selection Component */}
+          <BoxSelection
+            onBoxSelect={handleBoxSelect}
+            isActive={MeshEditModes.includes(editMode)}
+          />
 
-        {/* Box Selection Component */}
-        <BoxSelection
-          onBoxSelect={handleBoxSelect}
-          isActive={MeshEditModes.includes(editMode)}
-        />
+          {/* Helper geometries for sub-object visualization */}
+          {MeshEditModes.includes(editMode) && (
+            <group ref={helperGroupRef}>
+              {/* Render vertex helpers */}
+              {currentSubObjectType === EditModes.vertex &&
+                helpers.vertices.map((helper) => (
+                  <primitive
+                    key={`vertex-${helper.userData.index}`}
+                    object={helper}
+                    onPointerDown={handlePointerDown}
+                    onPointerOver={handlePointerOver}
+                    onPointerOut={handlePointerOut}
+                  />
+                ))}
 
-        {/* Helper geometries for sub-object visualization */}
-        {MeshEditModes.includes(editMode) && (
-          <group ref={helperGroupRef}>
-            {/* Render vertex helpers */}
-            {currentSubObjectType === EditModes.vertex &&
-              helpers.vertices.map((helper) => (
-                <primitive
-                  key={`vertex-${helper.userData.index}`}
-                  object={helper}
-                  onPointerDown={handlePointerDown}
-                  onPointerOver={handlePointerOver}
-                  onPointerOut={handlePointerOut}
-                />
-              ))}
+              {/* Render edge helpers */}
+              {currentSubObjectType === EditModes.edge &&
+                helpers.edges.map((helper) => (
+                  <primitive
+                    key={`edge-${helper.userData.index}`}
+                    object={helper}
+                    onPointerDown={handlePointerDown}
+                    onPointerOver={handlePointerOver}
+                    onPointerOut={handlePointerOut}
+                  />
+                ))}
 
-            {/* Render edge helpers */}
-            {currentSubObjectType === EditModes.edge &&
-              helpers.edges.map((helper) => (
-                <primitive
-                  key={`edge-${helper.userData.index}`}
-                  object={helper}
-                  onPointerDown={handlePointerDown}
-                  onPointerOver={handlePointerOver}
-                  onPointerOut={handlePointerOut}
-                />
-              ))}
-
-            {/* Render face helpers */}
-            {currentSubObjectType === EditModes.face &&
-              helpers.faces.map((helper, index) => (
-                <primitive
-                  key={`face-${helper.userData.index}-${index}`}
-                  object={helper}
-                  onPointerDown={handlePointerDown}
-                  onPointerOver={handlePointerOver}
-                  onPointerOut={handlePointerOut}
-                />
-              ))}
-          </group>
-        )}
+              {/* Render face helpers */}
+              {currentSubObjectType === EditModes.face &&
+                helpers.faces.map((helper, index) => (
+                  <primitive
+                    key={`face-${helper.userData.index}-${index}`}
+                    object={helper}
+                    onPointerDown={handlePointerDown}
+                    onPointerOver={handlePointerOver}
+                    onPointerOut={handlePointerOut}
+                  />
+                ))}
+            </group>
+          )}
+        </group>
       </group>
-    </group>
+
+      {/* Transform Gizmo - positioned outside the transformed groups */}
+      <TransformGizmo
+        modelId={modelId}
+        visible={MeshEditModes.includes(editMode)}
+        mode={
+          activeTool === "translate"
+            ? "translate"
+            : activeTool === "rotate"
+              ? "rotate"
+              : activeTool === "scale"
+                ? "scale"
+                : "translate"
+        }
+        getTargetMatrixWorld={() =>
+          meshRef.current ? meshRef.current.matrixWorld.clone() : null
+        }
+        getMeshObject={() => meshRef.current}
+      />
+    </>
   );
 };
 

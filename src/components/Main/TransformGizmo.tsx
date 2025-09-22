@@ -114,7 +114,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     return count > 0 ? center.divideScalar(count) : new THREE.Vector3(0, 0, 0);
   }, [meshData, editMode, currentSubObjectType]);
 
-  // Compute corrected gizmo position accounting for full world transform of mesh
+  // Compute corrected gizmo position in world space
   const correctedGizmoPosition = React.useMemo(() => {
     if (!meshData || !MeshEditModes.includes(editMode))
       return new THREE.Vector3(0, 0, 0);
@@ -140,7 +140,8 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     }
     if (selectedVertexIndices.length === 0) return selectionCenter.clone();
 
-    // Average in WORLD space
+    // Calculate center in world space - no coordinate conversion needed
+    // since TransformGizmo is now at scene root level
     const worldCenter = new THREE.Vector3();
     selectedVertexIndices.forEach((idx) => {
       const v = meshData.vertices[idx];
@@ -154,16 +155,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     });
     worldCenter.multiplyScalar(1 / selectedVertexIndices.length);
 
-    // Convert world center to the parent local space where helperGroupRef will be attached
-    // (parent is the group that contains mesh & gizmo inside MeshEditableModel)
-    // If no parent yet, fallback
-    if (helperGroupRef.current?.parent) {
-      const parentInv = new THREE.Matrix4()
-        .copy(helperGroupRef.current.parent.matrixWorld)
-        .invert();
-      return worldCenter.clone().applyMatrix4(parentInv);
-    }
-    return worldCenter; // parent not ready yet
+    return worldCenter;
   }, [
     meshData,
     editMode,
