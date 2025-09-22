@@ -237,6 +237,18 @@ const modelSlice = createSlice({
       }
       state.selectedModelIds = state.selectedModelIds.filter(id => id !== modelId);
     },
+    clearModels: (state) => {
+      state.models = [];
+      state.selectedModelId = null;
+      state.selectedModelIds = [];
+      state.error = null;
+    },
+    setModels: (state, action: PayloadAction<ModelMetadata[]>) => {
+      state.models = action.payload;
+      state.selectedModelId = null;
+      state.selectedModelIds = [];
+      state.error = null;
+    },
     duplicateModel: (state, action: PayloadAction<DuplicateModelPayload>) => {
       const { id, position: offset, name } = action.payload;
       const originalModel = state.models.find(m => m.id === id);
@@ -351,6 +363,8 @@ export const {
   pasteModels,
   createNewModel, 
   removeModel, 
+  clearModels,
+  setModels,
   duplicateModel,
   saveToHistory,
   undo,

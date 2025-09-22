@@ -34,9 +34,12 @@ import {
   Category,
   CloudUpload as UploadIcon,
   CloudDownload as DownloadIcon,
+  Save as SaveIcon,
+  FolderOpen as LoadIcon,
 } from "@mui/icons-material";
 import CreateModelModal from "./CreateModelModal";
 import FileManager from "../FileManager/FileManager";
+import { ProjectDialog } from "../ProjectManager";
 import { glassStyles } from "../../config/theme";
 import { RootState } from "../../store";
 import * as THREE from "three";
@@ -56,6 +59,10 @@ const Sidebar: React.FC = () => {
   const [fileManagerOpen, setFileManagerOpen] = useState(false);
   const [fileManagerMode, setFileManagerMode] = useState<"import" | "export">(
     "import"
+  );
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [projectDialogMode, setProjectDialogMode] = useState<"save" | "load">(
+    "save"
   );
 
   // Get current selected model's geometry for export
@@ -85,6 +92,16 @@ const Sidebar: React.FC = () => {
     }
     setFileManagerMode("export");
     setFileManagerOpen(true);
+  };
+
+  const handleSaveProjectClick = () => {
+    setProjectDialogMode("save");
+    setProjectDialogOpen(true);
+  };
+
+  const handleLoadProjectClick = () => {
+    setProjectDialogMode("load");
+    setProjectDialogOpen(true);
   };
 
   return (
@@ -135,6 +152,30 @@ const Sidebar: React.FC = () => {
             className="hover-lift"
           >
             Export
+          </Button>
+        </Stack>
+
+        {/* Project Operations */}
+        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<SaveIcon />}
+            onClick={handleSaveProjectClick}
+            sx={{ flex: 1 }}
+            className="hover-lift"
+            color="secondary"
+          >
+            Save Project
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<LoadIcon />}
+            onClick={handleLoadProjectClick}
+            sx={{ flex: 1 }}
+            className="hover-lift"
+            color="secondary"
+          >
+            Load Project
           </Button>
         </Stack>
       </Box>
@@ -270,6 +311,13 @@ const Sidebar: React.FC = () => {
         mode={fileManagerMode}
         currentGeometry={currentGeometry}
         currentModelId={selectedModelId || undefined}
+      />
+
+      {/* Project Manager Dialog */}
+      <ProjectDialog
+        open={projectDialogOpen}
+        onClose={() => setProjectDialogOpen(false)}
+        mode={projectDialogMode}
       />
     </Box>
   );
