@@ -479,8 +479,8 @@ const FaceEditor: React.FC<FaceEditorProps> = ({ modelId }) => {
           </Typography>
           <Slider
             value={subdivisionCuts}
-            onChange={(_: any, newValue: number) =>
-              setSubdivisionCuts(newValue as number)
+            onChange={(event: Event, value: number | number[]) =>
+              setSubdivisionCuts(Array.isArray(value) ? value[0] : value)
             }
             min={1}
             max={5}
@@ -495,8 +495,8 @@ const FaceEditor: React.FC<FaceEditorProps> = ({ modelId }) => {
           </Typography>
           <Slider
             value={subdivisionSmooth}
-            onChange={(_: any, newValue: number) =>
-              setSubdivisionSmooth(newValue as number)
+            onChange={(event: Event, value: number | number[]) =>
+              setSubdivisionSmooth(Array.isArray(value) ? value[0] : value)
             }
             min={0}
             max={1}
