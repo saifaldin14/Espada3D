@@ -19,10 +19,13 @@ import {
   MaterialProperties,
   GeometryType,
   CreateModelPayload,
+  ModelMetadata,
 } from "../../types";
-import { useModels } from "../../hooks/useRedux";
+import { useCommandManager } from "../../hooks/useCommandManager";
+import { AddModelCommand } from "../../utils/commands";
 import { validateCreateModelPayload } from "../../utils/validation";
 import { glassStyles } from "../../config/theme";
+import { v4 as uuidv4 } from "uuid";
 
 interface CreateModelModalProps {
   open: boolean;
@@ -39,7 +42,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
   });
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const { createModel, error } = useModels();
+  const { executeCommand } = useCommandManager();
 
   const handleCreateModel = () => {
     try {
@@ -51,7 +54,31 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
       // Validate the payload before creating
       validateCreateModelPayload(payload);
 
-      createModel(payload);
+      // Create the model metadata
+      const model: ModelMetadata = {
+        id: uuidv4(),
+        type: modelType,
+        name: `${modelType.charAt(0).toUpperCase() + modelType.slice(1)} ${Date.now()}`,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        material: {
+          ...material,
+          color: material.color || "#808080",
+          metalness: material.metalness || 0.1,
+          roughness: material.roughness || 0.8,
+        },
+        parentId: null,
+        visible: true,
+        locked: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Execute the command
+      const command = new AddModelCommand(model);
+      executeCommand(command);
+
       setValidationError(null);
       onClose();
     } catch (err) {
@@ -85,9 +112,9 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
       </DialogTitle>
 
       <DialogContent dividers sx={styles.content}>
-        {(validationError || error) && (
+        {validationError && (
           <Alert severity="error" sx={styles.alert}>
-            {validationError || error}
+            {validationError}
           </Alert>
         )}
 

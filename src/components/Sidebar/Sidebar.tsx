@@ -40,6 +40,7 @@ import {
 import CreateModelModal from "./CreateModelModal";
 import FileManager from "../FileManager/FileManager";
 import { ProjectDialog } from "../ProjectManager";
+import { UndoRedoPanel, KeyboardShortcutsIndicator } from "../UndoRedo";
 import { glassStyles } from "../../config/theme";
 import { RootState } from "../../store";
 import * as THREE from "three";
@@ -267,6 +268,11 @@ const Sidebar: React.FC = () => {
         </Box>
       </Box>
 
+      {/* History */}
+      <Box sx={styles.section}>
+        <UndoRedoPanel compact={false} showHistory={true} />
+      </Box>
+
       {/* Settings */}
       <Box sx={styles.section}>
         <Typography variant="subtitle1" sx={styles.sectionTitle}>
@@ -300,6 +306,11 @@ const Sidebar: React.FC = () => {
             sx={styles.switchControl}
           />
         </FormGroup>
+      </Box>
+
+      {/* Keyboard Shortcuts */}
+      <Box sx={styles.section}>
+        <KeyboardShortcutsIndicator compact={false} />
       </Box>
 
       <CreateModelModal open={modalOpen} onClose={() => setModalOpen(false)} />

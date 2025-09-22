@@ -13,9 +13,11 @@ import { triggerMeshUpdate } from '../store/slices/modelSlice';
 import { MeshEditor } from '../utils/meshEditor';
 import { MeshEditData, Vector3Tuple, SubObjectType, BoxSelectionMode } from '../types';
 import { SelectModes } from '../Enums';
+import { useModelCommands } from './useModelCommands';
 
 export const useMeshEditor = (modelId: string) => {
   const dispatch = useDispatch();
+  const { updateMeshVertices } = useModelCommands();
   const meshData = useSelector((state: RootState) => state.mesh.meshData[modelId]);
   const pendingOperations = useSelector((state: RootState) => state.mesh.pendingOperations[modelId] || []);
 
@@ -33,6 +35,14 @@ export const useMeshEditor = (modelId: string) => {
   // Apply pending operations and update geometry
   const applyOperations = useCallback((geometry: THREE.BufferGeometry) => {
     if (!meshData || pendingOperations.length === 0) return;
+
+    // Store the original mesh data for undo
+    const originalMeshData = {
+      ...meshData,
+      vertices: meshData.vertices.map(v => ({ ...v })),
+      edges: meshData.edges.map(e => ({ ...e })),
+      faces: meshData.faces.map(f => ({ ...f }))
+    };
 
     // Create a deep copy of mesh data to avoid mutation issues
     let currentMeshData: MeshEditData = {
@@ -177,10 +187,40 @@ export const useMeshEditor = (modelId: string) => {
     }
 
     MeshEditor.updateGeometryFromMeshData(geometry, currentMeshData);
-    dispatch(updateMeshData(currentMeshData));
+    
+    // Create a command for the entire mesh edit operation to enable undo/redo
+    if (originalMeshData !== currentMeshData) {
+      // Check what changed and create appropriate commands
+      const vertexChanges = [];
+      for (let i = 0; i < originalMeshData.vertices.length; i++) {
+        const oldVertex = originalMeshData.vertices[i];
+        const newVertex = currentMeshData.vertices[i];
+        if (oldVertex && newVertex && 
+            (oldVertex.position[0] !== newVertex.position[0] ||
+             oldVertex.position[1] !== newVertex.position[1] ||
+             oldVertex.position[2] !== newVertex.position[2])) {
+          vertexChanges.push({
+            index: i,
+            oldPosition: oldVertex.position as [number, number, number],
+            newPosition: newVertex.position as [number, number, number]
+          });
+        }
+      }
+      
+      if (vertexChanges.length > 0) {
+        const indices = vertexChanges.map(v => v.index);
+        const oldPositions = vertexChanges.map(v => v.oldPosition);
+        const newPositions = vertexChanges.map(v => v.newPosition);
+        updateMeshVertices(modelId, indices, oldPositions, newPositions);
+      } else {
+        // Fallback to direct update if no vertex changes detected
+        dispatch(updateMeshData(currentMeshData));
+      }
+    }
+    
     dispatch(clearPendingOperations(modelId));
     dispatch(triggerMeshUpdate({ modelId }));
-  }, [meshData, pendingOperations, dispatch, modelId]);
+  }, [meshData, pendingOperations, dispatch, modelId, updateMeshVertices]);
 
   // Mesh editing operations
   const moveVertices = useCallback((delta: Vector3Tuple, constraint?: string, pivot?: Vector3Tuple) => {

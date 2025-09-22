@@ -5,6 +5,7 @@ import { TransformControls } from "@react-three/drei";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
+import { useModelCommands } from "../../hooks/useModelCommands";
 import { Vector3Tuple } from "../../types";
 import { MeshEditModes } from "../../consts";
 import { EditModes } from "../../Enums";
@@ -15,9 +16,7 @@ interface TransformGizmoProps {
   mode: "translate" | "rotate" | "scale";
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
-  // Matrix of the editable mesh (its local space) for converting world gizmo movement to mesh local deltas
   getTargetMatrixWorld?: () => THREE.Matrix4 | null;
-  // New: direct access to mesh object for robust world position calculation
   getMeshObject?: () => THREE.Object3D | null;
 }
 
@@ -49,6 +48,17 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   const meshData = useSelector(
     (state: RootState) => state.mesh.meshData[modelId]
   );
+  const models = useSelector((state: RootState) => state.models.models);
+  const selectedModel = models.find((m) => m.id === modelId);
+
+  const { updateTransform } = useModelCommands();
+
+  // Store original transform for undo operations
+  const [originalTransform, setOriginalTransform] = useState<{
+    position: [number, number, number];
+    rotation: [number, number, number];
+    scale: [number, number, number];
+  } | null>(null);
 
   const {
     moveVertices,
@@ -176,6 +186,15 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
       rotation: object.rotation.clone(),
       scale: object.scale.clone(),
     });
+
+    // Store original model transform for undo/redo
+    if (selectedModel && !MeshEditModes.includes(editMode)) {
+      setOriginalTransform({
+        position: [...selectedModel.position],
+        rotation: [...selectedModel.rotation],
+        scale: [...selectedModel.scale],
+      });
+    }
 
     // Capture starting local pivot position & world position
     pivotLocalStartRef.current = object.position.clone();
@@ -319,10 +338,58 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
 
   // Handle transform end
   const handleTransformEnd = useCallback(() => {
+    // Save transform changes through command system for model-level transforms
+    if (
+      selectedModel &&
+      originalTransform &&
+      !MeshEditModes.includes(editMode)
+    ) {
+      const object = transformRef.current?.object;
+      if (object) {
+        const newTransform = {
+          position: [
+            object.position.x,
+            object.position.y,
+            object.position.z,
+          ] as [number, number, number],
+          rotation: [
+            object.rotation.x,
+            object.rotation.y,
+            object.rotation.z,
+          ] as [number, number, number],
+          scale: [object.scale.x, object.scale.y, object.scale.z] as [
+            number,
+            number,
+            number,
+          ],
+        };
+
+        // Only create command if transform actually changed
+        const hasChanged =
+          JSON.stringify(originalTransform.position) !==
+            JSON.stringify(newTransform.position) ||
+          JSON.stringify(originalTransform.rotation) !==
+            JSON.stringify(newTransform.rotation) ||
+          JSON.stringify(originalTransform.scale) !==
+            JSON.stringify(newTransform.scale);
+
+        if (hasChanged) {
+          updateTransform(selectedModel.id, newTransform);
+        }
+      }
+    }
+
     setIsTransforming(false);
     setStartValues({});
+    setOriginalTransform(null);
     onTransformEnd?.();
-  }, [onTransformEnd]);
+  }, [
+    selectedModel,
+    originalTransform,
+    editMode,
+    updateTransform,
+    onTransformEnd,
+  ]);
 
   // Frame update: compute selection center in mesh local space
   useFrame(() => {
