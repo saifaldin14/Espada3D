@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useCallback } from "react";
 import { Box, Typography, IconButton } from "@mui/material";
 import {
   Input,
@@ -25,6 +25,7 @@ interface NodeComponentProps {
   onMouseDown: (event: React.MouseEvent) => void;
   onPortMouseDown: (port: string, event: React.MouseEvent) => void;
   onPortMouseUp: (port: string, event: React.MouseEvent) => void;
+  onNodeResize?: (nodeId: string, width: number, height: number) => void;
 }
 
 const NodeComponent: React.FC<NodeComponentProps> = ({
@@ -33,7 +34,60 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
   onMouseDown,
   onPortMouseDown,
   onPortMouseUp,
+  onNodeResize,
 }) => {
+  const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  const nodeRef = useRef<HTMLDivElement>(null);
+
+  const handleResizeStart = useCallback(
+    (direction: string, event: React.MouseEvent) => {
+      event.stopPropagation();
+
+      const rect = nodeRef.current?.getBoundingClientRect();
+      if (rect) {
+        resizeStartRef.current = {
+          x: event.clientX,
+          y: event.clientY,
+          width: node.width || 170,
+          height: node.height || 120,
+        };
+      }
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const deltaX = e.clientX - resizeStartRef.current.x;
+        const deltaY = e.clientY - resizeStartRef.current.y;
+
+        let newWidth = resizeStartRef.current.width;
+        let newHeight = resizeStartRef.current.height;
+
+        if (direction.includes("right")) {
+          newWidth = Math.max(150, resizeStartRef.current.width + deltaX);
+        }
+        if (direction.includes("left")) {
+          newWidth = Math.max(150, resizeStartRef.current.width - deltaX);
+        }
+        if (direction.includes("bottom")) {
+          newHeight = Math.max(100, resizeStartRef.current.height + deltaY);
+        }
+        if (direction.includes("top")) {
+          newHeight = Math.max(100, resizeStartRef.current.height - deltaY);
+        }
+
+        if (onNodeResize) {
+          onNodeResize(node.id, newWidth, newHeight);
+        }
+      };
+
+      const handleMouseUp = () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    },
+    [node.id, node.width, node.height, onNodeResize]
+  );
   const getNodeIcon = (type: string) => {
     switch (type) {
       case "input":
@@ -166,6 +220,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
 
   return (
     <Box
+      ref={nodeRef}
       sx={{
         ...styles.node,
         left: node.position.x,
@@ -180,9 +235,60 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
           ? `0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px ${nodeColors.accent}40`
           : "0 4px 20px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.2)",
         transform: selected ? "translateY(-2px)" : "translateY(0)",
+        overflow: selected ? "visible" : "hidden", // Allow resize handles to show when selected
       }}
       onMouseDown={onMouseDown}
     >
+      {/* Resize Handles */}
+      {selected && !node.collapsed && (
+        <>
+          {/* Corner handles */}
+          <Box
+            sx={{ ...styles.resizeHandle, ...styles.resizeHandleTopLeft }}
+            onMouseDown={(e: React.MouseEvent) =>
+              handleResizeStart("top-left", e)
+            }
+          />
+          <Box
+            sx={{ ...styles.resizeHandle, ...styles.resizeHandleTopRight }}
+            onMouseDown={(e: React.MouseEvent) =>
+              handleResizeStart("top-right", e)
+            }
+          />
+          <Box
+            sx={{ ...styles.resizeHandle, ...styles.resizeHandleBottomLeft }}
+            onMouseDown={(e: React.MouseEvent) =>
+              handleResizeStart("bottom-left", e)
+            }
+          />
+          <Box
+            sx={{ ...styles.resizeHandle, ...styles.resizeHandleBottomRight }}
+            onMouseDown={(e: React.MouseEvent) =>
+              handleResizeStart("bottom-right", e)
+            }
+          />
+
+          {/* Edge handles */}
+          <Box
+            sx={{ ...styles.resizeHandle, ...styles.resizeHandleTop }}
+            onMouseDown={(e: React.MouseEvent) => handleResizeStart("top", e)}
+          />
+          <Box
+            sx={{ ...styles.resizeHandle, ...styles.resizeHandleRight }}
+            onMouseDown={(e: React.MouseEvent) => handleResizeStart("right", e)}
+          />
+          <Box
+            sx={{ ...styles.resizeHandle, ...styles.resizeHandleBottom }}
+            onMouseDown={(e: React.MouseEvent) =>
+              handleResizeStart("bottom", e)
+            }
+          />
+          <Box
+            sx={{ ...styles.resizeHandle, ...styles.resizeHandleLeft }}
+            onMouseDown={(e: React.MouseEvent) => handleResizeStart("left", e)}
+          />
+        </>
+      )}
       {/* Header */}
       <Box
         sx={{
@@ -639,6 +745,80 @@ const styles = {
       borderColor: "rgba(255, 255, 255, 0.2)",
       transform: "translateY(-1px)",
     },
+  },
+  // Resize handles
+  resizeHandle: {
+    position: "absolute" as const,
+    backgroundColor: "rgba(0, 204, 255, 0.9)", // More visible blue color
+    border: "2px solid rgba(255, 255, 255, 0.8)",
+    borderRadius: "3px",
+    transition: "all 0.2s ease",
+    zIndex: 1000, // Ensure handles are on top
+    "&:hover": {
+      backgroundColor: "rgba(0, 204, 255, 1)",
+      transform: "scale(1.3)",
+      boxShadow: "0 2px 8px rgba(0, 204, 255, 0.4)",
+    },
+  },
+  resizeHandleTopLeft: {
+    top: "-6px",
+    left: "-6px",
+    width: "12px",
+    height: "12px",
+    cursor: "nw-resize",
+  },
+  resizeHandleTopRight: {
+    top: "-6px",
+    right: "-6px",
+    width: "12px",
+    height: "12px",
+    cursor: "ne-resize",
+  },
+  resizeHandleBottomLeft: {
+    bottom: "-6px",
+    left: "-6px",
+    width: "12px",
+    height: "12px",
+    cursor: "sw-resize",
+  },
+  resizeHandleBottomRight: {
+    bottom: "-6px",
+    right: "-6px",
+    width: "12px",
+    height: "12px",
+    cursor: "se-resize",
+  },
+  resizeHandleTop: {
+    top: "-6px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "12px",
+    height: "8px",
+    cursor: "n-resize",
+  },
+  resizeHandleRight: {
+    right: "-6px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: "8px",
+    height: "12px",
+    cursor: "e-resize",
+  },
+  resizeHandleBottom: {
+    bottom: "-6px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "12px",
+    height: "8px",
+    cursor: "s-resize",
+  },
+  resizeHandleLeft: {
+    left: "-6px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: "8px",
+    height: "12px",
+    cursor: "w-resize",
   },
   header: {
     display: "flex",

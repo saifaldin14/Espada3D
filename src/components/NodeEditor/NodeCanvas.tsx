@@ -10,6 +10,7 @@ interface NodeCanvasProps {
   selectedNodeId: string | null;
   onNodeSelect: (nodeId: string) => void;
   onNodeMove: (nodeId: string, position: Position) => void;
+  onNodeResize?: (nodeId: string, width: number, height: number) => void;
   onConnect: (
     sourceId: string,
     targetId: string,
@@ -29,6 +30,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
   selectedNodeId,
   onNodeSelect,
   onNodeMove,
+  onNodeResize,
   onConnect,
   onDisconnect,
   viewportOffset,
@@ -360,6 +362,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
             onPortMouseUp={(port: string, event: React.MouseEvent) =>
               handlePortMouseUp(node.id, port, event)
             }
+            onNodeResize={onNodeResize}
           />
         ))}
       </Box>

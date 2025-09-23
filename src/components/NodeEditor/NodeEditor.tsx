@@ -35,6 +35,7 @@ import {
   disconnectNodes,
   updateNodePosition,
   updateNodeData,
+  updateNodeSize,
   setSelectedNode,
   setExecuting,
   setNodeExecutionResult,
@@ -108,6 +109,13 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
       dispatch(deleteNode(selectedNodeId));
     }
   }, [selectedNodeId, dispatch]);
+
+  const handleNodeResize = useCallback(
+    (nodeId: string, width: number, height: number) => {
+      dispatch(updateNodeSize({ nodeId, width, height }));
+    },
+    [dispatch]
+  );
 
   const handleExecute = useCallback(async () => {
     dispatch(setExecuting(true));
@@ -205,6 +213,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
               onNodeMove={(nodeId, position) =>
                 dispatch(updateNodePosition({ nodeId, position }))
               }
+              onNodeResize={handleNodeResize}
               onConnect={(sourceId, targetId, sourcePort, targetPort) =>
                 dispatch(
                   connectNodes({ sourceId, targetId, sourcePort, targetPort })
