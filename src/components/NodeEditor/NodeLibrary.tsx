@@ -245,12 +245,15 @@ const styles = {
     fontSize: "14px",
     fontWeight: 600,
     borderBottom: "1px solid #333",
+    flexShrink: 0,
   },
   categoriesContainer: {
     flex: 1,
-    overflow: "auto",
+    overflowY: "auto",
+    overflowX: "hidden",
     padding: "8px 0",
     scrollBehavior: "smooth",
+    minHeight: 0, // This is crucial for flex children to be scrollable
     // Custom scrollbar styling
     "&::-webkit-scrollbar": {
       width: "6px",
@@ -343,6 +346,7 @@ const styles = {
     padding: "12px",
     borderTop: "1px solid #333",
     backgroundColor: "#252525",
+    flexShrink: 0,
   },
   instructionText: {
     display: "block",

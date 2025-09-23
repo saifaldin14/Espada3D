@@ -378,15 +378,19 @@ const styles = {
     display: "flex",
     flex: 1,
     overflow: "hidden",
+    minHeight: 0,
+    height: "calc(100vh - 120px)",
   },
   sidebar: {
     width: "200px",
     backgroundColor: "#2a2a2a",
     borderRight: "1px solid #333",
-    overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    height: "100%",
+    minHeight: 0, // This is crucial for flex children to be scrollable
+    flex: "0 0 200px", // Don't grow/shrink, fixed width
+    height: "100%", // Take full height of parent
+    overflow: "hidden", // Prevent sidebar itself from scrolling
   },
   canvasContainer: {
     flex: 1,
