@@ -59,16 +59,21 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   // Add keyboard support for deleting models
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "x") {
-        if (selectedModelId) {
-          if (
-            window.confirm(
-              "Are you sure you want to delete the selected object from the scene?"
-            )
-          ) {
-            deleteModel(selectedModelId);
-          }
-        }
+      // Only handle delete when not in input fields
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        (event.target as any)?.contentEditable === "true"
+      ) {
+        return;
+      }
+
+      if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        selectedModelId
+      ) {
+        event.preventDefault();
+        deleteModel(selectedModelId);
       }
     };
 

@@ -29,14 +29,14 @@ const ModelHighlight: React.FC<ModelHighlightProps> = ({
 
     const edgesGeometry = new EdgesGeometry(mesh.geometry);
     const outlineMaterial = new LineBasicMaterial({
-      color: APP_CONFIG.MATERIALS.OUTLINE_COLOR,
+      color: isSelected ? 0x667eea : 0x00c9ff,
       linewidth: 2,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.9,
     });
 
     return { edgesGeometry, outlineMaterial };
-  }, [mesh]);
+  }, [mesh, isSelected]);
 
   // Update outline visibility and animation
   useEffect(() => {
@@ -52,7 +52,12 @@ const ModelHighlight: React.FC<ModelHighlightProps> = ({
       groupRef.current.scale.copy(mesh.scale);
 
       // Slightly scale up for outline effect
-      groupRef.current.scale.multiplyScalar(isSelected ? 1.02 : 1.01);
+      const scaleFactor = isSelected ? 1.015 : 1.008;
+      groupRef.current.scale.multiplyScalar(scaleFactor);
+
+      // Update material color based on selection state
+      const material = outlineRef.current.material as LineBasicMaterial;
+      material.color.setHex(isSelected ? 0x667eea : 0x00c9ff);
     }
   }, [mesh, isSelected, isHovered]);
 
@@ -62,7 +67,7 @@ const ModelHighlight: React.FC<ModelHighlightProps> = ({
 
     const time = state.clock.getElapsedTime();
     const material = outlineRef.current.material as LineBasicMaterial;
-    material.opacity = 0.5 + Math.sin(time * 3) * 0.3; // Pulsing effect
+    material.opacity = 0.7 + Math.sin(time * 2.5) * 0.2; // Subtle pulsing effect
   });
 
   // Cleanup

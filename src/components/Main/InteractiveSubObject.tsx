@@ -60,12 +60,12 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
       editMode === EditModes.vertex
     ) {
       meshEditData.vertices.forEach((vertex, index) => {
-        const sphereGeometry = new THREE.SphereGeometry(0.08, 8, 6); // Increased from 0.02 to 0.08
+        const sphereGeometry = new THREE.SphereGeometry(0.08, 8, 6);
         const material = new THREE.MeshBasicMaterial({
-          color: vertex.selected ? 0xff0000 : 0x00ff00,
+          color: vertex.selected ? 0xfa709a : 0x667eea,
           transparent: true,
-          opacity: vertex.selected ? 0.8 : 0.4, // More visible when selected
-          depthTest: false, // Always visible through other objects
+          opacity: vertex.selected ? 0.85 : 0.5,
+          depthTest: false,
         });
         const sphere = new THREE.Mesh(sphereGeometry, material);
         sphere.position.set(...vertex.position);
@@ -75,7 +75,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
           originalMaterial: material,
           isSelected: vertex.selected,
         };
-        sphere.renderOrder = 999; // Render on top
+        sphere.renderOrder = 999;
         helpers.vertices.push(sphere);
       });
     }
@@ -97,15 +97,15 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
           const center = start.clone().add(end).multiplyScalar(0.5);
 
           const cylinderGeometry = new THREE.CylinderGeometry(
-            0.05, // Increased from 0.01 to 0.05
+            0.05,
             0.05,
             length
           );
           const material = new THREE.MeshBasicMaterial({
-            color: edge.selected ? 0x00ff00 : 0x0000ff,
+            color: edge.selected ? 0x43e97b : 0x667eea,
             transparent: true,
-            opacity: edge.selected ? 0.8 : 0.4, // More visible when selected
-            depthTest: false, // Always visible through other objects
+            opacity: edge.selected ? 0.85 : 0.5,
+            depthTest: false,
           });
           const cylinder = new THREE.Mesh(cylinderGeometry, material);
 
@@ -120,7 +120,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
             originalMaterial: material,
             isSelected: edge.selected,
           };
-          cylinder.renderOrder = 999; // Render on top
+          cylinder.renderOrder = 999;
           helpers.edges.push(cylinder);
         }
       });
@@ -159,11 +159,11 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
           faceGeometry.computeVertexNormals();
 
           const material = new THREE.MeshBasicMaterial({
-            color: face.selected ? 0xff0000 : 0xffff00,
+            color: face.selected ? 0x667eea : 0x00c9ff,
             transparent: true,
-            opacity: face.selected ? 0.6 : 0.3, // More visible when selected
+            opacity: face.selected ? 0.65 : 0.35,
             side: THREE.DoubleSide,
-            depthTest: false, // Always visible through other objects
+            depthTest: false,
           });
 
           const faceMesh = new THREE.Mesh(faceGeometry, material);
@@ -173,7 +173,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
             originalMaterial: material,
             isSelected: face.selected,
           };
-          faceMesh.renderOrder = 998; // Render on top but below vertices/edges
+          faceMesh.renderOrder = 998;
           helpers.faces.push(faceMesh);
         }
       });
@@ -186,7 +186,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     const object = event.object;
     if (object.userData?.originalMaterial && !object.userData?.isSelected) {
       // Brighten the material on hover
-      object.material.opacity = Math.min(object.material.opacity * 1.5, 1.0);
+      object.material.opacity = Math.min(object.material.opacity * 1.4, 1.0);
     }
     // Change cursor to indicate interactivity
     document.body.style.cursor = "pointer";
@@ -197,7 +197,7 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
     if (object.userData?.originalMaterial && !object.userData?.isSelected) {
       // Restore original opacity
       const type = object.userData.type;
-      const baseOpacity = type === EditModes.face ? 0.3 : 0.4;
+      const baseOpacity = type === EditModes.face ? 0.35 : 0.5;
       object.material.opacity = baseOpacity;
     }
     // Restore default cursor
@@ -391,20 +391,6 @@ const InteractiveSubObject: React.FC<InteractiveSubObjectProps> = ({
       })
     );
   };
-
-  // Debug: Log the state to understand what's happening
-  React.useEffect(() => {
-    console.log("InteractiveSubObject Debug:", {
-      modelId,
-      editMode,
-      currentSubObjectType,
-      meshEditData: !!meshEditData,
-      meshEditDataKeys: meshEditData ? Object.keys(meshEditData) : "none",
-      vertexCount: meshEditData?.vertices?.length || 0,
-      edgeCount: meshEditData?.edges?.length || 0,
-      faceCount: meshEditData?.faces?.length || 0,
-    });
-  }, [modelId, editMode, currentSubObjectType, meshEditData]);
 
   if (!MeshEditModes.includes(editMode)) {
     return (

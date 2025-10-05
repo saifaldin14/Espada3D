@@ -34,21 +34,21 @@ export class SelectionMaterialManager {
     return {
       vertex: {
         normal: new THREE.MeshBasicMaterial({
-          color: 0x888888,
+          color: 0x999999,
           transparent: true,
-          opacity: 0.8,
+          opacity: 0.75,
           depthTest: false,
           depthWrite: false,
         }),
         selected: new THREE.MeshBasicMaterial({
-          color: 0xff4500, // Orange red for better visibility
+          color: 0xfa709a, // Theme error color
           transparent: true,
           opacity: 1.0,
           depthTest: false,
           depthWrite: false,
         }),
         hover: new THREE.MeshBasicMaterial({
-          color: 0x00bfff, // Deep sky blue for hover
+          color: 0x00c9ff, // Theme secondary color
           transparent: true,
           opacity: 0.9,
           depthTest: false,
@@ -57,15 +57,15 @@ export class SelectionMaterialManager {
       },
       edge: {
         normal: new THREE.LineBasicMaterial({
-          color: 0x666666,
+          color: 0x777777,
           transparent: true,
-          opacity: 0.6,
+          opacity: 0.65,
           depthTest: false,
           depthWrite: false,
           linewidth: 2,
         }),
         selected: new THREE.LineBasicMaterial({
-          color: 0xff4500, // Orange red
+          color: 0x43e97b, // Theme success color
           transparent: true,
           opacity: 1.0,
           depthTest: false,
@@ -73,7 +73,7 @@ export class SelectionMaterialManager {
           linewidth: 4,
         }),
         hover: new THREE.LineBasicMaterial({
-          color: 0x00bfff, // Deep sky blue
+          color: 0x00c9ff, // Theme secondary color
           transparent: true,
           opacity: 0.9,
           depthTest: false,
@@ -83,39 +83,39 @@ export class SelectionMaterialManager {
       },
       face: {
         normal: new THREE.MeshBasicMaterial({
-          color: 0x555555,
+          color: 0x666666,
           transparent: true,
-          opacity: 0.05,
+          opacity: 0.08,
           side: THREE.DoubleSide,
           depthTest: false,
           depthWrite: false,
         }),
         selected: new THREE.MeshBasicMaterial({
-          color: 0xff4500, // Orange red
+          color: 0x667eea, // Theme primary color
           transparent: true,
-          opacity: 0.4,
+          opacity: 0.35,
           side: THREE.DoubleSide,
           depthTest: false,
           depthWrite: false,
         }),
         hover: new THREE.MeshBasicMaterial({
-          color: 0x00bfff, // Deep sky blue
+          color: 0x00c9ff, // Theme secondary color
           transparent: true,
-          opacity: 0.25,
+          opacity: 0.22,
           side: THREE.DoubleSide,
           depthTest: false,
           depthWrite: false,
         }),
         wireframe: new THREE.LineBasicMaterial({
-          color: 0x666666,
+          color: 0x777777,
           transparent: true,
-          opacity: 0.6,
+          opacity: 0.65,
           depthTest: false,
           depthWrite: false,
           linewidth: 1,
         }),
         wireframeSelected: new THREE.LineBasicMaterial({
-          color: 0xff4500, // Orange red
+          color: 0x667eea, // Theme primary color
           transparent: true,
           opacity: 1.0,
           depthTest: false,

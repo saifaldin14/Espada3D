@@ -39,7 +39,7 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
         elements.push(
           <mesh key={`vertex-${vertex.index}`} position={vertex.position}>
             <sphereGeometry args={[0.05, 8, 6]} />
-            <meshBasicMaterial color="#ff0000" />
+            <meshBasicMaterial color="#fa709a" />
           </mesh>
         );
       });
@@ -70,7 +70,7 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
               <bufferGeometry attach="geometry" {...lineGeometry} />
               <lineBasicMaterial
                 attach="material"
-                color="#00ff00"
+                color="#43e97b"
                 linewidth={3}
               />
             </line>
@@ -107,7 +107,7 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
                 <bufferGeometry attach="geometry" {...lineGeometry} />
                 <lineBasicMaterial
                   attach="material"
-                  color="#0000ff"
+                  color="#667eea"
                   linewidth={2}
                 />
               </line>
@@ -147,9 +147,9 @@ const SubObjectHighlight: React.FC<SubObjectHighlightProps> = ({
               <bufferGeometry attach="geometry" {...faceGeometry} />
               <meshBasicMaterial
                 attach="material"
-                color="#0000ff"
+                color="#667eea"
                 transparent
-                opacity={0.3}
+                opacity={0.25}
                 side={THREE.DoubleSide}
               />
             </mesh>

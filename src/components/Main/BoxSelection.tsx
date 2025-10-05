@@ -37,11 +37,13 @@ const BoxSelection: React.FC<BoxSelectionProps> = ({
     // Create selection box element
     const selectionBox = document.createElement("div");
     selectionBox.style.position = "absolute";
-    selectionBox.style.border = "1px dashed #00ffff";
-    selectionBox.style.backgroundColor = "rgba(0, 255, 255, 0.1)";
+    selectionBox.style.border = "2px solid #00c9ff";
+    selectionBox.style.backgroundColor = "rgba(0, 201, 255, 0.08)";
     selectionBox.style.pointerEvents = "none";
     selectionBox.style.display = "none";
     selectionBox.style.zIndex = "1000";
+    selectionBox.style.borderRadius = "2px";
+    selectionBox.style.boxShadow = "0 0 8px rgba(0, 201, 255, 0.3)";
     container.appendChild(selectionBox);
     selectionBoxRef.current = selectionBox;
 
@@ -71,16 +73,22 @@ const BoxSelection: React.FC<BoxSelectionProps> = ({
       // Update box color based on mode
       selectionBox.style.border =
         mode === SelectModes.add
-          ? "1px dashed #00ff00"
+          ? "2px solid #43e97b"
           : mode === SelectModes.remove
-            ? "1px dashed #ff0000"
-            : "1px dashed #00ffff";
+            ? "2px solid #fa709a"
+            : "2px solid #00c9ff";
       selectionBox.style.backgroundColor =
         mode === SelectModes.add
-          ? "rgba(0, 255, 0, 0.1)"
+          ? "rgba(67, 233, 123, 0.08)"
           : mode === SelectModes.remove
-            ? "rgba(255, 0, 0, 0.1)"
-            : "rgba(0, 255, 255, 0.1)";
+            ? "rgba(250, 112, 154, 0.08)"
+            : "rgba(0, 201, 255, 0.08)";
+      selectionBox.style.boxShadow =
+        mode === SelectModes.add
+          ? "0 0 8px rgba(67, 233, 123, 0.3)"
+          : mode === SelectModes.remove
+            ? "0 0 8px rgba(250, 112, 154, 0.3)"
+            : "0 0 8px rgba(0, 201, 255, 0.3)";
       selectionBox.style.display = "block";
     };
 

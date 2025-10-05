@@ -168,13 +168,22 @@ const Canvas3D: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <Canvas
           camera={{
             position: [...APP_CONFIG.SCENE.DEFAULT_CAMERA_POSITION],
             fov: 75,
           }}
           shadows
+          style={{ flex: 1 }}
           onCreated={({ gl }) => {
             gl.outputColorSpace = SRGBColorSpace;
             gl.toneMapping = ACESFilmicToneMapping;
