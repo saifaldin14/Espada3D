@@ -466,8 +466,8 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
             height={
               Math.abs(boxSelection.current.y - boxSelection.start.y) * zoom
             }
-            fill="rgba(67, 233, 123, 0.1)"
-            stroke="rgba(67, 233, 123, 0.6)"
+            fill="rgba(102, 126, 234, 0.12)"
+            stroke="rgba(102, 126, 234, 0.6)"
             strokeWidth={2}
             strokeDasharray="8,4"
           />
@@ -482,8 +482,8 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
             x2="100%"
             y2="0%"
           >
-            <stop offset="0%" stopColor="#43e97b" />
-            <stop offset="100%" stopColor="#38f9d7" />
+            <stop offset="0%" stopColor="#667eea" />
+            <stop offset="100%" stopColor="#764ba2" />
           </linearGradient>
         </defs>
       </svg>
@@ -557,8 +557,8 @@ const styles = {
     overflow: "hidden",
     cursor: "default",
     background: `
-      radial-gradient(circle at 25% 25%, rgba(67, 233, 123, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, rgba(56, 249, 215, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(118, 75, 162, 0.08) 0%, transparent 50%),
       linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)
     `,
     "&:active": {

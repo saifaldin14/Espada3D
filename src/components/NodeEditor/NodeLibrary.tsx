@@ -6,7 +6,22 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import { ExpandMore } from "@mui/icons-material";
+import {
+  ExpandMore,
+  Input,
+  Output,
+  Palette,
+  Calculate,
+  Category,
+  Interests,
+  Transform,
+  Texture,
+  Lightbulb,
+  Videocam,
+  FilterList,
+  Code,
+  Help,
+} from "@mui/icons-material";
 import { NodeType, NodeLibraryItem } from "../../types/nodeTypes";
 
 interface NodeLibraryProps {
@@ -21,24 +36,24 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       name: "Input",
       description: "Input value node",
       category: "input",
-      icon: "📥",
-      color: "#4CAF50",
+      icon: "Input",
+      color: "#43e97b",
     },
     {
       type: "color",
       name: "Color",
       description: "Color picker input",
       category: "input",
-      icon: "🎨",
-      color: "#E91E63",
+      icon: "Palette",
+      color: "#fa709a",
     },
     {
       type: "output",
       name: "Output",
       description: "Output result node",
       category: "output",
-      icon: "📤",
-      color: "#F44336",
+      icon: "Output",
+      color: "#fa709a",
     },
 
     // Math
@@ -47,8 +62,8 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       name: "Math",
       description: "Mathematical operations",
       category: "math",
-      icon: "🧮",
-      color: "#2196F3",
+      icon: "Calculate",
+      color: "#667eea",
     },
 
     // Geometry
@@ -57,24 +72,24 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       name: "Geometry",
       description: "Create geometric shapes",
       category: "geometry",
-      icon: "📐",
-      color: "#00BCD4",
+      icon: "Category",
+      color: "#00c9ff",
     },
     {
       type: "mesh",
       name: "Mesh",
       description: "Create or modify mesh objects",
       category: "geometry",
-      icon: "🔷",
-      color: "#00BCD4",
+      icon: "Interests",
+      color: "#00c9ff",
     },
     {
       type: "transform",
       name: "Transform",
       description: "Transform geometry",
       category: "geometry",
-      icon: "🔄",
-      color: "#FF9800",
+      icon: "Transform",
+      color: "#fa709a",
     },
 
     // Material
@@ -83,16 +98,16 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       name: "Material",
       description: "Material properties",
       category: "material",
-      icon: "🎨",
-      color: "#9C27B0",
+      icon: "Palette",
+      color: "#764ba2",
     },
     {
       type: "texture",
       name: "Texture",
       description: "Texture mapping and generation",
       category: "material",
-      icon: "🖼️",
-      color: "#9C27B0",
+      icon: "Texture",
+      color: "#764ba2",
     },
 
     // Lighting
@@ -101,16 +116,16 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       name: "Light",
       description: "Scene lighting",
       category: "lighting",
-      icon: "💡",
-      color: "#FFEB3B",
+      icon: "Lightbulb",
+      color: "#f6d365",
     },
     {
       type: "camera",
       name: "Camera",
       description: "Camera controls",
       category: "lighting",
-      icon: "📷",
-      color: "#FFEB3B",
+      icon: "Videocam",
+      color: "#f6d365",
     },
 
     // Utility
@@ -119,16 +134,16 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       name: "Filter",
       description: "Apply filters and effects",
       category: "utility",
-      icon: "🔍",
-      color: "#795548",
+      icon: "FilterList",
+      color: "#667eea",
     },
     {
       type: "script",
       name: "Script",
       description: "Custom scripting node",
       category: "utility",
-      icon: "📜",
-      color: "#795548",
+      icon: "Code",
+      color: "#667eea",
     },
 
     // Logic
@@ -137,8 +152,8 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       name: "Condition",
       description: "Conditional logic",
       category: "logic",
-      icon: "❓",
-      color: "#607D8B",
+      icon: "Help",
+      color: "#00c9ff",
     },
   ];
 
@@ -160,6 +175,40 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
     return nodeLibraryItems.filter((item) => item.category === category);
   };
 
+  const getIconComponent = (iconName: string) => {
+    const iconProps = { sx: { fontSize: 16 } };
+    switch (iconName) {
+      case "Input":
+        return <Input {...iconProps} />;
+      case "Output":
+        return <Output {...iconProps} />;
+      case "Palette":
+        return <Palette {...iconProps} />;
+      case "Calculate":
+        return <Calculate {...iconProps} />;
+      case "Category":
+        return <Category {...iconProps} />;
+      case "Interests":
+        return <Interests {...iconProps} />;
+      case "Transform":
+        return <Transform {...iconProps} />;
+      case "Texture":
+        return <Texture {...iconProps} />;
+      case "Lightbulb":
+        return <Lightbulb {...iconProps} />;
+      case "Videocam":
+        return <Videocam {...iconProps} />;
+      case "FilterList":
+        return <FilterList {...iconProps} />;
+      case "Code":
+        return <Code {...iconProps} />;
+      case "Help":
+        return <Help {...iconProps} />;
+      default:
+        return <Category {...iconProps} />;
+    }
+  };
+
   return (
     <Box sx={styles.container}>
       <Typography variant="h6" sx={styles.header}>
@@ -179,7 +228,9 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
               sx={styles.accordion}
             >
               <AccordionSummary
-                expandIcon={<ExpandMore sx={{ color: "#ccc" }} />}
+                expandIcon={
+                  <ExpandMore sx={{ color: "rgba(255, 255, 255, 0.6)" }} />
+                }
                 sx={styles.accordionSummary}
               >
                 <Typography sx={styles.categoryTitle}>
@@ -196,7 +247,9 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
                     onDragStart={() => handleDragStart(item.type)}
                     title={item.description}
                   >
-                    <Box sx={styles.nodeIcon}>{item.icon}</Box>
+                    <Box sx={styles.nodeIcon}>
+                      {getIconComponent(item.icon)}
+                    </Box>
                     <Typography sx={styles.nodeName}>{item.name}</Typography>
                     <Box
                       sx={{
@@ -215,16 +268,16 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       {/* Instructions */}
       <Box sx={styles.instructions}>
         <Typography variant="caption" sx={styles.instructionText}>
-          💡 Drag nodes to canvas
+          Drag nodes to canvas
         </Typography>
         <Typography variant="caption" sx={styles.instructionText}>
-          🔗 Connect output to input ports
+          Connect output to input ports
         </Typography>
         <Typography variant="caption" sx={styles.instructionText}>
-          ⌫ Right-click or double-click to delete connections
+          Right-click or double-click to delete connections
         </Typography>
         <Typography variant="caption" sx={styles.instructionText}>
-          🎯 Click connections to select and show delete button
+          Click connections to select and show delete button
         </Typography>
       </Box>
     </Box>
@@ -234,44 +287,45 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
 const styles = {
   container: {
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "column" as const,
     height: "100%",
     overflow: "hidden",
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "rgba(20, 25, 35, 0.95)",
+    backdropFilter: "blur(10px)",
   },
   header: {
-    color: "#fff",
-    padding: "16px 12px 8px",
-    fontSize: "14px",
+    color: "#ffffff",
+    padding: "16px 16px 12px",
+    fontSize: "15px",
     fontWeight: 600,
-    borderBottom: "1px solid #333",
+    borderBottom: "1px solid rgba(102, 126, 234, 0.2)",
     flexShrink: 0,
+    background:
+      "linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)",
   },
   categoriesContainer: {
     flex: 1,
-    overflowY: "auto",
-    overflowX: "hidden",
+    overflowY: "auto" as const,
+    overflowX: "hidden" as const,
     padding: "8px 0",
-    scrollBehavior: "smooth",
-    minHeight: 0, // This is crucial for flex children to be scrollable
-    // Custom scrollbar styling
+    scrollBehavior: "smooth" as const,
+    minHeight: 0,
     "&::-webkit-scrollbar": {
       width: "6px",
     },
     "&::-webkit-scrollbar-track": {
-      background: "rgba(255, 255, 255, 0.05)",
+      background: "rgba(255, 255, 255, 0.03)",
       borderRadius: "3px",
     },
     "&::-webkit-scrollbar-thumb": {
-      background: "rgba(255, 255, 255, 0.2)",
+      background: "rgba(102, 126, 234, 0.3)",
       borderRadius: "3px",
       "&:hover": {
-        background: "rgba(255, 255, 255, 0.3)",
+        background: "rgba(102, 126, 234, 0.5)",
       },
     },
-    // Firefox scrollbar styling
-    scrollbarWidth: "thin",
-    scrollbarColor: "rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05)",
+    scrollbarWidth: "thin" as const,
+    scrollbarColor: "rgba(102, 126, 234, 0.3) rgba(255, 255, 255, 0.03)",
   },
   accordion: {
     backgroundColor: "transparent",
@@ -288,74 +342,89 @@ const styles = {
     },
   },
   accordionSummary: {
-    backgroundColor: "#333",
-    borderRadius: "4px",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: "6px",
     margin: "4px 8px",
+    border: "1px solid rgba(102, 126, 234, 0.15)",
     "&:hover": {
-      backgroundColor: "#3a3a3a",
+      backgroundColor: "rgba(255, 255, 255, 0.08)",
+      borderColor: "rgba(102, 126, 234, 0.3)",
     },
   },
   categoryTitle: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: "12px",
     fontWeight: 600,
+    letterSpacing: "0.5px",
   },
   accordionDetails: {
     display: "flex",
-    flexDirection: "column",
-    gap: "4px",
+    flexDirection: "column" as const,
+    gap: "6px",
   },
   nodeItem: {
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    padding: "8px 12px",
-    backgroundColor: "#333",
-    borderRadius: "6px",
+    gap: "10px",
+    padding: "10px 14px",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: "8px",
     cursor: "grab",
     transition: "all 0.2s ease",
-    border: "1px solid transparent",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
     "&:hover": {
-      backgroundColor: "#3a3a3a",
-      borderColor: "#555",
-      transform: "translateY(-1px)",
+      backgroundColor: "rgba(102, 126, 234, 0.15)",
+      borderColor: "rgba(102, 126, 234, 0.4)",
+      transform: "translateX(4px)",
+      boxShadow: "0 2px 8px rgba(102, 126, 234, 0.2)",
     },
     "&:active": {
       cursor: "grabbing",
-      transform: "translateY(0)",
+      transform: "translateX(2px)",
     },
   },
   nodeIcon: {
-    fontSize: "16px",
-    width: "20px",
-    textAlign: "center",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "24px",
+    height: "24px",
+    color: "rgba(255, 255, 255, 0.9)",
+    flexShrink: 0,
   },
   nodeName: {
     flex: 1,
-    color: "#fff",
-    fontSize: "11px",
+    color: "#ffffff",
+    fontSize: "12px",
     fontWeight: 500,
+    letterSpacing: "0.3px",
   },
   nodeColorIndicator: {
-    width: "8px",
-    height: "8px",
+    width: "10px",
+    height: "10px",
     borderRadius: "50%",
     flexShrink: 0,
+    boxShadow: "0 0 4px rgba(0, 0, 0, 0.3)",
   },
   instructions: {
-    padding: "12px",
-    borderTop: "1px solid #333",
-    backgroundColor: "#252525",
+    padding: "14px 16px",
+    borderTop: "1px solid rgba(102, 126, 234, 0.2)",
+    backgroundColor: "rgba(10, 15, 25, 0.8)",
     flexShrink: 0,
   },
   instructionText: {
     display: "block",
-    color: "#999",
-    fontSize: "10px",
-    lineHeight: 1.4,
-    marginBottom: "4px",
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: "11px",
+    lineHeight: 1.6,
+    marginBottom: "6px",
     "&:last-child": {
       marginBottom: 0,
+    },
+    "&:before": {
+      content: '"• "',
+      color: "rgba(102, 126, 234, 0.6)",
+      fontWeight: 600,
     },
   },
 };

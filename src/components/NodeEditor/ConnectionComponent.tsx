@@ -133,9 +133,9 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
           x2="100%"
           y2="0%"
         >
-          <stop offset="0%" stopColor="rgba(67, 233, 123, 0.8)" />
-          <stop offset="50%" stopColor="rgba(83, 109, 254, 0.7)" />
-          <stop offset="100%" stopColor="rgba(248, 113, 113, 0.8)" />
+          <stop offset="0%" stopColor="rgba(102, 126, 234, 0.8)" />
+          <stop offset="50%" stopColor="rgba(118, 75, 162, 0.75)" />
+          <stop offset="100%" stopColor="rgba(139, 92, 246, 0.8)" />
         </linearGradient>
 
         {/* Selected connection gradient */}
@@ -146,8 +146,8 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
           x2="100%"
           y2="0%"
         >
-          <stop offset="0%" stopColor="rgba(67, 233, 123, 1)" />
-          <stop offset="50%" stopColor="rgba(139, 92, 246, 1)" />
+          <stop offset="0%" stopColor="rgba(102, 126, 234, 1)" />
+          <stop offset="50%" stopColor="rgba(118, 75, 162, 1)" />
           <stop offset="100%" stopColor="rgba(59, 130, 246, 1)" />
         </linearGradient>
 
@@ -164,7 +164,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
       {/* Connection shadow/glow for better visibility */}
       <path
         d={pathData}
-        stroke="rgba(67, 233, 123, 0.3)"
+        stroke="rgba(102, 126, 234, 0.3)"
         strokeWidth={connection.selected ? 8 : 6}
         fill="none"
         pointerEvents="none"
@@ -243,7 +243,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
         <>
           <circle
             r="5"
-            fill="rgba(67, 233, 123, 0.9)"
+            fill="rgba(102, 126, 234, 0.9)"
             stroke="rgba(255, 255, 255, 0.6)"
             strokeWidth="1"
           >
@@ -263,7 +263,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
       {connection.selected && (
         <path
           d={pathData}
-          stroke="rgba(67, 233, 123, 0.6)"
+          stroke="rgba(102, 126, 234, 0.6)"
           strokeWidth="6"
           fill="none"
           pointerEvents="none"

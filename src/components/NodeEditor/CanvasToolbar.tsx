@@ -63,10 +63,11 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
         display: "flex",
         alignItems: "center",
         gap: 1,
-        backgroundColor: "rgba(30, 35, 45, 0.95)",
-        border: "1px solid rgba(67, 233, 123, 0.3)",
+        backgroundColor: "rgba(20, 25, 35, 0.95)",
+        backdropFilter: "blur(10px)",
+        border: "1px solid rgba(102, 126, 234, 0.3)",
         borderRadius: "12px",
-        padding: "8px 12px",
+        padding: "10px 14px",
         boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
         zIndex: 100,
       }}
@@ -251,7 +252,7 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
         sx={{
           px: 1,
           fontSize: "0.75rem",
-          color: "#43e97b",
+          color: "#667eea",
           fontWeight: 600,
           minWidth: 45,
           textAlign: "center",
@@ -274,12 +275,14 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
 };
 
 const iconButtonStyle = {
-  color: "#00ccff",
+  color: "rgba(255, 255, 255, 0.9)",
+  transition: "all 0.2s ease",
   "&:hover": {
-    backgroundColor: "rgba(0, 204, 255, 0.1)",
+    backgroundColor: "rgba(102, 126, 234, 0.2)",
+    color: "#667eea",
   },
   "&:disabled": {
-    color: "#666",
+    color: "rgba(255, 255, 255, 0.3)",
   },
 };
 

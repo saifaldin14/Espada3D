@@ -478,70 +478,87 @@ const styles = {
     overflow: "hidden",
   },
   header: {
-    color: "#fff",
-    padding: "16px 12px 8px",
-    fontSize: "14px",
+    color: "#ffffff",
+    padding: "16px 16px 12px",
+    fontSize: "15px",
     fontWeight: 600,
-    borderBottom: "1px solid #333",
+    borderBottom: "1px solid rgba(102, 126, 234, 0.2)",
+    background:
+      "linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)",
   },
   nodeInfo: {
-    padding: "8px 12px",
-    backgroundColor: "#333",
-    margin: "8px",
-    borderRadius: "4px",
+    padding: "10px 14px",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    margin: "12px",
+    borderRadius: "8px",
+    border: "1px solid rgba(102, 126, 234, 0.2)",
   },
   infoLabel: {
     display: "block",
-    color: "#ccc",
+    color: "rgba(255, 255, 255, 0.7)",
     fontSize: "11px",
-    marginBottom: "2px",
+    marginBottom: "4px",
+    letterSpacing: "0.3px",
   },
   propertiesContainer: {
     flex: 1,
-    overflow: "auto",
-    padding: "8px 12px",
+    overflow: "auto" as const,
+    padding: "12px 16px",
     display: "flex",
-    flexDirection: "column",
-    gap: "12px",
+    flexDirection: "column" as const,
+    gap: "14px",
+    "&::-webkit-scrollbar": {
+      width: "6px",
+    },
+    "&::-webkit-scrollbar-track": {
+      background: "rgba(255, 255, 255, 0.03)",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      background: "rgba(102, 126, 234, 0.3)",
+      borderRadius: "3px",
+      "&:hover": {
+        background: "rgba(102, 126, 234, 0.5)",
+      },
+    },
   },
   textField: {
     "& .MuiInputLabel-root": {
-      color: "#ccc",
+      color: "rgba(255, 255, 255, 0.7)",
     },
     "& .MuiOutlinedInput-root": {
-      color: "#fff",
+      color: "#ffffff",
       "& fieldset": {
-        borderColor: "#555",
+        borderColor: "rgba(255, 255, 255, 0.2)",
       },
       "&:hover fieldset": {
-        borderColor: "#777",
+        borderColor: "rgba(255, 255, 255, 0.3)",
       },
       "&.Mui-focused fieldset": {
-        borderColor: "#00ccff",
+        borderColor: "#667eea",
       },
     },
   },
   formControl: {
     "& .MuiInputLabel-root": {
-      color: "#ccc",
+      color: "rgba(255, 255, 255, 0.7)",
     },
   },
   inputLabel: {
-    color: "#ccc",
+    color: "rgba(255, 255, 255, 0.7)",
   },
   select: {
-    color: "#fff",
+    color: "#ffffff",
     "& .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#555",
+      borderColor: "rgba(255, 255, 255, 0.2)",
     },
     "&:hover .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#777",
+      borderColor: "rgba(255, 255, 255, 0.3)",
     },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#00ccff",
+      borderColor: "#667eea",
     },
     "& .MuiSvgIcon-root": {
-      color: "#ccc",
+      color: "rgba(255, 255, 255, 0.7)",
     },
   },
   vectorInput: {
@@ -556,25 +573,26 @@ const styles = {
   vectorField: {
     flex: 1,
     "& .MuiInputLabel-root": {
-      color: "#ccc",
+      color: "rgba(255, 255, 255, 0.7)",
     },
     "& .MuiOutlinedInput-root": {
-      color: "#fff",
+      color: "#ffffff",
       "& fieldset": {
-        borderColor: "#555",
+        borderColor: "rgba(255, 255, 255, 0.2)",
       },
       "&:hover fieldset": {
-        borderColor: "#777",
+        borderColor: "rgba(255, 255, 255, 0.3)",
       },
       "&.Mui-focused fieldset": {
-        borderColor: "#00ccff",
+        borderColor: "#667eea",
       },
     },
   },
   label: {
-    color: "#ccc",
+    color: "rgba(255, 255, 255, 0.9)",
     fontSize: "12px",
     fontWeight: 500,
+    letterSpacing: "0.3px",
   },
   colorControl: {
     display: "flex",
@@ -587,17 +605,19 @@ const styles = {
     gap: "8px",
   },
   colorSwatch: {
-    width: "24px",
-    height: "24px",
-    borderRadius: "4px",
-    border: "2px solid #555",
+    width: "32px",
+    height: "32px",
+    borderRadius: "6px",
+    border: "2px solid rgba(102, 126, 234, 0.4)",
     cursor: "pointer",
+    transition: "all 0.2s ease",
     "&:hover": {
-      borderColor: "#777",
+      borderColor: "#667eea",
+      transform: "scale(1.05)",
     },
   },
   colorValue: {
-    color: "#ccc",
+    color: "rgba(255, 255, 255, 0.7)",
     fontSize: "11px",
     fontFamily: "monospace",
   },
@@ -611,12 +631,15 @@ const styles = {
     gap: "8px",
   },
   slider: {
-    color: "#00ccff",
+    color: "#667eea",
     "& .MuiSlider-track": {
-      backgroundColor: "#00ccff",
+      backgroundColor: "#667eea",
     },
     "& .MuiSlider-thumb": {
-      backgroundColor: "#00ccff",
+      backgroundColor: "#667eea",
+      "&:hover": {
+        boxShadow: "0 0 0 8px rgba(102, 126, 234, 0.2)",
+      },
     },
   },
   actions: {

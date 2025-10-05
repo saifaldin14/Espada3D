@@ -914,15 +914,15 @@ const styles = {
     width: "14px",
     height: "14px",
     borderRadius: "50%",
-    background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     border: "2px solid rgba(255, 255, 255, 0.8)",
     cursor: "crosshair",
     transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), 0 0 8px rgba(67, 233, 123, 0.3)",
+    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), 0 0 8px rgba(102, 126, 234, 0.4)",
     "&:hover": {
       transform: "scale(1.3)",
       boxShadow:
-        "0 4px 8px rgba(0, 0, 0, 0.3), 0 0 12px rgba(67, 233, 123, 0.5)",
+        "0 4px 8px rgba(0, 0, 0, 0.3), 0 0 12px rgba(102, 126, 234, 0.6)",
     },
   },
   portLabel: {

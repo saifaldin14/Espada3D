@@ -28,22 +28,24 @@ const CanvasHelpOverlay: React.FC<CanvasHelpOverlayProps> = ({
         bottom: 16,
         left: 16,
         maxWidth: 280,
-        backgroundColor: "rgba(30, 35, 45, 0.95)",
-        border: "1px solid rgba(67, 233, 123, 0.3)",
+        backgroundColor: "rgba(20, 25, 35, 0.95)",
+        border: "1px solid rgba(102, 126, 234, 0.3)",
         borderRadius: "12px",
         padding: "12px",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+        boxShadow:
+          "0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(102, 126, 234, 0.15)",
+        backdropFilter: "blur(10px)",
         zIndex: 100,
       }}
     >
       {/* Header */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-        <Info sx={{ fontSize: 18, color: "#43e97b" }} />
+        <Info sx={{ fontSize: 18, color: "#667eea" }} />
         <Typography
           sx={{
             fontSize: "0.85rem",
             fontWeight: 600,
-            color: "#43e97b",
+            color: "#667eea",
             textTransform: "uppercase",
             letterSpacing: "0.5px",
           }}
@@ -71,9 +73,9 @@ const CanvasHelpOverlay: React.FC<CanvasHelpOverlayProps> = ({
                 height: 22,
                 fontSize: "0.7rem",
                 fontFamily: "monospace",
-                backgroundColor: "rgba(67, 233, 123, 0.15)",
-                color: "#43e97b",
-                border: "1px solid rgba(67, 233, 123, 0.3)",
+                backgroundColor: "rgba(102, 126, 234, 0.15)",
+                color: "#667eea",
+                border: "1px solid rgba(102, 126, 234, 0.3)",
                 fontWeight: 600,
               }}
             />

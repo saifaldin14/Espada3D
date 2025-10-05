@@ -677,69 +677,77 @@ const styles = {
     height: "100vh",
     display: "flex",
     flexDirection: "column" as const,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "rgba(15, 20, 30, 0.98)",
+    backdropFilter: "blur(10px)",
     border: "none",
     borderRadius: 0,
     overflow: "hidden",
-    zIndex: 10000, // Above everything including keyboard shortcuts (9999) when fullscreen
+    zIndex: 10000,
   },
   containerMinimized: {
     position: "fixed" as const,
     bottom: 20,
     right: 20,
-    width: 300,
-    height: 50,
+    width: 320,
+    height: 56,
     display: "flex",
     flexDirection: "column" as const,
-    backgroundColor: "#1a1a1a",
-    border: "1px solid #333",
-    borderRadius: "8px",
+    backgroundColor: "rgba(20, 25, 35, 0.95)",
+    backdropFilter: "blur(10px)",
+    border: "1px solid rgba(102, 126, 234, 0.3)",
+    borderRadius: "10px",
     overflow: "hidden",
-    zIndex: 900, // Below header
+    zIndex: 900,
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
   },
   containerWindowed: {
     position: "fixed" as const,
     display: "flex",
     flexDirection: "column" as const,
-    backgroundColor: "#1a1a1a",
-    border: "1px solid #333",
-    borderRadius: "8px",
+    backgroundColor: "rgba(20, 25, 35, 0.95)",
+    backdropFilter: "blur(10px)",
+    border: "1px solid rgba(102, 126, 234, 0.3)",
+    borderRadius: "12px",
     overflow: "hidden",
-    zIndex: 900, // Below header (1000) to avoid covering nav bar
+    zIndex: 900,
     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
   },
   container: {
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "column" as const,
     height: "100%",
-    backgroundColor: "#1a1a1a",
-    border: "1px solid #333",
-    borderRadius: "8px",
+    backgroundColor: "rgba(20, 25, 35, 0.95)",
+    backdropFilter: "blur(10px)",
+    border: "1px solid rgba(102, 126, 234, 0.3)",
+    borderRadius: "12px",
     overflow: "hidden",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "12px 16px",
-    backgroundColor: "#252525",
-    borderBottom: "1px solid #333",
+    padding: "14px 18px",
+    background:
+      "linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)",
+    borderBottom: "1px solid rgba(102, 126, 234, 0.2)",
     userSelect: "none" as const,
+    cursor: "move",
   },
   headerActions: {
     display: "flex",
-    gap: "8px",
+    gap: "6px",
     alignItems: "center",
   },
   actionButton: {
-    color: "#00ccff",
-    padding: "8px",
+    color: "rgba(255, 255, 255, 0.9)",
+    padding: "6px",
+    transition: "all 0.2s ease",
     "&:hover": {
-      backgroundColor: "rgba(0, 204, 255, 0.1)",
+      backgroundColor: "rgba(102, 126, 234, 0.2)",
+      color: "#667eea",
     },
     "&:disabled": {
-      color: "#666",
+      color: "rgba(255, 255, 255, 0.3)",
     },
   },
   content: {
@@ -759,10 +767,10 @@ const styles = {
     width: "200px",
     minWidth: "180px",
     maxWidth: "250px",
-    backgroundColor: "#2a2a2a",
-    borderRight: "1px solid #333",
+    backgroundColor: "rgba(20, 25, 35, 0.95)",
+    borderRight: "1px solid rgba(102, 126, 234, 0.2)",
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "column" as const,
     minHeight: 0,
     flex: "0 0 200px",
     height: "100%",
@@ -770,17 +778,17 @@ const styles = {
   },
   canvasContainer: {
     flex: 1,
-    position: "relative",
+    position: "relative" as const,
     overflow: "hidden",
-    backgroundColor: "#1e1e1e",
-    minWidth: 0, // Allows flex shrinking
+    backgroundColor: "rgba(15, 20, 30, 0.98)",
+    minWidth: 0,
   },
   propertiesPanel: {
     width: "260px",
     minWidth: "240px",
     maxWidth: "300px",
-    backgroundColor: "#2a2a2a",
-    borderLeft: "1px solid #333",
+    backgroundColor: "rgba(20, 25, 35, 0.95)",
+    borderLeft: "1px solid rgba(102, 126, 234, 0.2)",
     overflow: "auto",
     flex: "0 0 260px",
   },
@@ -794,7 +802,7 @@ const styles = {
     cursor: "ns-resize",
     zIndex: 10,
     "&:hover": {
-      backgroundColor: "rgba(67, 233, 123, 0.3)",
+      backgroundColor: "rgba(102, 126, 234, 0.5)",
     },
   },
   resizeHandleRight: {
@@ -806,7 +814,7 @@ const styles = {
     cursor: "ew-resize",
     zIndex: 10,
     "&:hover": {
-      backgroundColor: "rgba(67, 233, 123, 0.3)",
+      backgroundColor: "rgba(102, 126, 234, 0.5)",
     },
   },
   resizeHandleBottom: {
@@ -818,7 +826,7 @@ const styles = {
     cursor: "ns-resize",
     zIndex: 10,
     "&:hover": {
-      backgroundColor: "rgba(67, 233, 123, 0.3)",
+      backgroundColor: "rgba(102, 126, 234, 0.5)",
     },
   },
   resizeHandleLeft: {
@@ -830,7 +838,7 @@ const styles = {
     cursor: "ew-resize",
     zIndex: 10,
     "&:hover": {
-      backgroundColor: "rgba(67, 233, 123, 0.3)",
+      backgroundColor: "rgba(102, 126, 234, 0.5)",
     },
   },
   resizeHandleTopLeft: {
@@ -842,7 +850,7 @@ const styles = {
     cursor: "nwse-resize",
     zIndex: 11,
     "&:hover": {
-      backgroundColor: "rgba(67, 233, 123, 0.5)",
+      backgroundColor: "rgba(102, 126, 234, 0.6)",
     },
   },
   resizeHandleTopRight: {
@@ -854,7 +862,7 @@ const styles = {
     cursor: "nesw-resize",
     zIndex: 11,
     "&:hover": {
-      backgroundColor: "rgba(67, 233, 123, 0.5)",
+      backgroundColor: "rgba(102, 126, 234, 0.6)",
     },
   },
   resizeHandleBottomLeft: {
@@ -866,7 +874,7 @@ const styles = {
     cursor: "nesw-resize",
     zIndex: 11,
     "&:hover": {
-      backgroundColor: "rgba(67, 233, 123, 0.5)",
+      backgroundColor: "rgba(102, 126, 234, 0.6)",
     },
   },
   resizeHandleBottomRight: {
@@ -878,7 +886,7 @@ const styles = {
     cursor: "nwse-resize",
     zIndex: 11,
     "&:hover": {
-      backgroundColor: "rgba(67, 233, 123, 0.5)",
+      backgroundColor: "rgba(102, 126, 234, 0.6)",
     },
   },
 };

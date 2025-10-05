@@ -259,10 +259,13 @@ const SearchMenu: React.FC<SearchMenuProps> = ({
         width: 380,
         maxHeight: 500,
         zIndex: 1000,
-        background: "linear-gradient(135deg, #1e2330 0%, #252d3d 100%)",
-        border: "1px solid rgba(67, 233, 123, 0.3)",
+        background:
+          "linear-gradient(135deg, rgba(20, 25, 35, 0.98) 0%, rgba(25, 30, 40, 0.98) 100%)",
+        border: "1px solid rgba(102, 126, 234, 0.3)",
         borderRadius: "12px",
-        boxShadow: "0 12px 48px rgba(0, 0, 0, 0.6)",
+        boxShadow:
+          "0 12px 48px rgba(0, 0, 0, 0.6), 0 0 20px rgba(102, 126, 234, 0.15)",
+        backdropFilter: "blur(10px)",
         overflow: "hidden",
       }}
       onKeyDown={handleKeyDown}
@@ -282,13 +285,14 @@ const SearchMenu: React.FC<SearchMenuProps> = ({
               color: "#fff",
               backgroundColor: "rgba(255, 255, 255, 0.05)",
               "& fieldset": {
-                borderColor: "rgba(67, 233, 123, 0.2)",
+                borderColor: "rgba(102, 126, 234, 0.3)",
               },
               "&:hover fieldset": {
-                borderColor: "rgba(67, 233, 123, 0.4)",
+                borderColor: "rgba(102, 126, 234, 0.5)",
               },
               "&.Mui-focused fieldset": {
-                borderColor: "#43e97b",
+                borderColor: "#667eea",
+                boxShadow: "0 0 8px rgba(102, 126, 234, 0.3)",
               },
             },
             "& .MuiInputBase-input::placeholder": {
@@ -316,10 +320,11 @@ const SearchMenu: React.FC<SearchMenuProps> = ({
                   py: 1,
                   fontSize: "0.75rem",
                   fontWeight: 600,
-                  color: "rgba(67, 233, 123, 0.8)",
+                  color: "rgba(102, 126, 234, 0.9)",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
-                  backgroundColor: "rgba(255, 255, 255, 0.03)",
+                  backgroundColor: "rgba(102, 126, 234, 0.08)",
+                  borderLeft: "3px solid rgba(102, 126, 234, 0.5)",
                 }}
               >
                 {category}
@@ -340,14 +345,15 @@ const SearchMenu: React.FC<SearchMenuProps> = ({
                         cursor: "pointer",
                         transition: "all 0.2s ease",
                         backgroundColor: isSelected
-                          ? "rgba(67, 233, 123, 0.15)"
+                          ? "rgba(102, 126, 234, 0.2)"
                           : "transparent",
                         borderLeft: isSelected
-                          ? "3px solid #43e97b"
+                          ? "3px solid #667eea"
                           : "3px solid transparent",
                         "&:hover": {
-                          backgroundColor: "rgba(67, 233, 123, 0.1)",
-                          borderLeft: "3px solid #43e97b",
+                          backgroundColor: "rgba(102, 126, 234, 0.15)",
+                          borderLeft: "3px solid #667eea",
+                          transform: "translateX(2px)",
                         },
                       }}
                     >

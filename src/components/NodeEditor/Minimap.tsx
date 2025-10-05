@@ -77,11 +77,11 @@ const Minimap: React.FC<MinimapProps> = ({
     const minimapScale = Math.min(scaleX, scaleY) * 0.9;
 
     // Draw background
-    ctx.fillStyle = "rgba(20, 20, 30, 0.8)";
+    ctx.fillStyle = "rgba(20, 25, 35, 0.9)";
     ctx.fillRect(0, 0, minimapWidth, minimapHeight);
 
     // Draw grid
-    ctx.strokeStyle = "rgba(67, 233, 123, 0.1)";
+    ctx.strokeStyle = "rgba(102, 126, 234, 0.15)";
     ctx.lineWidth = 0.5;
     const gridSize = 100 * minimapScale;
     for (let x = 0; x < minimapWidth; x += gridSize) {
@@ -106,13 +106,13 @@ const Minimap: React.FC<MinimapProps> = ({
 
       // Node background
       ctx.fillStyle = node.selected
-        ? "rgba(67, 233, 123, 0.6)"
+        ? "rgba(102, 126, 234, 0.6)"
         : "rgba(100, 150, 200, 0.4)";
       ctx.fillRect(x, y, width, height);
 
       // Node border
       ctx.strokeStyle = node.selected
-        ? "rgba(67, 233, 123, 1)"
+        ? "rgba(102, 126, 234, 1)"
         : "rgba(100, 150, 200, 0.8)";
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, width, height);
@@ -124,12 +124,12 @@ const Minimap: React.FC<MinimapProps> = ({
     const viewportWidth = (canvasWidth / zoom) * minimapScale;
     const viewportHeight = (canvasHeight / zoom) * minimapScale;
 
-    ctx.strokeStyle = "rgba(67, 233, 123, 0.8)";
+    ctx.strokeStyle = "rgba(102, 126, 234, 0.9)";
     ctx.lineWidth = 2;
     ctx.strokeRect(viewportX, viewportY, viewportWidth, viewportHeight);
 
     // Viewport fill
-    ctx.fillStyle = "rgba(67, 233, 123, 0.1)";
+    ctx.fillStyle = "rgba(102, 126, 234, 0.15)";
     ctx.fillRect(viewportX, viewportY, viewportWidth, viewportHeight);
   }, [nodes, viewportOffset, zoom, canvasWidth, canvasHeight]);
 
@@ -186,10 +186,18 @@ const Minimap: React.FC<MinimapProps> = ({
         height: minimapHeight,
         borderRadius: "8px",
         overflow: "hidden",
-        border: "2px solid rgba(67, 233, 123, 0.3)",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+        border: "2px solid rgba(102, 126, 234, 0.4)",
+        boxShadow:
+          "0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(102, 126, 234, 0.2)",
+        backdropFilter: "blur(5px)",
         zIndex: 100,
         cursor: "pointer",
+        transition: "all 0.2s ease",
+        "&:hover": {
+          border: "2px solid rgba(102, 126, 234, 0.6)",
+          boxShadow:
+            "0 6px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(102, 126, 234, 0.3)",
+        },
       }}
     >
       <canvas
