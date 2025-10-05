@@ -289,11 +289,34 @@ const AnimationPanel: React.FC<AnimationPanelProps> = ({ isOpen }) => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialog(false)}>Cancel</Button>
+          <Button
+            onClick={() => setCreateDialog(false)}
+            sx={{
+              textTransform: "none",
+              color: "rgba(255, 255, 255, 0.7)",
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.08)",
+              },
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleCreateAnimation}
             variant="contained"
             disabled={!newAnimationName.trim()}
+            sx={{
+              textTransform: "none",
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #5568d3 0%, #653a8e 100%)",
+                boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+              },
+              "&:disabled": {
+                background: "rgba(255, 255, 255, 0.08)",
+                color: "rgba(255, 255, 255, 0.3)",
+              },
+            }}
           >
             Create
           </Button>
@@ -307,15 +330,33 @@ const styles = {
   panel: {
     width: "350px",
     height: "100vh",
-    backgroundColor: "#f5f5f5",
-    borderLeft: "1px solid #ddd",
+    backgroundColor: "rgba(18, 18, 18, 0.95)",
+    backdropFilter: "blur(20px)",
+    borderLeft: "1px solid rgba(255, 255, 255, 0.12)",
     padding: "16px",
     boxSizing: "border-box" as const,
     overflow: "auto",
+    "&::-webkit-scrollbar": {
+      width: "6px",
+    },
+    "&::-webkit-scrollbar-track": {
+      background: "rgba(255, 255, 255, 0.05)",
+      borderRadius: "3px",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      background: "rgba(102, 126, 234, 0.4)",
+      borderRadius: "3px",
+      "&:hover": {
+        background: "rgba(102, 126, 234, 0.6)",
+      },
+    },
   },
   title: {
     marginBottom: "16px",
-    fontWeight: "bold",
+    fontWeight: 600,
+    color: "#ffffff",
+    fontSize: "1rem",
+    letterSpacing: "0.3px",
   },
   toolbar: {
     display: "flex",
@@ -324,22 +365,27 @@ const styles = {
   },
   card: {
     marginBottom: "16px",
-    backgroundColor: "white",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backdropFilter: "blur(10px)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "8px",
   },
   animationItem: {
-    borderRadius: "4px",
+    borderRadius: "6px",
     marginBottom: "4px",
+    transition: "all 0.2s ease",
     "&.Mui-selected": {
-      backgroundColor: "rgba(25, 118, 210, 0.08)",
+      backgroundColor: "rgba(102, 126, 234, 0.15)",
     },
     "&:hover": {
-      backgroundColor: "rgba(0, 0, 0, 0.04)",
+      backgroundColor: "rgba(255, 255, 255, 0.06)",
     },
   },
   keyframeItem: {
-    backgroundColor: "rgba(0, 0, 0, 0.02)",
-    borderRadius: "4px",
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderRadius: "6px",
     marginBottom: "4px",
+    border: "1px solid rgba(255, 255, 255, 0.06)",
   },
   playbackControls: {
     display: "flex",

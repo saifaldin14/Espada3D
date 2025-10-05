@@ -145,7 +145,7 @@ const styles = {
     fontSize: "16px",
     marginRight: "8px",
     flexShrink: 0,
-    color: "#00c9ff",
+    color: "#667eea",
   },
   sectionContent: {
     padding: "10px",

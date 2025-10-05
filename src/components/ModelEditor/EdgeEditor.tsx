@@ -659,7 +659,8 @@ const EdgeEditor: React.FC<EdgeEditorProps> = ({ modelId }) => {
               Delete Selected Edges ({selectedEdges.length})
             </Button>
             <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-              ⚠️ Deleting edges will dissolve them and may merge adjacent faces
+              Warning: Deleting edges will dissolve them and may merge adjacent
+              faces
             </Typography>
           </Paper>
         )}

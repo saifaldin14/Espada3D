@@ -387,63 +387,6 @@ const ModelEditor: React.FC = () => {
             }}
           />
 
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
-              <Box sx={styles.stateToggleCard}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={visible}
-                      onChange={(e) =>
-                        handleMetadataChange("visible", e.target.checked)
-                      }
-                      icon={<VisibilityOff />}
-                      checkedIcon={<Visibility />}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#00c9ff",
-                        },
-                      }}
-                    />
-                  }
-                  label=""
-                  sx={{ m: 0 }}
-                />
-                <Typography variant="caption" sx={styles.stateCaption}>
-                  {visible ? "Object is visible in scene" : "Object is hidden"}
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6}>
-              <Box sx={styles.stateToggleCard}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={locked}
-                      onChange={(e) =>
-                        handleMetadataChange("locked", e.target.checked)
-                      }
-                      icon={<LockOpen />}
-                      checkedIcon={<Lock />}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#ff9900",
-                        },
-                      }}
-                    />
-                  }
-                  label=""
-                  sx={{ m: 0 }}
-                />
-                <Typography variant="caption" sx={styles.stateCaption}>
-                  {locked
-                    ? "Object is locked from editing"
-                    : "Object is editable"}
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-
           {selectedModel && (
             <Box sx={styles.objectInfoCard}>
               <Box sx={styles.objectInfoRow}>
@@ -472,279 +415,6 @@ const ModelEditor: React.FC = () => {
               </Box>
             </Box>
           )}
-        </Box>
-      </Collapse>
-    </Paper>
-  );
-
-  const renderMaterialControls = () => (
-    <Paper elevation={0} sx={styles.section}>
-      <Box
-        sx={styles.sectionHeader}
-        onClick={() => toggleSection(EditModes.material)}
-      >
-        <Box sx={styles.sectionHeaderLeft}>
-          <ColorLens sx={styles.sectionIcon} />
-          <Typography variant="subtitle1" sx={styles.sectionTitle}>
-            Material
-          </Typography>
-        </Box>
-        {expandedSections.material ? <ExpandLess /> : <ExpandMore />}
-      </Box>
-
-      <Collapse in={expandedSections.material}>
-        <Box sx={styles.sectionContent}>
-          <FormControl fullWidth sx={styles.formControl}>
-            <InputLabel id="material-type-label">Material Type</InputLabel>
-            <Select
-              labelId="material-type-label"
-              value={materialType}
-              onChange={(e) => handleMaterialChange("type", e.target.value)}
-              label="Material Type"
-              disabled={locked}
-              startAdornment={
-                <FormatPaint sx={{ mr: 1, opacity: 0.7 }} fontSize="small" />
-              }
-            >
-              <MenuItem value="standard">Standard (PBR)</MenuItem>
-              <MenuItem value="phong">Phong</MenuItem>
-              <MenuItem value="lambert">Lambert</MenuItem>
-              <MenuItem value="basic">Basic</MenuItem>
-              <MenuItem value="physical">Physical</MenuItem>
-              <MenuItem value="toon">Toon</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Box sx={styles.materialPreviewWrapper}>
-            <Box
-              sx={{
-                ...styles.materialPreview,
-                backgroundColor: color,
-                opacity: opacity,
-                boxShadow:
-                  metalness > 0.5
-                    ? `0 0 20px rgba(255, 255, 255, ${metalness * 0.5})`
-                    : "none",
-                filter: `brightness(${1 + emissiveIntensity * 0.5})`,
-              }}
-            />
-            <Typography variant="caption" sx={styles.materialPreviewLabel}>
-              Material Preview
-            </Typography>
-          </Box>
-
-          <Accordion sx={styles.materialAccordion} defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Typography variant="body2">Base Color</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box sx={styles.colorPickerWrapper}>
-                <SketchPicker
-                  color={color}
-                  onChange={(color) => handleMaterialChange("color", color.hex)}
-                  disableAlpha={false}
-                  width="100%"
-                  presetColors={[
-                    "#D0021B",
-                    "#F5A623",
-                    "#F8E71C",
-                    "#8B572A",
-                    "#7ED321",
-                    "#417505",
-                    "#BD10E0",
-                    "#9013FE",
-                    "#4A90E2",
-                    "#50E3C2",
-                    "#B8E986",
-                    "#000000",
-                    "#4A4A4A",
-                    "#9B9B9B",
-                    "#FFFFFF",
-                  ]}
-                />
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-
-          {/* Material sliders with more visual feedback */}
-          <Grid container spacing={1} alignItems="center" sx={{ mt: 2 }}>
-            <Grid item xs={4}>
-              <Typography variant="body2" sx={styles.sliderLabel}>
-                Opacity
-              </Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Slider
-                value={opacity}
-                onChange={(_: any, value: number | number[]) =>
-                  handleMaterialChange("opacity", value)
-                }
-                min={0}
-                max={1}
-                step={0.01}
-                disabled={locked}
-                sx={styles.slider}
-              />
-            </Grid>
-            <Grid item xs={2}>
-              <Typography
-                variant="caption"
-                align="right"
-                sx={{ display: "block" }}
-              >
-                {opacity.toFixed(2)}
-              </Typography>
-            </Grid>
-          </Grid>
-
-          {(materialType === "standard" || materialType === "physical") && (
-            <Fade in={true}>
-              <Box>
-                <Grid container spacing={1} alignItems="center">
-                  <Grid item xs={4}>
-                    <Typography variant="body2" sx={styles.sliderLabel}>
-                      Metalness
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Slider
-                      value={metalness}
-                      onChange={(_: any, value: number | number[]) =>
-                        handleMaterialChange("metalness", value)
-                      }
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      disabled={locked}
-                      sx={styles.slider}
-                    />
-                  </Grid>
-                  <Grid item xs={2}>
-                    <Typography
-                      variant="caption"
-                      align="right"
-                      sx={{ display: "block" }}
-                    >
-                      {metalness.toFixed(2)}
-                    </Typography>
-                  </Grid>
-                </Grid>
-
-                <Grid container spacing={1} alignItems="center">
-                  <Grid item xs={4}>
-                    <Typography variant="body2" sx={styles.sliderLabel}>
-                      Roughness
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Slider
-                      value={roughness}
-                      onChange={(_: any, value: number | number[]) =>
-                        handleMaterialChange("roughness", value)
-                      }
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      disabled={locked}
-                      sx={styles.slider}
-                    />
-                  </Grid>
-                  <Grid item xs={2}>
-                    <Typography
-                      variant="caption"
-                      align="right"
-                      sx={{ display: "block" }}
-                    >
-                      {roughness.toFixed(2)}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Box>
-            </Fade>
-          )}
-
-          <Accordion sx={styles.materialAccordion}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Typography variant="body2">Emission</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box sx={styles.colorPickerWrapper}>
-                <SketchPicker
-                  color={emissive}
-                  onChange={(color) =>
-                    handleMaterialChange("emissive", color.hex)
-                  }
-                  disableAlpha={true}
-                  width="100%"
-                />
-              </Box>
-
-              <Grid container spacing={1} alignItems="center" sx={{ mt: 2 }}>
-                <Grid item xs={5}>
-                  <Typography variant="body2" sx={styles.sliderLabel}>
-                    Intensity
-                  </Typography>
-                </Grid>
-                <Grid item xs={5}>
-                  <Slider
-                    value={emissiveIntensity}
-                    onChange={(_: any, value: number | number[]) =>
-                      handleMaterialChange("emissiveIntensity", value)
-                    }
-                    min={0}
-                    max={2}
-                    step={0.01}
-                    disabled={locked}
-                    sx={styles.slider}
-                  />
-                </Grid>
-                <Grid item xs={2}>
-                  <Typography
-                    variant="caption"
-                    align="right"
-                    sx={{ display: "block" }}
-                  >
-                    {emissiveIntensity.toFixed(2)}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
-
-          <Grid container spacing={2} sx={{ mt: 2 }}>
-            <Grid item xs={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={transparent}
-                    onChange={(e) =>
-                      handleMaterialChange("transparent", e.target.checked)
-                    }
-                    disabled={locked}
-                    size="small"
-                  />
-                }
-                label="Transparent"
-                sx={styles.switchControl}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={wireframe}
-                    onChange={(e) =>
-                      handleMaterialChange("wireframe", e.target.checked)
-                    }
-                    disabled={locked}
-                    size="small"
-                  />
-                }
-                label="Wireframe"
-                sx={styles.switchControl}
-              />
-            </Grid>
-          </Grid>
         </Box>
       </Collapse>
     </Paper>
@@ -972,14 +642,7 @@ const ModelEditor: React.FC = () => {
         <Box sx={styles.scrollContainer}>
           {/* Show different sections based on edit mode */}
           {editMode === EditModes.model && (
-            <Box sx={styles.sectionContainer}>
-              {renderObjectControls()}
-              {renderTransformControls()}
-            </Box>
-          )}
-
-          {editMode === EditModes.material && (
-            <Box sx={styles.sectionContainer}>{renderMaterialControls()}</Box>
+            <Box sx={styles.sectionContainer}>{renderObjectControls()}</Box>
           )}
 
           {/* Mesh Editing Mode - now using MeshEditPanel for all mesh modes */}
@@ -1098,23 +761,23 @@ const styles = {
   },
   title: {
     fontWeight: 700,
-    background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     backgroundClip: "text",
     color: "#ffffff",
   },
   selectedChip: {
-    background: "rgba(0, 201, 255, 0.15)",
+    background: "rgba(102, 126, 234, 0.15)",
     backdropFilter: "blur(5px)",
-    border: "1px solid rgba(0, 201, 255, 0.3)",
+    border: "1px solid rgba(102, 126, 234, 0.3)",
     color: "#ffffff",
     fontWeight: 500,
     fontSize: "0.75rem",
     "& .MuiChip-deleteIcon": {
       color: "rgba(255, 255, 255, 0.7)",
       "&:hover": {
-        color: "#ff5252",
+        color: "#fa709a",
       },
     },
   },
@@ -1158,7 +821,7 @@ const styles = {
   sectionIcon: {
     fontSize: "18px",
     marginRight: "10px",
-    color: "#00c9ff",
+    color: "#667eea",
   },
   sectionContent: {
     padding: "16px",
@@ -1177,10 +840,10 @@ const styles = {
       borderRadius: "4px",
     },
     "&::-webkit-scrollbar-thumb": {
-      background: "rgba(0, 201, 255, 0.3)",
+      background: "rgba(102, 126, 234, 0.4)",
       borderRadius: "4px",
       "&:hover": {
-        background: "rgba(0, 201, 255, 0.5)",
+        background: "rgba(102, 126, 234, 0.6)",
       },
     },
   },
@@ -1345,7 +1008,7 @@ const styles = {
     },
   },
   objectInfoValue: {
-    color: "#00c9ff",
+    color: "#667eea",
     fontWeight: 500,
   },
   stateToggleCard: {
@@ -1474,12 +1137,12 @@ const styles = {
     },
   },
   slider: {
-    color: "#00c9ff",
+    color: "#667eea",
     "& .MuiSlider-thumb": {
       width: 14,
       height: 14,
       "&:hover, &.Mui-active": {
-        boxShadow: "0 0 0 8px rgba(0, 201, 255, 0.2)",
+        boxShadow: "0 0 0 8px rgba(102, 126, 234, 0.2)",
       },
     },
     "& .MuiSlider-rail": {

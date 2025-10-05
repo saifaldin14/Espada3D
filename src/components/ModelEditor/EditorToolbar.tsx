@@ -214,7 +214,7 @@ const EditorToolbar: React.FC = () => {
             horizontal: "left",
           }}
         >
-          <ViewInAr sx={{ fontSize: 24, color: "#00c9ff" }} />
+          <ViewInAr sx={{ fontSize: 24, color: "#667eea" }} />
         </Badge>
       </Box>
 
@@ -781,9 +781,10 @@ const styles = {
       color: "#ffffff",
     },
     "&.Mui-selected": {
-      background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
-      color: "rgba(0, 0, 0, 0.8)",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      color: "#ffffff",
       fontWeight: 600,
+      boxShadow: "0 2px 8px rgba(102, 126, 234, 0.3)",
     },
   },
   mainToggleButton: {
@@ -796,12 +797,12 @@ const styles = {
       color: "#ffffff",
     },
     "&.Mui-selected": {
-      background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
-      color: "rgba(0, 0, 0, 0.8)",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      color: "#ffffff",
       fontWeight: 600,
-      boxShadow: "0 4px 8px rgba(0, 201, 255, 0.2)",
+      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
       "& .MuiTypography-root": {
-        color: "rgba(0, 0, 0, 0.7)",
+        color: "#ffffff",
       },
     },
   },
@@ -851,13 +852,13 @@ const styles = {
     },
   },
   activeIconButton: {
-    background: "linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)",
-    color: "rgba(0, 0, 0, 0.8)",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    color: "#ffffff",
     border: "none",
-    boxShadow: "0 2px 8px rgba(0, 201, 255, 0.3)",
+    boxShadow: "0 2px 8px rgba(102, 126, 234, 0.3)",
     "&:hover": {
-      background: "linear-gradient(135deg, #00b8e6 0%, #7de68a 100%)",
-      color: "rgba(0, 0, 0, 0.9)",
+      background: "linear-gradient(135deg, #5568d3 0%, #653a8e 100%)",
+      color: "#ffffff",
     },
   },
   divider: {
