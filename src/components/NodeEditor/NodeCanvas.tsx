@@ -1,8 +1,17 @@
 import React, { useRef, useCallback, useState, useEffect } from "react";
 import { Box } from "@mui/material";
-import { Node, NodeConnection, Position } from "../../types/nodeTypes";
+import {
+  Node,
+  NodeConnection,
+  Position,
+  NodeType,
+} from "../../types/nodeTypes";
 import NodeComponent from "./NodeComponent";
 import ConnectionComponent from "./ConnectionComponent";
+import SearchMenu from "./SearchMenu";
+import Minimap from "./Minimap";
+import CanvasToolbar from "./CanvasToolbar";
+import CanvasHelpOverlay from "./CanvasHelpOverlay";
 
 interface NodeCanvasProps {
   nodes: Node[];
@@ -22,6 +31,28 @@ interface NodeCanvasProps {
   zoom: number;
   onViewportChange: (offset: Position) => void;
   onZoomChange: (zoom: number) => void;
+  onAddNode?: (nodeType: NodeType, position: Position) => void;
+  onSelectMultiple?: (nodeIds: string[]) => void;
+  onSelectArea?: (area: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }) => void;
+  onAlign?: (
+    alignment:
+      | "left"
+      | "right"
+      | "top"
+      | "bottom"
+      | "center-horizontal"
+      | "center-vertical"
+  ) => void;
+  onDistribute?: (direction: "horizontal" | "vertical") => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
 }
 
 const NodeCanvas: React.FC<NodeCanvasProps> = ({
@@ -37,6 +68,15 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
   zoom,
   onViewportChange,
   onZoomChange,
+  onAddNode,
+  onSelectMultiple,
+  onSelectArea,
+  onAlign,
+  onDistribute,
+  onCopy,
+  onPaste,
+  onDuplicate,
+  onDelete,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -50,6 +90,15 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
     position: Position;
   } | null>(null);
   const [mousePosition, setMousePosition] = useState<Position>({ x: 0, y: 0 });
+  const [showSearchMenu, setShowSearchMenu] = useState(false);
+  const [searchMenuPosition, setSearchMenuPosition] = useState<Position>({
+    x: 0,
+    y: 0,
+  });
+  const [boxSelection, setBoxSelection] = useState<{
+    start: Position;
+    current: Position;
+  } | null>(null);
 
   // Handle mouse wheel for zooming
   const handleWheel = useCallback(
@@ -71,11 +120,22 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
         setIsPanning(true);
         setLastPanPoint({ x: event.clientX, y: event.clientY });
       } else if (event.button === 0 && event.target === canvasRef.current) {
-        // Left click on empty canvas - clear selection
-        onNodeSelect("");
+        // Left click on empty canvas - start box selection
+        if (!event.ctrlKey && !event.metaKey) {
+          onNodeSelect("");
+        }
+
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const startPos = {
+            x: (event.clientX - rect.left - viewportOffset.x) / zoom,
+            y: (event.clientY - rect.top - viewportOffset.y) / zoom,
+          };
+          setBoxSelection({ start: startPos, current: startPos });
+        }
       }
     },
-    [onNodeSelect]
+    [onNodeSelect, viewportOffset, zoom]
   );
 
   const handleMouseMove = useCallback(
@@ -111,6 +171,16 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           };
           onNodeMove(draggedNode, newPosition);
         }
+      } else if (boxSelection) {
+        // Update box selection
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const currentPos = {
+            x: (event.clientX - rect.left - viewportOffset.x) / zoom,
+            y: (event.clientY - rect.top - viewportOffset.y) / zoom,
+          };
+          setBoxSelection({ ...boxSelection, current: currentPos });
+        }
       }
     },
     [
@@ -122,6 +192,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
       zoom,
       onViewportChange,
       onNodeMove,
+      boxSelection,
     ]
   );
 
@@ -129,7 +200,19 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
     setIsPanning(false);
     setDraggedNode(null);
     setConnectionStart(null);
-  }, []);
+
+    // Complete box selection
+    if (boxSelection && onSelectArea) {
+      const { start, current } = boxSelection;
+      onSelectArea({
+        x1: start.x,
+        y1: start.y,
+        x2: current.x,
+        y2: current.y,
+      });
+    }
+    setBoxSelection(null);
+  }, [boxSelection, onSelectArea]);
 
   // Node drag handlers
   const handleNodeMouseDown = useCallback(
@@ -276,14 +359,32 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
       handleMouseUp();
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Tab or Shift+A to open search menu
+      if (event.key === "Tab" || (event.shiftKey && event.key === "A")) {
+        event.preventDefault();
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          setSearchMenuPosition({
+            x: rect.width / 2 - 190,
+            y: rect.height / 2 - 250,
+          });
+          setShowSearchMenu(true);
+        }
+      }
+    };
+
     if (isPanning || draggedNode) {
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
     }
 
+    document.addEventListener("keydown", handleKeyDown);
+
     return () => {
       document.removeEventListener("mousemove", handleGlobalMouseMove);
       document.removeEventListener("mouseup", handleGlobalMouseUp);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isPanning, draggedNode, handleMouseMove, handleMouseUp]);
 
@@ -296,6 +397,28 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
+      {/* Canvas Toolbar */}
+      {onAlign &&
+        onDistribute &&
+        onCopy &&
+        onPaste &&
+        onDuplicate &&
+        onDelete && (
+          <CanvasToolbar
+            hasSelection={nodes.some((n) => n.selected)}
+            zoom={zoom}
+            onAlign={onAlign}
+            onDistribute={onDistribute}
+            onCopy={onCopy}
+            onPaste={onPaste}
+            onDuplicate={onDuplicate}
+            onDelete={onDelete}
+            onZoomIn={() => onZoomChange(zoom * 1.2)}
+            onZoomOut={() => onZoomChange(zoom * 0.8)}
+            onZoomReset={() => onZoomChange(1)}
+          />
+        )}
+
       {/* Grid */}
       <svg style={styles.gridSvg}>{renderGrid()}</svg>
 
@@ -326,6 +449,30 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           />
         )}
 
+        {/* Box selection rectangle */}
+        {boxSelection && (
+          <rect
+            x={
+              Math.min(boxSelection.start.x, boxSelection.current.x) * zoom +
+              viewportOffset.x
+            }
+            y={
+              Math.min(boxSelection.start.y, boxSelection.current.y) * zoom +
+              viewportOffset.y
+            }
+            width={
+              Math.abs(boxSelection.current.x - boxSelection.start.x) * zoom
+            }
+            height={
+              Math.abs(boxSelection.current.y - boxSelection.start.y) * zoom
+            }
+            fill="rgba(67, 233, 123, 0.1)"
+            stroke="rgba(67, 233, 123, 0.6)"
+            strokeWidth={2}
+            strokeDasharray="8,4"
+          />
+        )}
+
         {/* Gradient definition for connection lines */}
         <defs>
           <linearGradient
@@ -352,7 +499,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           <NodeComponent
             key={node.id}
             node={node}
-            selected={selectedNodeId === node.id}
+            selected={node.selected || selectedNodeId === node.id}
             onMouseDown={(event: React.MouseEvent) =>
               handleNodeMouseDown(node.id, event, node.position)
             }
@@ -366,6 +513,38 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           />
         ))}
       </Box>
+
+      {/* Search Menu */}
+      {showSearchMenu && onAddNode && (
+        <SearchMenu
+          position={searchMenuPosition}
+          onNodeSelect={(nodeType) => {
+            const canvasRect = canvasRef.current?.getBoundingClientRect();
+            if (canvasRect) {
+              const position = {
+                x: (searchMenuPosition.x + 190 - viewportOffset.x) / zoom,
+                y: (searchMenuPosition.y + 250 - viewportOffset.y) / zoom,
+              };
+              onAddNode(nodeType, position);
+            }
+            setShowSearchMenu(false);
+          }}
+          onClose={() => setShowSearchMenu(false)}
+        />
+      )}
+
+      {/* Minimap */}
+      <Minimap
+        nodes={nodes}
+        viewportOffset={viewportOffset}
+        zoom={zoom}
+        canvasWidth={canvasRef.current?.clientWidth || 1000}
+        canvasHeight={canvasRef.current?.clientHeight || 1000}
+        onViewportChange={onViewportChange}
+      />
+
+      {/* Help Overlay */}
+      <CanvasHelpOverlay show={nodes.length === 0} />
     </Box>
   );
 };

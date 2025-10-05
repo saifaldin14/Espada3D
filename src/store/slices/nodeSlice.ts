@@ -310,6 +310,247 @@ const nodeSlice = createSlice({
       state.isExecuting = true;
       state.executionResults = {};
     },
+
+    // Multi-selection operations
+    addToSelection: (state, action: PayloadAction<string>) => {
+      const node = state.nodes.find(n => n.id === action.payload);
+      if (node) {
+        node.selected = true;
+        if (!state.selectedNodeId) {
+          state.selectedNodeId = action.payload;
+        }
+      }
+    },
+
+    removeFromSelection: (state, action: PayloadAction<string>) => {
+      const node = state.nodes.find(n => n.id === action.payload);
+      if (node) {
+        node.selected = false;
+        if (state.selectedNodeId === action.payload) {
+          const remainingSelected = state.nodes.find(n => n.selected);
+          state.selectedNodeId = remainingSelected?.id || null;
+        }
+      }
+    },
+
+    selectMultipleNodes: (state, action: PayloadAction<string[]>) => {
+      // Clear previous selections
+      state.nodes.forEach(node => {
+        node.selected = false;
+      });
+      
+      // Select specified nodes
+      action.payload.forEach(nodeId => {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (node) {
+          node.selected = true;
+        }
+      });
+      
+      state.selectedNodeId = action.payload[0] || null;
+    },
+
+    selectNodesInArea: (state, action: PayloadAction<{ x1: number; y1: number; x2: number; y2: number }>) => {
+      const { x1, y1, x2, y2 } = action.payload;
+      const minX = Math.min(x1, x2);
+      const maxX = Math.max(x1, x2);
+      const minY = Math.min(y1, y2);
+      const maxY = Math.max(y1, y2);
+
+      state.nodes.forEach(node => {
+        const nodeWidth = node.width || 150;
+        const nodeHeight = node.height || 100;
+        
+        const nodeInArea = 
+          node.position.x + nodeWidth >= minX &&
+          node.position.x <= maxX &&
+          node.position.y + nodeHeight >= minY &&
+          node.position.y <= maxY;
+        
+        node.selected = nodeInArea;
+      });
+
+      const firstSelected = state.nodes.find(n => n.selected);
+      state.selectedNodeId = firstSelected?.id || null;
+    },
+
+    // Delete multiple nodes
+    deleteSelectedNodes: (state) => {
+      const selectedNodeIds = state.nodes
+        .filter(node => node.selected)
+        .map(node => node.id);
+      
+      // Remove nodes
+      state.nodes = state.nodes.filter(node => !node.selected);
+      
+      // Remove connections to/from deleted nodes
+      state.connections = state.connections.filter(
+        conn => !selectedNodeIds.includes(conn.sourceNodeId) && 
+                !selectedNodeIds.includes(conn.targetNodeId)
+      );
+      
+      // Clear selection
+      state.selectedNodeId = null;
+      
+      // Clear execution results
+      selectedNodeIds.forEach(nodeId => {
+        delete state.executionResults[nodeId];
+      });
+    },
+
+    // Duplicate selected nodes
+    duplicateSelectedNodes: (state, action: PayloadAction<{ offsetX: number; offsetY: number }>) => {
+      const { offsetX, offsetY } = action.payload;
+      const selectedNodes = state.nodes.filter(node => node.selected);
+      const selectedNodeIds = selectedNodes.map(node => node.id);
+      const selectedConnections = state.connections.filter(
+        conn => selectedNodeIds.includes(conn.sourceNodeId) && selectedNodeIds.includes(conn.targetNodeId)
+      );
+      
+      if (selectedNodes.length === 0) return;
+      
+      // Create ID mapping for duplicated nodes
+      const idMapping: Record<string, string> = {};
+      
+      // Clear current selection
+      state.nodes.forEach(node => {
+        node.selected = false;
+      });
+      
+      // Duplicate nodes with new IDs and offset positions
+      selectedNodes.forEach(node => {
+        const newId = generateId();
+        idMapping[node.id] = newId;
+        
+        const newNode: Node = {
+          ...node,
+          id: newId,
+          position: {
+            x: node.position.x + offsetX,
+            y: node.position.y + offsetY,
+          },
+          selected: true,
+        };
+        
+        state.nodes.push(newNode);
+      });
+      
+      // Duplicate connections with updated node IDs
+      selectedConnections.forEach(conn => {
+        const newSourceId = idMapping[conn.sourceNodeId];
+        const newTargetId = idMapping[conn.targetNodeId];
+        
+        if (newSourceId && newTargetId) {
+          const newConnection: NodeConnection = {
+            ...conn,
+            id: generateConnectionId(),
+            sourceNodeId: newSourceId,
+            targetNodeId: newTargetId,
+            selected: false,
+          };
+          
+          state.connections.push(newConnection);
+        }
+      });
+    },
+
+    // Move selected nodes
+    moveSelectedNodes: (state, action: PayloadAction<{ deltaX: number; deltaY: number }>) => {
+      const { deltaX, deltaY } = action.payload;
+      state.nodes.forEach(node => {
+        if (node.selected) {
+          node.position.x += deltaX;
+          node.position.y += deltaY;
+        }
+      });
+    },
+
+    // Align selected nodes
+    alignSelectedNodes: (state, action: PayloadAction<'left' | 'right' | 'top' | 'bottom' | 'center-horizontal' | 'center-vertical'>) => {
+      const selectedNodes = state.nodes.filter(node => node.selected);
+      if (selectedNodes.length < 2) return;
+
+      const alignment = action.payload;
+
+      switch (alignment) {
+        case 'left': {
+          const minX = Math.min(...selectedNodes.map(n => n.position.x));
+          selectedNodes.forEach(node => {
+            node.position.x = minX;
+          });
+          break;
+        }
+        case 'right': {
+          const maxX = Math.max(...selectedNodes.map(n => n.position.x + (n.width || 150)));
+          selectedNodes.forEach(node => {
+            node.position.x = maxX - (node.width || 150);
+          });
+          break;
+        }
+        case 'top': {
+          const minY = Math.min(...selectedNodes.map(n => n.position.y));
+          selectedNodes.forEach(node => {
+            node.position.y = minY;
+          });
+          break;
+        }
+        case 'bottom': {
+          const maxY = Math.max(...selectedNodes.map(n => n.position.y + (n.height || 100)));
+          selectedNodes.forEach(node => {
+            node.position.y = maxY - (node.height || 100);
+          });
+          break;
+        }
+        case 'center-horizontal': {
+          const centerX = selectedNodes.reduce((sum, n) => sum + n.position.x + (n.width || 150) / 2, 0) / selectedNodes.length;
+          selectedNodes.forEach(node => {
+            node.position.x = centerX - (node.width || 150) / 2;
+          });
+          break;
+        }
+        case 'center-vertical': {
+          const centerY = selectedNodes.reduce((sum, n) => sum + n.position.y + (n.height || 100) / 2, 0) / selectedNodes.length;
+          selectedNodes.forEach(node => {
+            node.position.y = centerY - (node.height || 100) / 2;
+          });
+          break;
+        }
+      }
+    },
+
+    // Distribute selected nodes
+    distributeSelectedNodes: (state, action: PayloadAction<'horizontal' | 'vertical'>) => {
+      const selectedNodes = state.nodes.filter(node => node.selected);
+      if (selectedNodes.length < 3) return;
+
+      const direction = action.payload;
+
+      if (direction === 'horizontal') {
+        selectedNodes.sort((a, b) => a.position.x - b.position.x);
+        const minX = selectedNodes[0].position.x;
+        const maxX = selectedNodes[selectedNodes.length - 1].position.x + (selectedNodes[selectedNodes.length - 1].width || 150);
+        const totalWidth = maxX - minX;
+        const spacing = totalWidth / (selectedNodes.length - 1);
+
+        selectedNodes.forEach((node, index) => {
+          if (index > 0 && index < selectedNodes.length - 1) {
+            node.position.x = minX + spacing * index - (node.width || 150) / 2;
+          }
+        });
+      } else {
+        selectedNodes.sort((a, b) => a.position.y - b.position.y);
+        const minY = selectedNodes[0].position.y;
+        const maxY = selectedNodes[selectedNodes.length - 1].position.y + (selectedNodes[selectedNodes.length - 1].height || 100);
+        const totalHeight = maxY - minY;
+        const spacing = totalHeight / (selectedNodes.length - 1);
+
+        selectedNodes.forEach((node, index) => {
+          if (index > 0 && index < selectedNodes.length - 1) {
+            node.position.y = minY + spacing * index - (node.height || 100) / 2;
+          }
+        });
+      }
+    },
   },
 });
 
@@ -336,6 +577,15 @@ export const {
   copySelectedToClipboard,
   pasteFromClipboard,
   executeNodeGraph,
+  addToSelection,
+  removeFromSelection,
+  selectMultipleNodes,
+  selectNodesInArea,
+  deleteSelectedNodes,
+  duplicateSelectedNodes,
+  moveSelectedNodes,
+  alignSelectedNodes,
+  distributeSelectedNodes,
 } = nodeSlice.actions;
 
 export default nodeSlice.reducer;

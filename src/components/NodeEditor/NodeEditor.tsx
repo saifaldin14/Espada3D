@@ -17,6 +17,10 @@ import {
   ExpandLess,
   ExpandMore,
   Close,
+  Fullscreen,
+  FullscreenExit,
+  Minimize,
+  AspectRatio,
 } from "@mui/icons-material";
 import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import {
@@ -24,6 +28,7 @@ import {
   NodeConnection,
   NodeType,
   NodeData,
+  Position,
 } from "../../types/nodeTypes";
 import NodeCanvas from "./NodeCanvas";
 import NodeLibrary from "./NodeLibrary";
@@ -39,6 +44,13 @@ import {
   setSelectedNode,
   setExecuting,
   setNodeExecutionResult,
+  selectNodesInArea,
+  deleteSelectedNodes,
+  duplicateSelectedNodes,
+  copySelectedToClipboard,
+  pasteFromClipboard,
+  alignSelectedNodes,
+  distributeSelectedNodes,
 } from "../../store/slices/nodeSlice";
 import { toggleNodeEditor } from "../../store/slices/uiSlice";
 import { createNodeExecutor } from "../../utils/nodeExecutor";
@@ -56,7 +68,48 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const [viewportOffset, setViewportOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [editorSize, setEditorSize] = useState({
+    width: 0,
+    height: 0,
+    x: 0,
+    y: 0,
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  // Initialize default size
+  useEffect(() => {
+    if (isOpen && editorSize.width === 0) {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+
+      // Calculate optimal size - more conservative to prevent cutoff
+      // Account for panels: sidebar (220px) + properties (280px when shown) + margins
+      // Also account for top nav bar (estimated ~60-80px)
+      const topNavHeight = 80;
+      const optimalWidth = Math.max(800, Math.min(1100, windowWidth * 0.75));
+      const optimalHeight = Math.max(
+        600,
+        Math.min(750, (windowHeight - topNavHeight) * 0.8)
+      );
+
+      setEditorSize({
+        width: optimalWidth,
+        height: optimalHeight,
+        x: Math.max(10, (windowWidth - optimalWidth) / 2),
+        y: Math.max(
+          topNavHeight + 10,
+          (windowHeight - optimalHeight) / 2 + topNavHeight / 2
+        ),
+      });
+    }
+  }, [isOpen, editorSize.width]);
 
   const handleNodeDragStart = useCallback((nodeType: NodeType) => {
     setDraggedNodeType(nodeType);
@@ -69,6 +122,105 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const handleToggleCollapse = useCallback(() => {
     setIsCollapsed(!isCollapsed);
   }, [isCollapsed]);
+
+  const handleToggleFullscreen = useCallback(() => {
+    setIsFullscreen(!isFullscreen);
+    if (!isFullscreen) {
+      setIsMinimized(false);
+    }
+  }, [isFullscreen]);
+
+  const handleToggleMinimize = useCallback(() => {
+    setIsMinimized(!isMinimized);
+    if (!isMinimized) {
+      setIsCollapsed(false);
+    }
+  }, [isMinimized]);
+
+  // Handle window dragging
+  const handleHeaderMouseDown = useCallback(
+    (event: React.MouseEvent) => {
+      if (isFullscreen) return;
+      if ((event.target as HTMLElement).closest("button")) return; // Don't drag when clicking buttons
+
+      setIsDragging(true);
+      setDragStart({
+        x: event.clientX - editorSize.x,
+        y: event.clientY - editorSize.y,
+      });
+    },
+    [isFullscreen, editorSize]
+  );
+
+  const handleMouseMove = useCallback(
+    (event: MouseEvent) => {
+      if (isDragging) {
+        setEditorSize((prev) => ({
+          ...prev,
+          x: event.clientX - dragStart.x,
+          y: event.clientY - dragStart.y,
+        }));
+      } else if (isResizing && resizeHandle) {
+        const deltaX = event.movementX;
+        const deltaY = event.movementY;
+
+        setEditorSize((prev) => {
+          let newSize = { ...prev };
+
+          if (resizeHandle.includes("right")) {
+            newSize.width = Math.max(600, prev.width + deltaX);
+          }
+          if (resizeHandle.includes("left")) {
+            const newWidth = Math.max(600, prev.width - deltaX);
+            if (newWidth > 600) {
+              newSize.width = newWidth;
+              newSize.x = prev.x + deltaX;
+            }
+          }
+          if (resizeHandle.includes("bottom")) {
+            newSize.height = Math.max(400, prev.height + deltaY);
+          }
+          if (resizeHandle.includes("top")) {
+            const newHeight = Math.max(400, prev.height - deltaY);
+            if (newHeight > 400) {
+              newSize.height = newHeight;
+              newSize.y = prev.y + deltaY;
+            }
+          }
+
+          return newSize;
+        });
+      }
+    },
+    [isDragging, isResizing, resizeHandle, dragStart]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setIsResizing(false);
+    setResizeHandle(null);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging || isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+
+  const handleResizeStart = useCallback(
+    (handle: string) => (event: React.MouseEvent) => {
+      if (isFullscreen) return;
+      event.stopPropagation();
+      setIsResizing(true);
+      setResizeHandle(handle);
+    },
+    [isFullscreen]
+  );
 
   const handleCanvasDrop = useCallback(
     (event: React.DragEvent) => {
@@ -105,10 +257,97 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   );
 
   const handleNodeDelete = useCallback(() => {
-    if (selectedNodeId) {
-      dispatch(deleteNode(selectedNodeId));
+    dispatch(deleteSelectedNodes());
+  }, [dispatch]);
+
+  const handleNodeDuplicate = useCallback(() => {
+    dispatch(duplicateSelectedNodes({ offsetX: 30, offsetY: 30 }));
+  }, [dispatch]);
+
+  const handleCopy = useCallback(() => {
+    dispatch(copySelectedToClipboard());
+  }, [dispatch]);
+
+  const handlePaste = useCallback(() => {
+    dispatch(pasteFromClipboard({ offsetX: 30, offsetY: 30 }));
+  }, [dispatch]);
+
+  const handleAddNode = useCallback(
+    (nodeType: NodeType, position: Position) => {
+      const newNode: Omit<Node, "id"> = {
+        type: nodeType,
+        position,
+        data: getDefaultNodeData(nodeType),
+        inputs: getNodeInputs(nodeType),
+        outputs: getNodeOutputs(nodeType),
+      };
+
+      dispatch(addNode(newNode));
+    },
+    [dispatch]
+  );
+
+  const handleSelectArea = useCallback(
+    (area: { x1: number; y1: number; x2: number; y2: number }) => {
+      dispatch(selectNodesInArea(area));
+    },
+    [dispatch]
+  );
+
+  const handleAlign = useCallback(
+    (
+      alignment:
+        | "left"
+        | "right"
+        | "top"
+        | "bottom"
+        | "center-horizontal"
+        | "center-vertical"
+    ) => {
+      dispatch(alignSelectedNodes(alignment));
+    },
+    [dispatch]
+  );
+
+  const handleDistribute = useCallback(
+    (direction: "horizontal" | "vertical") => {
+      dispatch(distributeSelectedNodes(direction));
+    },
+    [dispatch]
+  );
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Delete key
+      if (event.key === "Delete" || event.key === "Backspace") {
+        handleNodeDelete();
+      }
+      // Ctrl/Cmd + D for duplicate
+      else if ((event.ctrlKey || event.metaKey) && event.key === "d") {
+        event.preventDefault();
+        handleNodeDuplicate();
+      }
+      // Ctrl/Cmd + C for copy
+      else if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+        event.preventDefault();
+        handleCopy();
+      }
+      // Ctrl/Cmd + V for paste
+      else if ((event.ctrlKey || event.metaKey) && event.key === "v") {
+        event.preventDefault();
+        handlePaste();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
     }
-  }, [selectedNodeId, dispatch]);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, handleNodeDelete, handleNodeDuplicate, handleCopy, handlePaste]);
 
   const handleNodeResize = useCallback(
     (nodeId: string, width: number, height: number) => {
@@ -141,10 +380,66 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
 
   if (!isOpen) return null;
 
+  const containerStyle = isFullscreen
+    ? styles.containerFullscreen
+    : isMinimized
+      ? styles.containerMinimized
+      : {
+          ...styles.containerWindowed,
+          width: editorSize.width,
+          height: editorSize.height,
+          left: editorSize.x,
+          top: editorSize.y,
+        };
+
   return (
-    <Box sx={styles.container}>
+    <Box ref={editorRef} sx={containerStyle}>
+      {/* Resize Handles */}
+      {!isFullscreen && !isMinimized && (
+        <>
+          <Box
+            sx={styles.resizeHandleTop}
+            onMouseDown={handleResizeStart("top")}
+          />
+          <Box
+            sx={styles.resizeHandleRight}
+            onMouseDown={handleResizeStart("right")}
+          />
+          <Box
+            sx={styles.resizeHandleBottom}
+            onMouseDown={handleResizeStart("bottom")}
+          />
+          <Box
+            sx={styles.resizeHandleLeft}
+            onMouseDown={handleResizeStart("left")}
+          />
+          <Box
+            sx={styles.resizeHandleTopLeft}
+            onMouseDown={handleResizeStart("top-left")}
+          />
+          <Box
+            sx={styles.resizeHandleTopRight}
+            onMouseDown={handleResizeStart("top-right")}
+          />
+          <Box
+            sx={styles.resizeHandleBottomLeft}
+            onMouseDown={handleResizeStart("bottom-left")}
+          />
+          <Box
+            sx={styles.resizeHandleBottomRight}
+            onMouseDown={handleResizeStart("bottom-right")}
+          />
+        </>
+      )}
+
       {/* Header */}
-      <Box sx={styles.header}>
+      <Box
+        sx={{
+          ...styles.header,
+          cursor: isFullscreen ? "default" : "move",
+        }}
+        onMouseDown={handleHeaderMouseDown}
+      >
         <Typography variant="h6" sx={{ color: "#fff", fontWeight: 600 }}>
           Node Editor
         </Typography>
@@ -177,6 +472,19 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
               <FolderOpen />
             </IconButton>
           </Tooltip>
+          <Tooltip title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
+            <IconButton
+              onClick={handleToggleFullscreen}
+              sx={styles.actionButton}
+            >
+              {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={isMinimized ? "Restore" : "Minimize"}>
+            <IconButton onClick={handleToggleMinimize} sx={styles.actionButton}>
+              {isMinimized ? <AspectRatio /> : <Minimize />}
+            </IconButton>
+          </Tooltip>
           <Tooltip title={isCollapsed ? "Expand" : "Collapse"}>
             <IconButton onClick={handleToggleCollapse} sx={styles.actionButton}>
               {isCollapsed ? <ExpandMore /> : <ExpandLess />}
@@ -192,7 +500,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
 
       {/* Collapsible Content */}
       <Collapse in={!isCollapsed} timeout="auto" unmountOnExit>
-        <Box sx={styles.content}>
+        <Box sx={isFullscreen ? styles.contentFullscreen : styles.content}>
           {/* Node Library */}
           <Box sx={styles.sidebar}>
             <NodeLibrary onNodeDragStart={handleNodeDragStart} />
@@ -226,6 +534,14 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
               zoom={zoom}
               onViewportChange={setViewportOffset}
               onZoomChange={setZoom}
+              onAddNode={handleAddNode}
+              onSelectArea={handleSelectArea}
+              onAlign={handleAlign}
+              onDistribute={handleDistribute}
+              onCopy={handleCopy}
+              onPaste={handlePaste}
+              onDuplicate={handleNodeDuplicate}
+              onDelete={handleNodeDelete}
             />
           </Box>
 
@@ -353,6 +669,46 @@ const getNodeOutputs = (type: NodeType): string[] => {
 };
 
 const styles = {
+  containerFullscreen: {
+    position: "fixed" as const,
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    display: "flex",
+    flexDirection: "column" as const,
+    backgroundColor: "#1a1a1a",
+    border: "none",
+    borderRadius: 0,
+    overflow: "hidden",
+    zIndex: 10000, // Above everything including keyboard shortcuts (9999) when fullscreen
+  },
+  containerMinimized: {
+    position: "fixed" as const,
+    bottom: 20,
+    right: 20,
+    width: 300,
+    height: 50,
+    display: "flex",
+    flexDirection: "column" as const,
+    backgroundColor: "#1a1a1a",
+    border: "1px solid #333",
+    borderRadius: "8px",
+    overflow: "hidden",
+    zIndex: 900, // Below header
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+  },
+  containerWindowed: {
+    position: "fixed" as const,
+    display: "flex",
+    flexDirection: "column" as const,
+    backgroundColor: "#1a1a1a",
+    border: "1px solid #333",
+    borderRadius: "8px",
+    overflow: "hidden",
+    zIndex: 900, // Below header (1000) to avoid covering nav bar
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
+  },
   container: {
     display: "flex",
     flexDirection: "column",
@@ -369,13 +725,16 @@ const styles = {
     padding: "12px 16px",
     backgroundColor: "#252525",
     borderBottom: "1px solid #333",
+    userSelect: "none" as const,
   },
   headerActions: {
     display: "flex",
     gap: "8px",
+    alignItems: "center",
   },
   actionButton: {
     color: "#00ccff",
+    padding: "8px",
     "&:hover": {
       backgroundColor: "rgba(0, 204, 255, 0.1)",
     },
@@ -388,30 +747,139 @@ const styles = {
     flex: 1,
     overflow: "hidden",
     minHeight: 0,
-    height: "calc(100vh - 120px)",
+  },
+  contentFullscreen: {
+    display: "flex",
+    flex: 1,
+    overflow: "hidden",
+    minHeight: 0,
+    height: "calc(100vh - 60px)", // Account for header
   },
   sidebar: {
     width: "200px",
+    minWidth: "180px",
+    maxWidth: "250px",
     backgroundColor: "#2a2a2a",
     borderRight: "1px solid #333",
     display: "flex",
     flexDirection: "column",
-    minHeight: 0, // This is crucial for flex children to be scrollable
-    flex: "0 0 200px", // Don't grow/shrink, fixed width
-    height: "100%", // Take full height of parent
-    overflow: "hidden", // Prevent sidebar itself from scrolling
+    minHeight: 0,
+    flex: "0 0 200px",
+    height: "100%",
+    overflow: "auto",
   },
   canvasContainer: {
     flex: 1,
     position: "relative",
     overflow: "hidden",
     backgroundColor: "#1e1e1e",
+    minWidth: 0, // Allows flex shrinking
   },
   propertiesPanel: {
-    width: "250px",
+    width: "260px",
+    minWidth: "240px",
+    maxWidth: "300px",
     backgroundColor: "#2a2a2a",
     borderLeft: "1px solid #333",
     overflow: "auto",
+    flex: "0 0 260px",
+  },
+  // Resize handles
+  resizeHandleTop: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    cursor: "ns-resize",
+    zIndex: 10,
+    "&:hover": {
+      backgroundColor: "rgba(67, 233, 123, 0.3)",
+    },
+  },
+  resizeHandleRight: {
+    position: "absolute" as const,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 4,
+    cursor: "ew-resize",
+    zIndex: 10,
+    "&:hover": {
+      backgroundColor: "rgba(67, 233, 123, 0.3)",
+    },
+  },
+  resizeHandleBottom: {
+    position: "absolute" as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    cursor: "ns-resize",
+    zIndex: 10,
+    "&:hover": {
+      backgroundColor: "rgba(67, 233, 123, 0.3)",
+    },
+  },
+  resizeHandleLeft: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 4,
+    cursor: "ew-resize",
+    zIndex: 10,
+    "&:hover": {
+      backgroundColor: "rgba(67, 233, 123, 0.3)",
+    },
+  },
+  resizeHandleTopLeft: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    width: 12,
+    height: 12,
+    cursor: "nwse-resize",
+    zIndex: 11,
+    "&:hover": {
+      backgroundColor: "rgba(67, 233, 123, 0.5)",
+    },
+  },
+  resizeHandleTopRight: {
+    position: "absolute" as const,
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    cursor: "nesw-resize",
+    zIndex: 11,
+    "&:hover": {
+      backgroundColor: "rgba(67, 233, 123, 0.5)",
+    },
+  },
+  resizeHandleBottomLeft: {
+    position: "absolute" as const,
+    bottom: 0,
+    left: 0,
+    width: 12,
+    height: 12,
+    cursor: "nesw-resize",
+    zIndex: 11,
+    "&:hover": {
+      backgroundColor: "rgba(67, 233, 123, 0.5)",
+    },
+  },
+  resizeHandleBottomRight: {
+    position: "absolute" as const,
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    cursor: "nwse-resize",
+    zIndex: 11,
+    "&:hover": {
+      backgroundColor: "rgba(67, 233, 123, 0.5)",
+    },
   },
 };
 
