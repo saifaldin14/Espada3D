@@ -2,7 +2,7 @@ import { ProjectManager, ProjectData } from '../utils/projectManager';
 import { ModelMetadata } from '../types';
 
 const createTestModel = (overrides: Partial<ModelMetadata> = {}): ModelMetadata => ({
-  id: `model_test_${Math.random().toString(36).substr(2, 6)}`,
+  id: `model_test_${Math.random().toString(36).slice(2, 8)}`,
   type: 'box',
   name: 'Test Box',
   position: [0, 0, 0],

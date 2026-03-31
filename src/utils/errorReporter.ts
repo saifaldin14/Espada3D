@@ -46,7 +46,7 @@ class ErrorReportingService {
     context?: Record<string, any>
   ): ErrorReport {
     const report: ErrorReport = {
-      id: `err_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      id: `err_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       timestamp: new Date().toISOString(),
       message: typeof error === 'string' ? error : error.message,
       stack: typeof error === 'string' ? undefined : error.stack,

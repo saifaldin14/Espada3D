@@ -10,7 +10,7 @@ import modelReducer, {
 import { ModelMetadata, ModelState } from '../types';
 
 const createTestModel = (overrides: Partial<ModelMetadata> = {}): ModelMetadata => ({
-  id: `model_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+  id: `model_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
   type: 'box',
   name: 'Test Box',
   position: [0, 0, 0],
