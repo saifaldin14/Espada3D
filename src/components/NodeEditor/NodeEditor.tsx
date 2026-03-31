@@ -394,7 +394,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
         clearTimeout(autoExecuteTimeoutRef.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handleExecute excluded to prevent double-trigger (it depends on nodes/connections which are already tracked via fingerprints)
   }, [nodesDataFingerprint, connectionsFingerprint, isOpen]);
 
   const selectedNode = selectedNodeId
