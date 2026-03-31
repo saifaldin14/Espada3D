@@ -210,14 +210,14 @@ export async function listSharedProjects(userId: string): Promise<CloudProjectMe
   const sharesSnapshot = await getDocs(sharesQuery);
   const projectIds = sharesSnapshot.docs.map((d) => d.data().projectId as string);
 
-  // Fetch project metadata for each shared project
+  // Fetch project metadata concurrently
   const projects: CloudProjectMeta[] = [];
-  for (const projectId of projectIds) {
-    const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+  const projectPromises = projectIds.map(async (projectId) => {
+    const projectRef = doc(db!, PROJECTS_COLLECTION, projectId);
     const projectSnap = await getDoc(projectRef);
     if (projectSnap.exists()) {
       const data = projectSnap.data();
-      projects.push({
+      return {
         id: projectSnap.id,
         name: data.name,
         description: data.metadata?.description,
@@ -227,9 +227,15 @@ export async function listSharedProjects(userId: string): Promise<CloudProjectMe
         ownerName: data.ownerName,
         modelCount: data.scene?.models?.length ?? 0,
         version: data.version,
-      });
+      } as CloudProjectMeta;
     }
-  }
+    return null;
+  });
+
+  const results = await Promise.all(projectPromises);
+  results.forEach((project) => {
+    if (project) projects.push(project);
+  });
 
   return projects;
 }

@@ -81,7 +81,7 @@ export async function createTeam(
 ): Promise<Team> {
   assertFirebase();
 
-  const teamId = `team_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const teamId = doc(collection(db!, TEAMS_COLLECTION)).id;
   const now = new Date().toISOString();
 
   const team: Team = {

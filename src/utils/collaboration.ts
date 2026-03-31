@@ -31,6 +31,7 @@ interface QueuedOperation {
 const MAX_RECONNECT_ATTEMPTS = 10;
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
+const MAX_OFFLINE_QUEUE_SIZE = 1000;
 
 /**
  * Manages real-time collaboration using Yjs CRDTs.
@@ -337,7 +338,7 @@ export class CollaborationManager {
   // ---- Offline queue ----
 
   private enqueue(op: QueuedOperation): void {
-    if (this.offlineQueue.length >= 1000) {
+    if (this.offlineQueue.length >= MAX_OFFLINE_QUEUE_SIZE) {
       this.offlineQueue.shift();
     }
     this.offlineQueue.push(op);
