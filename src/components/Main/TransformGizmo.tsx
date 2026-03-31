@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { TransformControls } from "@react-three/drei";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
 import { useModelCommands } from "../../hooks/useModelCommands";
@@ -29,8 +29,6 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   getTargetMatrixWorld,
   getMeshObject,
 }) => {
-  const dispatch = useDispatch();
-  const { camera, gl, scene } = useThree();
   const transformRef = useRef<any>(null);
   const helperGroupRef = useRef<THREE.Group>(null);
 
@@ -125,7 +123,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   }, [meshData, editMode, currentSubObjectType]);
 
   // Compute corrected gizmo position in world space
-  const correctedGizmoPosition = React.useMemo(() => {
+  const _correctedGizmoPosition = React.useMemo(() => {
     if (!meshData || !MeshEditModes.includes(editMode))
       return new THREE.Vector3(0, 0, 0);
     const targetMatrix = getTargetMatrixWorld?.();
@@ -203,7 +201,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     startWorldPosRef.current = wp.clone();
 
     onTransformStart?.();
-  }, [onTransformStart]);
+  }, [onTransformStart, editMode, selectedModel]);
 
   const startWorldPosRef = useRef<THREE.Vector3 | null>(null);
   const pivotLocalStartRef = useRef<THREE.Vector3 | null>(null);
@@ -464,21 +462,22 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
 
   // Update gizmo position (legacy effect) -- now simplified, rely on frame updates
   useEffect(() => {
-    if (transformRef.current && helperGroupRef.current) {
+    const currentHelperGroup = helperGroupRef.current;
+    if (transformRef.current && currentHelperGroup) {
       const meshObj = getMeshObject?.();
-      if (meshObj && helperGroupRef.current.parent !== meshObj) {
-        meshObj.add(helperGroupRef.current);
+      if (meshObj && currentHelperGroup.parent !== meshObj) {
+        meshObj.add(currentHelperGroup);
       }
-      transformRef.current.object = helperGroupRef.current;
+      transformRef.current.object = currentHelperGroup;
     }
     return () => {
       const meshObj = getMeshObject?.();
       if (
         meshObj &&
-        helperGroupRef.current &&
-        helperGroupRef.current.parent === meshObj
+        currentHelperGroup &&
+        currentHelperGroup.parent === meshObj
       ) {
-        meshObj.remove(helperGroupRef.current);
+        meshObj.remove(currentHelperGroup);
       }
     };
   }, [meshData, editMode, currentSubObjectType, getMeshObject]);

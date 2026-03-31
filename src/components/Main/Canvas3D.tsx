@@ -164,7 +164,8 @@ const Canvas3D: React.FC = () => {
     return () => {
       Object.values(newModels).forEach(disposeGroup);
     };
-  }, [modelsMetadata, showWireframe]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelsMetadata, showWireframe, dispatch]);
 
   return (
     <ErrorBoundary>

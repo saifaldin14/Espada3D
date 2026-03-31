@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { BoxSelectionMode } from "../../types";
@@ -151,7 +151,7 @@ const BoxSelection: React.FC<BoxSelectionProps> = ({
       canvas.removeEventListener("pointerup", handlePointerUp);
       container.removeChild(selectionBox);
     };
-  }, [isActive, isSelecting, startPoint, currentPoint, onBoxSelect, gl]);
+  }, [isActive, isSelecting, startPoint, currentPoint, onBoxSelect, gl, selectionMode]);
 
   return null; // This component doesn't render anything in the 3D scene
 };

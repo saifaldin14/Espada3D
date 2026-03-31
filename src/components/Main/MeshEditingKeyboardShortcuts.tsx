@@ -5,10 +5,8 @@ import { RootState } from "../../store";
 import {
   setEditMode,
   setCurrentSubObjectType,
-  setSubObjectSelectionMode,
   setActiveTool,
 } from "../../store/slices/uiSlice";
-import { selectSubObjects } from "../../store/slices/meshSlice";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
 import { MeshEditModes } from "../../consts";
 import { EditModes } from "../../Enums";

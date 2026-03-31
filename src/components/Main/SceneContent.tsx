@@ -11,9 +11,7 @@ import {
 } from "three";
 import { useAppSelector } from "../../hooks/useRedux";
 import { useModels } from "../../hooks/useRedux";
-import { ModelMetadata, ToolType } from "../../types";
-import SubObjectHighlight from "./SubObjectHighlight";
-import InteractiveSubObject from "./InteractiveSubObject";
+import { ToolType } from "../../types";
 import MeshEditableModel from "./MeshEditableModel";
 import { MeshEditModes } from "../../consts";
 

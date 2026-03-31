@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import { useSelector } from "react-redux";
 import * as THREE from "three";
 import { RootState } from "../../store";
@@ -56,7 +56,7 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
     index: number;
   } | null>(null);
 
-  const { camera, scene } = useThree();
+  const { camera } = useThree();
 
   const editMode = useSelector((state: RootState) => state.ui.editMode);
   const currentSubObjectType = useSelector(
@@ -93,6 +93,42 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
     }
   }, [editMode, meshData, initializeMesh, modelId]);
 
+  // Create a double-sided material for mesh editing
+  const meshEditingMaterial = useMemo(() => {
+    if (!MeshEditModes.includes(editMode)) {
+      return material;
+    }
+
+    // Clone the material to avoid modifying the original
+    let editMaterial: THREE.Material;
+
+    if (Array.isArray(material)) {
+      // Handle material arrays by cloning each material
+      editMaterial = material.map((mat) => {
+        const cloned = mat.clone();
+        cloned.side = THREE.DoubleSide;
+        return cloned;
+      })[0]; // Use first material for simplicity
+    } else {
+      editMaterial = material.clone();
+      editMaterial.side = THREE.DoubleSide;
+    }
+
+    return editMaterial;
+  }, [material, editMode]);
+
+  // Clean up cloned materials when component unmounts or material changes
+  useEffect(() => {
+    return () => {
+      if (
+        meshEditingMaterial !== material &&
+        !Array.isArray(meshEditingMaterial)
+      ) {
+        meshEditingMaterial.dispose();
+      }
+    };
+  }, [meshEditingMaterial, material]);
+
   // Apply pending operations to geometry
   useEffect(() => {
     if (meshData && pendingOperations.length > 0) {
@@ -111,7 +147,7 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
         meshRef.current.material = meshEditingMaterial;
       }
     }
-  }, [meshData, pendingOperations, applyOperations, onGeometryUpdate]);
+  }, [meshData, pendingOperations, applyOperations, onGeometryUpdate, meshEditingMaterial]);
 
   // Create helper geometries for visualization with improved materials
   const helpers = useMemo(() => {
@@ -377,42 +413,6 @@ const MeshEditableModel: React.FC<MeshEditableModelProps> = ({
     },
     [meshData, currentSubObjectType, selectElements, camera]
   );
-
-  // Create a double-sided material for mesh editing
-  const meshEditingMaterial = useMemo(() => {
-    if (!MeshEditModes.includes(editMode)) {
-      return material;
-    }
-
-    // Clone the material to avoid modifying the original
-    let editMaterial: THREE.Material;
-
-    if (Array.isArray(material)) {
-      // Handle material arrays by cloning each material
-      editMaterial = material.map((mat) => {
-        const cloned = mat.clone();
-        cloned.side = THREE.DoubleSide;
-        return cloned;
-      })[0]; // Use first material for simplicity
-    } else {
-      editMaterial = material.clone();
-      editMaterial.side = THREE.DoubleSide;
-    }
-
-    return editMaterial;
-  }, [material, editMode]);
-
-  // Clean up cloned materials when component unmounts or material changes
-  useEffect(() => {
-    return () => {
-      if (
-        meshEditingMaterial !== material &&
-        !Array.isArray(meshEditingMaterial)
-      ) {
-        meshEditingMaterial.dispose();
-      }
-    };
-  }, [meshEditingMaterial, material]);
 
   return (
     <>
