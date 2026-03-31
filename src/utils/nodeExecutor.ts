@@ -1,7 +1,7 @@
 import { Node, NodeConnection, NodeExecutionResult } from '../types/nodeTypes';
 import { ModelMetadata, GeometryType, MaterialType } from '../types';
 import store from '../store';
-import { addModel, updateModelMetadata, removeModel } from '../store/slices/modelSlice';
+import { addModel, updateModelMetadata, updateModelTransform, updateModelMaterial, removeModel } from '../store/slices/modelSlice';
 
 export class NodeExecutor {
   private nodes: Node[];
@@ -550,6 +550,16 @@ export class NodeExecutor {
           visible: modelData.visible,
           locked: modelData.locked 
         }));
+        store.dispatch(updateModelTransform({
+          id: modelId,
+          position: modelData.position,
+          rotation: modelData.rotation,
+          scale: modelData.scale,
+        }));
+        store.dispatch(updateModelMaterial({
+          id: modelId,
+          material: modelData.material,
+        }));
       } else {
         store.dispatch(addModel(modelData));
       }
@@ -594,6 +604,16 @@ export class NodeExecutor {
           name: modelData.name,
           visible: modelData.visible,
           locked: modelData.locked 
+        }));
+        store.dispatch(updateModelTransform({
+          id: modelId,
+          position: modelData.position,
+          rotation: modelData.rotation,
+          scale: modelData.scale,
+        }));
+        store.dispatch(updateModelMaterial({
+          id: modelId,
+          material: modelData.material,
         }));
       } else {
         store.dispatch(addModel(modelData));

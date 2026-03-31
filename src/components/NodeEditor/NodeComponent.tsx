@@ -35,7 +35,8 @@ import {
   NodePortDefinition,
   PortDataType,
 } from "../../types/nodeTypes";
-import { useAppSelector } from "../../hooks/useRedux";
+import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
+import { toggleNodeCollapse } from "../../store/slices/nodeSlice";
 
 interface NodeComponentProps {
   node: Node;
@@ -97,6 +98,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
 }) => {
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
   const nodeRef = useRef<HTMLDivElement>(null);
+  const dispatch = useAppDispatch();
 
   const executionResult = useAppSelector(
     (state) => state.nodes.executionResults[node.id]
@@ -547,8 +549,9 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
         ...styles.node,
         left: node.position.x,
         top: node.position.y,
-        width: node.width || 170,
-        height: node.collapsed ? 50 : node.height || 120,
+        width: node.width || 180,
+        height: node.collapsed ? 50 : "auto",
+        minHeight: node.collapsed ? 50 : node.height || 130,
         background: selected
           ? `linear-gradient(135deg, ${headerColor}20 0%, ${headerColor}10 100%)`
           : "linear-gradient(135deg, rgba(30, 35, 45, 0.95) 0%, rgba(25, 30, 40, 0.95) 100%)",
@@ -557,7 +560,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
           ? `0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px ${headerColor}40, 0 2px 8px rgba(0,0,0,0.4)`
           : "0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3)",
         transform: selected ? "translateY(-2px)" : "translateY(0)",
-        overflow: selected ? "visible" : "hidden",
+        overflow: "visible",
       }}
       onMouseDown={onMouseDown}
     >
@@ -600,6 +603,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
             sx={styles.collapseButton}
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
+              dispatch(toggleNodeCollapse(node.id));
             }}
           >
             {node.collapsed ? <ExpandMore /> : <ExpandLess />}

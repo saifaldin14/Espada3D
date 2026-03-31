@@ -29,13 +29,29 @@ const nodeSlice = createSlice({
   reducers: {
     // Node operations
     addNode: (state, action: PayloadAction<Omit<Node, 'id'>>) => {
+      const nodeType = action.payload.type;
+      // Use taller heights for nodes with interactive content or many ports
+      const heightByType: Record<string, number> = {
+        point: 170,
+        sequence: 170,
+        numberSlider: 160,
+        transform: 160,
+        material: 150,
+        mesh: 140,
+        geometry: 140,
+        math: 140,
+        camera: 160,
+        light: 140,
+        filter: 140,
+        condition: 140,
+      };
       const newNode: Node = {
         ...action.payload,
         id: generateId(),
         selected: false,
         collapsed: false,
-        width: 150,
-        height: 100,
+        width: 180,
+        height: heightByType[nodeType] || 130,
       };
       state.nodes.push(newNode);
     },

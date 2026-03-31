@@ -423,6 +423,335 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
           </>
         );
 
+      case "numberSlider":
+        return (
+          <>
+            <TextField
+              label="Value"
+              type="number"
+              value={node.data.value ?? 0.5}
+              onChange={(e) =>
+                handleValueChange("value", parseFloat(e.target.value) || 0)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Min"
+              type="number"
+              value={node.data.min ?? 0}
+              onChange={(e) =>
+                handleValueChange("min", parseFloat(e.target.value) || 0)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Max"
+              type="number"
+              value={node.data.max ?? 1}
+              onChange={(e) =>
+                handleValueChange("max", parseFloat(e.target.value) || 1)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+          </>
+        );
+
+      case "booleanToggle":
+        return (
+          <FormControl fullWidth size="small" sx={styles.formControl}>
+            <InputLabel sx={styles.inputLabel}>Value</InputLabel>
+            <Select
+              value={node.data.value ? "true" : "false"}
+              onChange={(e) =>
+                handleValueChange("value", e.target.value === "true")
+              }
+              sx={styles.select}
+            >
+              <MenuItem value="true">True</MenuItem>
+              <MenuItem value="false">False</MenuItem>
+            </Select>
+          </FormControl>
+        );
+
+      case "color":
+        return (
+          <>
+            <Box sx={styles.colorControl}>
+              <Typography variant="caption" sx={styles.label}>
+                Color
+              </Typography>
+              <Box sx={styles.colorPreview}>
+                <Box
+                  sx={{
+                    ...styles.colorSwatch,
+                    backgroundColor: String(
+                      node.data.value || node.data.color || "#ffffff"
+                    ),
+                  }}
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                />
+                <Typography variant="caption" sx={styles.colorValue}>
+                  {String(
+                    node.data.value || node.data.color || "#ffffff"
+                  )}
+                </Typography>
+              </Box>
+              {showColorPicker && (
+                <Box sx={styles.colorPickerContainer}>
+                  <SketchPicker
+                    color={String(
+                      node.data.value || node.data.color || "#ffffff"
+                    )}
+                    onChange={(color: any) =>
+                      handleValueChange("value", color.hex)
+                    }
+                  />
+                </Box>
+              )}
+            </Box>
+          </>
+        );
+
+      case "point":
+        return (
+          <Box sx={styles.vectorInput}>
+            <Typography variant="caption" sx={styles.label}>
+              Point (X, Y, Z)
+            </Typography>
+            <Box sx={styles.vectorRow}>
+              {["X", "Y", "Z"].map((axis, idx) => (
+                <TextField
+                  key={axis}
+                  label={axis}
+                  type="number"
+                  value={
+                    (Array.isArray(node.data.value)
+                      ? node.data.value[idx]
+                      : 0) || 0
+                  }
+                  onChange={(e) => {
+                    const currentValue = Array.isArray(node.data.value)
+                      ? node.data.value
+                      : [0, 0, 0];
+                    const newValue = [...currentValue];
+                    newValue[idx] = parseFloat(e.target.value) || 0;
+                    handleValueChange("value", newValue);
+                  }}
+                  size="small"
+                  sx={styles.vectorField}
+                />
+              ))}
+            </Box>
+          </Box>
+        );
+
+      case "sequence":
+        return (
+          <>
+            <TextField
+              label="Start"
+              type="number"
+              value={node.data.start ?? 0}
+              onChange={(e) =>
+                handleValueChange("start", parseFloat(e.target.value) || 0)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="End"
+              type="number"
+              value={node.data.end ?? 10}
+              onChange={(e) =>
+                handleValueChange("end", parseFloat(e.target.value) || 0)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Step"
+              type="number"
+              value={node.data.step ?? 1}
+              onChange={(e) =>
+                handleValueChange("step", parseFloat(e.target.value) || 1)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+          </>
+        );
+
+      case "mesh":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Mesh Source</InputLabel>
+              <Select
+                value={node.data.meshSource || "geometry"}
+                onChange={(e) =>
+                  handleValueChange("meshSource", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="geometry">From Geometry</MenuItem>
+                <MenuItem value="file">From File</MenuItem>
+                <MenuItem value="generated">Generated</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="Subdivision"
+              type="number"
+              value={node.data.subdivision ?? 0}
+              onChange={(e) =>
+                handleValueChange(
+                  "subdivision",
+                  parseInt(e.target.value) || 0
+                )
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+          </>
+        );
+
+      case "light":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Light Type</InputLabel>
+              <Select
+                value={node.data.lightType || "directional"}
+                onChange={(e) =>
+                  handleValueChange("lightType", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="directional">Directional</MenuItem>
+                <MenuItem value="point">Point</MenuItem>
+                <MenuItem value="spot">Spot</MenuItem>
+                <MenuItem value="ambient">Ambient</MenuItem>
+              </Select>
+            </FormControl>
+            <Box sx={styles.sliderControl}>
+              <Typography variant="caption" sx={styles.label}>
+                Intensity: {(node.data.intensity || 1).toFixed(2)}
+              </Typography>
+              <Slider
+                value={node.data.intensity || 1}
+                onChange={(_: any, value: any) =>
+                  handleValueChange("intensity", value)
+                }
+                min={0}
+                max={10}
+                step={0.1}
+                sx={styles.slider}
+              />
+            </Box>
+          </>
+        );
+
+      case "camera":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Camera Type</InputLabel>
+              <Select
+                value={node.data.cameraType || "perspective"}
+                onChange={(e) =>
+                  handleValueChange("cameraType", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="perspective">Perspective</MenuItem>
+                <MenuItem value="orthographic">Orthographic</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="FOV"
+              type="number"
+              value={node.data.fov ?? 75}
+              onChange={(e) =>
+                handleValueChange("fov", parseFloat(e.target.value) || 75)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+          </>
+        );
+
+      case "texture":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Texture Type</InputLabel>
+              <Select
+                value={node.data.textureType || "diffuse"}
+                onChange={(e) =>
+                  handleValueChange("textureType", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="diffuse">Diffuse</MenuItem>
+                <MenuItem value="normal">Normal</MenuItem>
+                <MenuItem value="roughness">Roughness</MenuItem>
+                <MenuItem value="metalness">Metalness</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Source</InputLabel>
+              <Select
+                value={node.data.textureSource || "file"}
+                onChange={(e) =>
+                  handleValueChange("textureSource", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="file">File</MenuItem>
+                <MenuItem value="generated">Generated</MenuItem>
+                <MenuItem value="procedural">Procedural</MenuItem>
+              </Select>
+            </FormControl>
+          </>
+        );
+
+      case "script":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Language</InputLabel>
+              <Select
+                value={node.data.scriptLanguage || "javascript"}
+                onChange={(e) =>
+                  handleValueChange("scriptLanguage", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="javascript">JavaScript</MenuItem>
+                <MenuItem value="glsl">GLSL</MenuItem>
+              </Select>
+            </FormControl>
+          </>
+        );
+
+      case "watch":
+      case "list":
+        return (
+          <Typography variant="body2" sx={styles.noProperties}>
+            This node has no editable properties.
+          </Typography>
+        );
+
       default:
         return (
           <Typography variant="body2" sx={styles.noProperties}>

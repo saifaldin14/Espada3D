@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -371,6 +371,32 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     }
   }, [nodes, connections, dispatch]);
 
+  // Auto-execute the node graph when node data or connections change
+  const autoExecuteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nodesDataFingerprint = useMemo(() => {
+    return JSON.stringify(nodes.map(n => ({ id: n.id, type: n.type, data: n.data })));
+  }, [nodes]);
+  const connectionsFingerprint = useMemo(() => {
+    return JSON.stringify(connections.map(c => ({ s: c.sourceNodeId, t: c.targetNodeId, sp: c.sourcePort, tp: c.targetPort })));
+  }, [connections]);
+
+  useEffect(() => {
+    if (!isOpen || nodes.length === 0) return;
+    // Debounce auto-execution to avoid rapid re-runs
+    if (autoExecuteTimeoutRef.current) {
+      clearTimeout(autoExecuteTimeoutRef.current);
+    }
+    autoExecuteTimeoutRef.current = setTimeout(() => {
+      handleExecute();
+    }, 500);
+    return () => {
+      if (autoExecuteTimeoutRef.current) {
+        clearTimeout(autoExecuteTimeoutRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodesDataFingerprint, connectionsFingerprint, isOpen]);
+
   const selectedNode = selectedNodeId
     ? nodes.find((n) => n.id === selectedNodeId)
     : null;
@@ -496,7 +522,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
       </Box>
 
       {/* Collapsible Content */}
-      <Collapse in={!isCollapsed} timeout="auto" unmountOnExit>
+      <Collapse in={!isCollapsed} timeout="auto" unmountOnExit sx={{ flex: 1, display: isCollapsed ? 'none' : 'flex', minHeight: 0 }}>
         <Box sx={isFullscreen ? styles.contentFullscreen : styles.content}>
           {/* Node Library */}
           <Box sx={styles.sidebar}>
@@ -709,6 +735,7 @@ const styles = {
     flex: 1,
     overflow: "hidden",
     minHeight: 0,
+    height: "100%",
   },
   contentFullscreen: {
     display: "flex",
