@@ -164,6 +164,7 @@ const Canvas3D: React.FC = () => {
     return () => {
       Object.values(newModels).forEach(disposeGroup);
     };
+  // `models` is intentionally excluded — it is set inside this effect and would cause infinite loops
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelsMetadata, showWireframe, dispatch]);
 
