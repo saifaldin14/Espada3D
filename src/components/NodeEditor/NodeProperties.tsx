@@ -10,6 +10,8 @@ import {
   Slider,
   Button,
   Divider,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import { SketchPicker } from "react-color";
 import { Node, NodeData } from "../../types/nodeTypes";
@@ -426,17 +428,21 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
       case "numberSlider":
         return (
           <>
-            <TextField
-              label="Value"
-              type="number"
-              value={node.data.value ?? 0.5}
-              onChange={(e) =>
-                handleValueChange("value", parseFloat(e.target.value) || 0)
-              }
-              size="small"
-              fullWidth
-              sx={styles.textField}
-            />
+            <Box sx={styles.sliderControl}>
+              <Typography variant="caption" sx={styles.label}>
+                Value: {Number(node.data.value ?? 0.5).toFixed(2)}
+              </Typography>
+              <Slider
+                value={Number(node.data.value ?? 0.5)}
+                onChange={(_: any, value: any) =>
+                  handleValueChange("value", value)
+                }
+                min={Number(node.data.min ?? 0)}
+                max={Number(node.data.max ?? 1)}
+                step={Number(node.data.step ?? 0.01)}
+                sx={styles.slider}
+              />
+            </Box>
             <TextField
               label="Min"
               type="number"
@@ -459,24 +465,49 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
               fullWidth
               sx={styles.textField}
             />
+            <TextField
+              label="Step"
+              type="number"
+              value={node.data.step ?? 0.01}
+              onChange={(e) =>
+                handleValueChange("step", parseFloat(e.target.value) || 0.01)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
           </>
         );
 
       case "booleanToggle":
         return (
-          <FormControl fullWidth size="small" sx={styles.formControl}>
-            <InputLabel sx={styles.inputLabel}>Value</InputLabel>
-            <Select
-              value={node.data.value ? "true" : "false"}
-              onChange={(e) =>
-                handleValueChange("value", e.target.value === "true")
-              }
-              sx={styles.select}
-            >
-              <MenuItem value="true">True</MenuItem>
-              <MenuItem value="false">False</MenuItem>
-            </Select>
-          </FormControl>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={Boolean(node.data.value)}
+                onChange={(e) =>
+                  handleValueChange("value", e.target.checked)
+                }
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": {
+                    color: "#667eea",
+                  },
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                    backgroundColor: "#667eea",
+                  },
+                }}
+              />
+            }
+            label={
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(255, 255, 255, 0.9)" }}
+              >
+                {node.data.value ? "True" : "False"}
+              </Typography>
+            }
+            sx={{ margin: 0 }}
+          />
         );
 
       case "color":
@@ -607,6 +638,19 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
                 <MenuItem value="generated">Generated</MenuItem>
               </Select>
             </FormControl>
+            {node.data.meshSource === "file" && (
+              <TextField
+                label="File Path"
+                value={node.data.meshFile || ""}
+                onChange={(e) =>
+                  handleValueChange("meshFile", e.target.value)
+                }
+                size="small"
+                fullWidth
+                sx={styles.textField}
+                placeholder="path/to/model.obj"
+              />
+            )}
             <TextField
               label="Subdivision"
               type="number"
@@ -657,6 +701,60 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
                 sx={styles.slider}
               />
             </Box>
+            <Box sx={styles.colorControl}>
+              <Typography variant="caption" sx={styles.label}>
+                Color
+              </Typography>
+              <Box sx={styles.colorPreview}>
+                <Box
+                  sx={{
+                    ...styles.colorSwatch,
+                    backgroundColor: node.data.color || "#ffffff",
+                  }}
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                />
+                <Typography variant="caption" sx={styles.colorValue}>
+                  {node.data.color || "#ffffff"}
+                </Typography>
+              </Box>
+              {showColorPicker && (
+                <Box sx={styles.colorPickerContainer}>
+                  <SketchPicker
+                    color={node.data.color || "#ffffff"}
+                    onChange={(color: any) =>
+                      handleValueChange("color", color.hex)
+                    }
+                  />
+                </Box>
+              )}
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={node.data.castShadows !== false}
+                  onChange={(e) =>
+                    handleValueChange("castShadows", e.target.checked)
+                  }
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: "#667eea",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      backgroundColor: "#667eea",
+                    },
+                  }}
+                />
+              }
+              label={
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(255, 255, 255, 0.9)" }}
+                >
+                  Cast Shadows
+                </Typography>
+              }
+              sx={{ margin: 0 }}
+            />
           </>
         );
 
@@ -682,6 +780,28 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
               value={node.data.fov ?? 75}
               onChange={(e) =>
                 handleValueChange("fov", parseFloat(e.target.value) || 75)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Near Clip"
+              type="number"
+              value={node.data.near ?? 0.1}
+              onChange={(e) =>
+                handleValueChange("near", parseFloat(e.target.value) || 0.1)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Far Clip"
+              type="number"
+              value={node.data.far ?? 1000}
+              onChange={(e) =>
+                handleValueChange("far", parseFloat(e.target.value) || 1000)
               }
               size="small"
               fullWidth
@@ -722,6 +842,19 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
                 <MenuItem value="procedural">Procedural</MenuItem>
               </Select>
             </FormControl>
+            {node.data.textureSource === "file" && (
+              <TextField
+                label="File Path"
+                value={node.data.textureFile || ""}
+                onChange={(e) =>
+                  handleValueChange("textureFile", e.target.value)
+                }
+                size="small"
+                fullWidth
+                sx={styles.textField}
+                placeholder="path/to/texture.png"
+              />
+            )}
           </>
         );
 
@@ -741,6 +874,31 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
                 <MenuItem value="glsl">GLSL</MenuItem>
               </Select>
             </FormControl>
+            <TextField
+              label="Script"
+              value={node.data.scriptContent || ""}
+              onChange={(e) =>
+                handleValueChange("scriptContent", e.target.value)
+              }
+              size="small"
+              fullWidth
+              multiline
+              minRows={4}
+              maxRows={12}
+              sx={{
+                ...styles.textField,
+                "& .MuiOutlinedInput-root": {
+                  ...((styles.textField as any)["& .MuiOutlinedInput-root"]),
+                  fontFamily: "monospace",
+                  fontSize: "12px",
+                },
+              }}
+              placeholder={
+                node.data.scriptLanguage === "glsl"
+                  ? "void main() {\n  // GLSL code\n}"
+                  : "// JavaScript code\nreturn input;"
+              }
+            />
           </>
         );
 
