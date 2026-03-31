@@ -218,9 +218,9 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
         );
 
       case "numberSlider": {
-        const val = Number(node.data.value ?? 50);
+        const val = Number(node.data.value ?? 0.5);
         const min = Number(node.data.min ?? 0);
-        const max = Number(node.data.max ?? 100);
+        const max = Number(node.data.max ?? 1);
         return (
           <Box sx={contentStyles.container}>
             <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", px: "4px" }}>
@@ -330,18 +330,23 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
         );
       }
 
-      case "point":
+      case "point": {
+        const pointVal = Array.isArray(node.data.value) ? node.data.value as number[] : [0, 0, 0];
         return (
           <Box sx={{ ...contentStyles.container, gap: "4px" }}>
-            {["x", "y", "z"].map((axis) => (
+            {["x", "y", "z"].map((axis, idx) => (
               <Box key={axis} sx={{ display: "flex", alignItems: "center", gap: "4px", width: "100%" }}>
                 <Typography variant="caption" sx={{ ...contentStyles.label, width: 12 }}>
                   {axis.toUpperCase()}
                 </Typography>
                 <input
                   type="number"
-                  value={Number(node.data[axis] ?? 0)}
-                  onChange={(e) => handleDataChange({ [axis]: parseFloat(e.target.value) || 0 })}
+                  value={Number(pointVal[idx] ?? 0)}
+                  onChange={(e) => {
+                    const newVal = [...pointVal];
+                    newVal[idx] = parseFloat(e.target.value) || 0;
+                    handleDataChange({ value: newVal });
+                  }}
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                   style={{
@@ -361,6 +366,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
             ))}
           </Box>
         );
+      }
 
       case "sequence":
         return (

@@ -446,12 +446,11 @@ export class NodeExecutor {
   }
 
   private executeSequenceNode(node: Node, inputs: Record<string, any>): Record<string, any> {
-    const { start: defStart = 0, end: defEnd = 10, step: defStep = 1 } = node.data;
-    const seqStart = inputs.start !== undefined ? Number(inputs.start) : Number(defStart);
-    const seqEnd = inputs.end !== undefined ? Number(inputs.end) : Number(defEnd);
-    const seqStep = inputs.step !== undefined ? Number(inputs.step) : Number(defStep);
+    const seqStart = Number(inputs.start ?? node.data.start ?? 0);
+    const seqEnd = Number(inputs.end ?? node.data.end ?? 10);
+    const seqStep = Number(inputs.step ?? node.data.step ?? 1);
 
-    if (seqStep === 0) return { list: [] };
+    if (seqStep === 0 || isNaN(seqStart) || isNaN(seqEnd) || isNaN(seqStep)) return { list: [] };
 
     const result: number[] = [];
     const maxItems = 10000; // Safety limit
