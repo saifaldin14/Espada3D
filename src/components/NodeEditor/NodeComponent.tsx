@@ -74,18 +74,6 @@ const getNodeIcon = (type: string) => {
   }
 };
 
-const isPortConnected = (
-  nodeId: string,
-  portName: string,
-  connections: NodeConnection[]
-): boolean => {
-  return connections.some(
-    (c) =>
-      (c.sourceNodeId === nodeId && c.sourcePort === portName) ||
-      (c.targetNodeId === nodeId && c.targetPort === portName)
-  );
-};
-
 const getPortDefinition = (
   nodeType: string,
   portName: string,

@@ -26,6 +26,7 @@ import {
   NodeType,
   NodeData,
   Position,
+  NODE_REGISTRY,
 } from "../../types/nodeTypes";
 import NodeCanvas from "./NodeCanvas";
 import NodeLibrary from "./NodeLibrary";
@@ -526,6 +527,9 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
               onDisconnect={(connectionId) =>
                 dispatch(disconnectNodes(connectionId))
               }
+              onDataChange={(nodeId, data) =>
+                dispatch(updateNodeData({ nodeId, data }))
+              }
               viewportOffset={viewportOffset}
               zoom={zoom}
               onViewportChange={setViewportOffset}
@@ -589,79 +593,33 @@ const getDefaultNodeData = (type: NodeType): NodeData => {
       return { filterType: "blur", strength: 1.0 };
     case "condition":
       return { condition: "equals", value: 0 };
+    case "numberSlider":
+      return { value: 0.5, min: 0, max: 1 };
+    case "booleanToggle":
+      return { value: true };
+    case "point":
+      return { value: [0, 0, 0] };
+    case "list":
+      return { value: [] };
+    case "watch":
+      return {};
+    case "sequence":
+      return { start: 0, end: 10, step: 1 };
     default:
       return {};
   }
 };
 
 const getNodeInputs = (type: NodeType): string[] => {
-  switch (type) {
-    case "input":
-      return [];
-    case "color":
-      return [];
-    case "output":
-      return ["value"];
-    case "math":
-      return ["a", "b"];
-    case "transform":
-      return ["geometry", "value"];
-    case "material":
-      return ["color", "roughness", "metalness"];
-    case "geometry":
-      return ["dimensions"];
-    case "mesh":
-      return ["geometry", "material"];
-    case "texture":
-      return [];
-    case "light":
-      return ["intensity", "color"];
-    case "camera":
-      return ["fov", "near", "far"];
-    case "script":
-      return ["input"];
-    case "filter":
-      return ["input", "strength"];
-    case "condition":
-      return ["input", "compare"];
-    default:
-      return [];
-  }
+  const entry = NODE_REGISTRY[type];
+  if (entry) return entry.inputs.map(p => p.name);
+  return [];
 };
 
 const getNodeOutputs = (type: NodeType): string[] => {
-  switch (type) {
-    case "input":
-      return ["value"];
-    case "color":
-      return ["color"];
-    case "output":
-      return [];
-    case "math":
-      return ["result"];
-    case "transform":
-      return ["geometry"];
-    case "material":
-      return ["material"];
-    case "geometry":
-      return ["geometry"];
-    case "mesh":
-      return ["mesh"];
-    case "texture":
-      return ["texture"];
-    case "light":
-      return ["light"];
-    case "camera":
-      return ["camera"];
-    case "script":
-      return ["output"];
-    case "filter":
-      return ["output"];
-    case "condition":
-      return ["true", "false"];
-    default:
-      return [];
-  }
+  const entry = NODE_REGISTRY[type];
+  if (entry) return entry.outputs.map(p => p.name);
+  return [];
 };
 
 const styles = {

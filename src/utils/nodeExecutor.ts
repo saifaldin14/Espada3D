@@ -124,6 +124,18 @@ export class NodeExecutor {
         return this.executeFilterNode(node, inputValues);
       case 'condition':
         return this.executeConditionNode(node, inputValues);
+      case 'numberSlider':
+        return this.executeNumberSliderNode(node, inputValues);
+      case 'booleanToggle':
+        return this.executeBooleanToggleNode(node, inputValues);
+      case 'point':
+        return this.executePointNode(node, inputValues);
+      case 'list':
+        return this.executeListNode(node, inputValues);
+      case 'watch':
+        return this.executeWatchNode(node, inputValues);
+      case 'sequence':
+        return this.executeSequenceNode(node, inputValues);
       default:
         throw new Error(`Unknown node type: ${node.type}`);
     }
@@ -392,6 +404,67 @@ export class NodeExecutor {
         nodeId: node.id,
       }
     };
+  }
+
+  private executeNumberSliderNode(node: Node, inputs: Record<string, any>): Record<string, any> {
+    const { value = 0.5, min = 0, max = 1 } = node.data;
+    const sliderMin = inputs.min !== undefined ? inputs.min : min;
+    const sliderMax = inputs.max !== undefined ? inputs.max : max;
+    // Clamp value to min/max range
+    const clampedValue = Math.min(Math.max(Number(value), sliderMin), sliderMax);
+    return { value: clampedValue };
+  }
+
+  private executeBooleanToggleNode(node: Node, _inputs: Record<string, any>): Record<string, any> {
+    const { value = true } = node.data;
+    return { value: Boolean(value) };
+  }
+
+  private executePointNode(node: Node, inputs: Record<string, any>): Record<string, any> {
+    const { value = [0, 0, 0] } = node.data;
+    const arr = Array.isArray(value) ? value : [0, 0, 0];
+    const x = inputs.x !== undefined ? inputs.x : arr[0] || 0;
+    const y = inputs.y !== undefined ? inputs.y : arr[1] || 0;
+    const z = inputs.z !== undefined ? inputs.z : arr[2] || 0;
+    return { point: [x, y, z] };
+  }
+
+  private executeListNode(node: Node, inputs: Record<string, any>): Record<string, any> {
+    const items: any[] = [];
+    // Collect all connected items
+    for (const key of Object.keys(inputs)) {
+      if (inputs[key] !== undefined) {
+        items.push(inputs[key]);
+      }
+    }
+    return { list: items };
+  }
+
+  private executeWatchNode(node: Node, inputs: Record<string, any>): Record<string, any> {
+    // Watch node just passes through input for display
+    return { input: inputs.input };
+  }
+
+  private executeSequenceNode(node: Node, inputs: Record<string, any>): Record<string, any> {
+    const { start: defStart = 0, end: defEnd = 10, step: defStep = 1 } = node.data;
+    const seqStart = inputs.start !== undefined ? Number(inputs.start) : Number(defStart);
+    const seqEnd = inputs.end !== undefined ? Number(inputs.end) : Number(defEnd);
+    const seqStep = inputs.step !== undefined ? Number(inputs.step) : Number(defStep);
+
+    if (seqStep === 0) return { list: [] };
+
+    const result: number[] = [];
+    const maxItems = 10000; // Safety limit
+    if (seqStep > 0) {
+      for (let i = seqStart; i <= seqEnd && result.length < maxItems; i += seqStep) {
+        result.push(i);
+      }
+    } else {
+      for (let i = seqStart; i >= seqEnd && result.length < maxItems; i += seqStep) {
+        result.push(i);
+      }
+    }
+    return { list: result };
   }
 
   private async applySceneChanges(): Promise<void> {

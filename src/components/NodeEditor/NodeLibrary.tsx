@@ -21,6 +21,13 @@ import {
   FilterList,
   Code,
   Help,
+  LinearScale,
+  ToggleOn,
+  Place,
+  List,
+  Visibility,
+  FormatListNumbered,
+  Colorize,
 } from "@mui/icons-material";
 import { NodeType, NodeLibraryItem } from "../../types/nodeTypes";
 
@@ -44,8 +51,32 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       name: "Color",
       description: "Color picker input",
       category: "input",
-      icon: "Palette",
+      icon: "Colorize",
       color: "#fa709a",
+    },
+    {
+      type: "numberSlider",
+      name: "Number Slider",
+      description: "Slider input for numbers",
+      category: "input",
+      icon: "LinearScale",
+      color: "#66BB6A",
+    },
+    {
+      type: "booleanToggle",
+      name: "Boolean Toggle",
+      description: "Toggle switch for booleans",
+      category: "input",
+      icon: "ToggleOn",
+      color: "#FFA726",
+    },
+    {
+      type: "point",
+      name: "Point",
+      description: "3D point / vector3 creator",
+      category: "input",
+      icon: "Place",
+      color: "#AB47BC",
     },
     {
       type: "output",
@@ -54,6 +85,14 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       category: "output",
       icon: "Output",
       color: "#fa709a",
+    },
+    {
+      type: "watch",
+      name: "Watch",
+      description: "Preview value for debugging",
+      category: "output",
+      icon: "Visibility",
+      color: "#42A5F5",
     },
 
     // Math
@@ -145,6 +184,22 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
       icon: "Code",
       color: "#667eea",
     },
+    {
+      type: "list",
+      name: "List",
+      description: "Creates a list from items",
+      category: "utility",
+      icon: "List",
+      color: "#CE93D8",
+    },
+    {
+      type: "sequence",
+      name: "Sequence",
+      description: "Generates a number sequence/range",
+      category: "utility",
+      icon: "FormatListNumbered",
+      color: "#26A69A",
+    },
 
     // Logic
     {
@@ -204,6 +259,20 @@ const NodeLibrary: React.FC<NodeLibraryProps> = ({ onNodeDragStart }) => {
         return <Code {...iconProps} />;
       case "Help":
         return <Help {...iconProps} />;
+      case "LinearScale":
+        return <LinearScale {...iconProps} />;
+      case "ToggleOn":
+        return <ToggleOn {...iconProps} />;
+      case "Place":
+        return <Place {...iconProps} />;
+      case "List":
+        return <List {...iconProps} />;
+      case "Visibility":
+        return <Visibility {...iconProps} />;
+      case "FormatListNumbered":
+        return <FormatListNumbered {...iconProps} />;
+      case "Colorize":
+        return <Colorize {...iconProps} />;
       default:
         return <Category {...iconProps} />;
     }
