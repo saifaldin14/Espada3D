@@ -8,7 +8,6 @@ import {
   Button,
   Paper,
   Tooltip,
-  useTheme,
   useMediaQuery,
 } from "@mui/material";
 import { Tune, CropFree, LinearScale, Crop } from "@mui/icons-material";
@@ -24,7 +23,6 @@ interface MeshEditPanelProps {
 const MeshEditPanel: React.FC<MeshEditPanelProps> = ({ modelId }) => {
   const dispatch = useDispatch();
   const editMode = useSelector((state: any) => state.ui.editMode);
-  const theme = useTheme();
   const isSmallPanel = useMediaQuery("(max-width:280px)");
   const isVerySmallPanel = useMediaQuery("(max-width:200px)");
 

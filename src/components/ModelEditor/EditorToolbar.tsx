@@ -24,8 +24,6 @@ import {
   ToggleButtonGroup,
   Tooltip,
   Divider,
-  FormControlLabel,
-  Switch,
   TextField,
   Typography,
   Badge,
@@ -33,8 +31,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Popover,
-  Paper,
 } from "@mui/material";
 import {
   OpenWith,
@@ -44,21 +40,16 @@ import {
   Redo,
   ContentCopy,
   ContentPaste,
-  Save,
   GridOn,
   GridOff,
   AccountTree,
   Timeline,
   CenterFocusStrong,
-  Edit,
   ViewInAr,
-  Extension,
   Texture,
   Animation,
   Category,
-  Layers,
   Menu as MenuIcon,
-  ArrowDropDown,
   MoreVert,
   Dashboard,
   TuneRounded,
@@ -133,45 +124,45 @@ const EditorToolbar: React.FC = () => {
     }
   };
 
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.ctrlKey || event.metaKey) {
-      switch (event.key) {
-        case "z":
-          event.preventDefault();
-          if (event.shiftKey) {
-            dispatch(redo());
-          } else {
-            dispatch(undo());
-          }
-          break;
-        case "y":
-          event.preventDefault();
-          dispatch(redo());
-          break;
-        case "c":
-          if (selectedModelIds.length > 0) {
-            event.preventDefault();
-            dispatch(copyModels(selectedModelIds));
-          }
-          break;
-        case "v":
-          event.preventDefault();
-          dispatch(pasteModels([0, 0, 0]));
-          break;
-        case "s":
-          event.preventDefault();
-          dispatch(saveToHistory());
-          break;
-      }
-    }
-  };
-
   React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        switch (event.key) {
+          case "z":
+            event.preventDefault();
+            if (event.shiftKey) {
+              dispatch(redo());
+            } else {
+              dispatch(undo());
+            }
+            break;
+          case "y":
+            event.preventDefault();
+            dispatch(redo());
+            break;
+          case "c":
+            if (selectedModelIds.length > 0) {
+              event.preventDefault();
+              dispatch(copyModels(selectedModelIds));
+            }
+            break;
+          case "v":
+            event.preventDefault();
+            dispatch(pasteModels([0, 0, 0]));
+            break;
+          case "s":
+            event.preventDefault();
+            dispatch(saveToHistory());
+            break;
+        }
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedModelIds]);
+  }, [selectedModelIds, dispatch]);
 
   const openMainMenu = (event: React.MouseEvent<HTMLElement>) => {
     setMainMenuAnchor(event.currentTarget);

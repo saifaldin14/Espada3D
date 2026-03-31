@@ -11,9 +11,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Chip,
   FormControl,
   InputLabel,
   Select,
@@ -21,15 +18,10 @@ import {
   Slider,
   FormControlLabel,
   Switch,
-  Divider,
   Paper,
-  Tooltip,
 } from "@mui/material";
 import {
   Delete,
-  ControlPoint,
-  LinearScale,
-  Transform,
   SelectAll,
   DeselectOutlined,
   OpenWith,
@@ -38,7 +30,6 @@ import {
   CallMerge,
   Add,
   Remove,
-  Loop,
 } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
