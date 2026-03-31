@@ -271,16 +271,95 @@ export class NodeExecutor {
     const input = inputs.input;
     const filterStrength = inputs.strength !== undefined ? inputs.strength : strength;
 
-    // For now, just pass through with filter metadata
+    // Apply the filter to numeric/color/material inputs when possible
+    let filteredValue = input;
+
+    if (typeof input === 'number') {
+      filteredValue = this.applyNumericFilter(input, filterType, filterStrength);
+    } else if (typeof input === 'string' && /^#[0-9a-f]{6}$/i.test(input)) {
+      filteredValue = this.applyColorFilter(input, filterType, filterStrength);
+    } else if (input && typeof input === 'object' && input.color) {
+      // Material-like object
+      filteredValue = {
+        ...input,
+        color: this.applyColorFilter(input.color, filterType, filterStrength),
+      };
+    }
+
     return {
       output: {
-        ...input,
+        value: filteredValue,
+        original: input,
         filter: {
           type: filterType,
           strength: filterStrength,
-        }
-      }
+        },
+      },
     };
+  }
+
+  /** Apply a filter to a numeric value. */
+  private applyNumericFilter(value: number, filterType: string, strength: number): number {
+    switch (filterType) {
+      case 'blur':
+        // Smooth toward zero
+        return value * (1 - Math.min(strength, 1));
+      case 'sharpen':
+        return value * (1 + strength);
+      case 'noise': {
+        const noise = (Math.random() - 0.5) * 2 * strength;
+        return value + noise;
+      }
+      case 'brightness':
+        return value + strength;
+      case 'contrast':
+        return (value - 0.5) * (1 + strength) + 0.5;
+      default:
+        return value;
+    }
+  }
+
+  /** Apply a filter to a hex colour string. */
+  private applyColorFilter(hex: string, filterType: string, strength: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    let [rr, gg, bb] = [r, g, b];
+
+    switch (filterType) {
+      case 'brightness':
+        rr = Math.min(255, Math.max(0, Math.round(r + strength * 255)));
+        gg = Math.min(255, Math.max(0, Math.round(g + strength * 255)));
+        bb = Math.min(255, Math.max(0, Math.round(b + strength * 255)));
+        break;
+      case 'contrast': {
+        const factor = 1 + strength;
+        rr = Math.min(255, Math.max(0, Math.round((r - 128) * factor + 128)));
+        gg = Math.min(255, Math.max(0, Math.round((g - 128) * factor + 128)));
+        bb = Math.min(255, Math.max(0, Math.round((b - 128) * factor + 128)));
+        break;
+      }
+      case 'blur': {
+        const grey = Math.round((r + g + b) / 3);
+        const t = Math.min(strength, 1);
+        rr = Math.round(r + (grey - r) * t);
+        gg = Math.round(g + (grey - g) * t);
+        bb = Math.round(b + (grey - b) * t);
+        break;
+      }
+      case 'noise': {
+        const n = Math.round((Math.random() - 0.5) * 2 * strength * 255);
+        rr = Math.min(255, Math.max(0, r + n));
+        gg = Math.min(255, Math.max(0, g + n));
+        bb = Math.min(255, Math.max(0, b + n));
+        break;
+      }
+      default:
+        break;
+    }
+
+    return `#${rr.toString(16).padStart(2, '0')}${gg.toString(16).padStart(2, '0')}${bb.toString(16).padStart(2, '0')}`;
   }
 
   private executeConditionNode(node: Node, inputs: Record<string, any>): Record<string, any> {
@@ -345,6 +424,78 @@ export class NodeExecutor {
       textureFile = ''
     } = node.data;
 
+    // Procedural texture generation: produce pixel data metadata for
+    // checkerboard / noise / gradient patterns.
+    if (textureSource === 'procedural') {
+      const size = 64; // pixels
+      const pixels: number[] = [];
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          let r = 255, g = 255, b = 255;
+          switch (textureType) {
+            case 'diffuse': { // checkerboard
+              const isWhite = ((Math.floor(x / 8) + Math.floor(y / 8)) % 2) === 0;
+              r = g = b = isWhite ? 255 : 64;
+              break;
+            }
+            case 'normal': { // flat normal map (128,128,255)
+              r = 128; g = 128; b = 255;
+              break;
+            }
+            case 'roughness': { // gradient left→right
+              r = g = b = Math.round((x / size) * 255);
+              break;
+            }
+            case 'metalness': { // noise
+              const v = Math.round(Math.random() * 255);
+              r = g = b = v;
+              break;
+            }
+            default:
+              break;
+          }
+          pixels.push(r, g, b, 255);
+        }
+      }
+
+      return {
+        texture: {
+          source: 'procedural',
+          type: textureType,
+          width: size,
+          height: size,
+          pixels,
+          nodeId: node.id,
+        },
+      };
+    }
+
+    // Generated solid-color texture
+    if (textureSource === 'generated') {
+      const size = 16;
+      const hex = inputs.color || '#ffffff';
+      const rr = parseInt(hex.slice(1, 3), 16) || 255;
+      const gg = parseInt(hex.slice(3, 5), 16) || 255;
+      const bb = parseInt(hex.slice(5, 7), 16) || 255;
+      const pixels: number[] = [];
+      for (let i = 0; i < size * size; i++) {
+        pixels.push(rr, gg, bb, 255);
+      }
+
+      return {
+        texture: {
+          source: 'generated',
+          type: textureType,
+          width: size,
+          height: size,
+          pixels,
+          nodeId: node.id,
+        },
+      };
+    }
+
+    // File-based texture — return metadata; actual loading deferred to renderer
     return {
       texture: {
         source: textureSource,
@@ -396,16 +547,79 @@ export class NodeExecutor {
   private executeScriptNode(node: Node, inputs: Record<string, any>): Record<string, any> {
     const { scriptContent = '', scriptLanguage = 'javascript' } = node.data;
 
-    // For now, just return the script info - in a real implementation,
-    // you would execute the script safely
-    return {
-      script: {
-        content: scriptContent,
-        language: scriptLanguage,
-        inputs,
-        nodeId: node.id,
-      }
-    };
+    // GLSL scripts cannot be executed on the CPU — return metadata for the
+    // renderer to compile as a shader later.
+    if (scriptLanguage === 'glsl' || !scriptContent.trim()) {
+      return {
+        script: {
+          content: scriptContent,
+          language: scriptLanguage,
+          inputs,
+          nodeId: node.id,
+        },
+      };
+    }
+
+    // Sandboxed JavaScript execution via new Function().
+    // We expose a small, safe API surface: the node inputs, basic math, and a
+    // return-value mechanism. No access to DOM, fetch, require, etc.
+    try {
+      const safeGlobals: Record<string, any> = {
+        Math,
+        Number,
+        String,
+        Boolean,
+        Array,
+        Object,
+        JSON,
+        parseFloat,
+        parseInt,
+        isNaN,
+        isFinite,
+        console: { log: () => {}, warn: () => {}, error: () => {} },
+      };
+
+      const argNames = Object.keys(safeGlobals);
+      const argValues = argNames.map((k) => safeGlobals[k]);
+
+      // Prepend input declarations so the user script can reference them
+      // directly by name (e.g. `a`, `b`, `input`).
+      const inputDeclarations = Object.entries(inputs)
+        .map(([k, v]) => `var ${k} = ${JSON.stringify(v)};`)
+        .join('\n');
+
+      const wrappedScript = `
+        "use strict";
+        ${inputDeclarations}
+        ${scriptContent}
+      `;
+
+      // eslint-disable-next-line no-new-func
+      const fn = new Function(...argNames, wrappedScript);
+      const result = fn(...argValues);
+
+      return {
+        script: {
+          content: scriptContent,
+          language: scriptLanguage,
+          inputs,
+          nodeId: node.id,
+          result: result !== undefined ? result : null,
+          executed: true,
+        },
+      };
+    } catch (err: any) {
+      return {
+        script: {
+          content: scriptContent,
+          language: scriptLanguage,
+          inputs,
+          nodeId: node.id,
+          error: err.message || 'Script execution failed',
+          executed: false,
+        },
+      };
+    }
   }
 
   private executeNumberSliderNode(node: Node, inputs: Record<string, any>): Record<string, any> {

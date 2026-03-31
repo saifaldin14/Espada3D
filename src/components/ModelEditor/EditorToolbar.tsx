@@ -31,6 +31,7 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Avatar,
 } from "@mui/material";
 import {
   OpenWith,
@@ -65,10 +66,15 @@ import {
   KeyboardArrowRight,
   RadioButtonChecked,
   AccountCircle,
+  Group as GroupIcon,
+  Login as LoginIcon,
 } from "@mui/icons-material";
 import { ToolType, EditMode } from "../../types";
 import { glassStyles } from "../../config/theme";
 import { EditModes } from "../../Enums";
+import { useAuth } from "../../contexts/AuthContext";
+import LoginDialog from "../Auth/LoginDialog";
+import CollaborationPanel from "../Collaboration/CollaborationPanel";
 
 const EditorToolbar: React.FC = () => {
   const activeTool = useSelector((state: any) => state.ui.activeTool);
@@ -96,6 +102,8 @@ const EditorToolbar: React.FC = () => {
 
   const dispatch = useDispatch();
 
+  const { user, available: authAvailable, logout } = useAuth();
+
   const [mainMenuAnchor, setMainMenuAnchor] = useState<null | HTMLElement>(
     null
   );
@@ -105,6 +113,8 @@ const EditorToolbar: React.FC = () => {
   const [toolsMenuAnchor, setToolsMenuAnchor] = useState<null | HTMLElement>(
     null
   );
+  const [showLogin, setShowLogin] = useState(false);
+  const [showCollab, setShowCollab] = useState(false);
 
   const handleToolChange = (
     event: React.MouseEvent<HTMLElement>,
@@ -521,6 +531,42 @@ const EditorToolbar: React.FC = () => {
             <TuneRounded fontSize="small" />
           </IconButton>
         </Tooltip>
+
+        <Divider orientation="vertical" flexItem sx={styles.divider} />
+
+        {/* Collaboration */}
+        <Tooltip title="Collaborate">
+          <IconButton
+            size="small"
+            onClick={() => setShowCollab(true)}
+            sx={styles.menuIconButton}
+          >
+            <GroupIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+
+        {/* Auth */}
+        {authAvailable && (
+          user ? (
+            <Tooltip title={`Signed in as ${user.displayName || user.email}`}>
+              <IconButton size="small" onClick={() => logout()} sx={styles.menuIconButton}>
+                <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: '#667eea' }}>
+                  {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+          ) : (
+            <Tooltip title="Sign In">
+              <IconButton
+                size="small"
+                onClick={() => setShowLogin(true)}
+                sx={styles.menuIconButton}
+              >
+                <LoginIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )
+        )}
       </Box>
 
       {/* Main Menu */}
@@ -641,6 +687,10 @@ const EditorToolbar: React.FC = () => {
           <ListItemText primary="More Options" />
         </MenuItem>
       </Menu>
+
+      {/* Auth & Collaboration Dialogs */}
+      <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
+      <CollaborationPanel open={showCollab} onClose={() => setShowCollab(false)} />
     </Box>
   );
 };

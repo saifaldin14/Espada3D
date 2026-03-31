@@ -14,6 +14,8 @@ import {
   Typography,
   Divider,
   IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import {
   CloudUpload as UploadIcon,
@@ -29,9 +31,12 @@ import {
   validateOBJFile,
   OBJExportOptions,
 } from "../../utils/objLoader";
+import { downloadModelGLTF, GLTFExportOptions } from "../../utils/gltfExporter";
 import { addModel } from "../../store/slices/modelSlice";
 import { createGeometry } from "../../utils/geometryFactory";
 import * as THREE from "three";
+
+type ExportFormat = "obj" | "gltf" | "glb";
 
 interface FileManagerProps {
   open: boolean;
@@ -64,6 +69,7 @@ const FileManager: React.FC<FileManagerProps> = ({
 
   // Export options
   const [exportFilename, setExportFilename] = useState("model");
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("glb");
   const [exportOptions, setExportOptions] = useState<OBJExportOptions>({
     includeNormals: true,
     includeUVs: true,
@@ -164,22 +170,19 @@ const FileManager: React.FC<FileManagerProps> = ({
 
     // Try to get geometry from different sources
     if (currentGeometry) {
-      // Use provided geometry (for imported models)
       geometryToExport = currentGeometry;
     } else if (selectedModel) {
-      // Create geometry from model metadata
       if (
         selectedModel.type === "imported" &&
         selectedModel.userData?.geometry
       ) {
         geometryToExport = selectedModel.userData.geometry;
       } else {
-        // Create geometry based on model type
         geometryToExport = createGeometry(selectedModel.type);
       }
     }
 
-    if (!geometryToExport) {
+    if (!geometryToExport && exportFormat === "obj") {
       setError("No geometry available to export");
       return;
     }
@@ -188,9 +191,23 @@ const FileManager: React.FC<FileManagerProps> = ({
     setError(null);
 
     try {
-      const filename = selectedModel?.name || exportFilename;
-      OBJExporter.downloadOBJ(geometryToExport, filename, exportOptions);
-      setSuccess(`Successfully exported "${exportFilename}.obj"!`);
+      if (exportFormat === "obj") {
+        const filename = selectedModel?.name || exportFilename;
+        OBJExporter.downloadOBJ(geometryToExport!, filename, exportOptions);
+        setSuccess(`Successfully exported "${exportFilename}.obj"!`);
+      } else {
+        // glTF / GLB export
+        if (!selectedModel) {
+          setError("No model selected to export");
+          setLoading(false);
+          return;
+        }
+        const binary = exportFormat === "glb";
+        const gltfOpts: GLTFExportOptions = { binary };
+        const filename = selectedModel.name || exportFilename;
+        await downloadModelGLTF(selectedModel, geometryToExport ?? undefined, filename, gltfOpts);
+        setSuccess(`Successfully exported "${filename}.${exportFormat}"!`);
+      }
 
       // Close dialog after a short delay
       setTimeout(() => {
@@ -199,7 +216,7 @@ const FileManager: React.FC<FileManagerProps> = ({
     } catch (error) {
       console.error("Export error:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to export OBJ file"
+        error instanceof Error ? error.message : "Failed to export file"
       );
     } finally {
       setLoading(false);
@@ -229,7 +246,7 @@ const FileManager: React.FC<FileManagerProps> = ({
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {mode === "import" ? <UploadIcon /> : <DownloadIcon />}
-          {mode === "import" ? "Import OBJ File" : "Export OBJ File"}
+          {mode === "import" ? "Import Model" : "Export Model"}
         </Box>
         <IconButton onClick={handleClose} size="small">
           <CloseIcon />
@@ -297,9 +314,23 @@ const FileManager: React.FC<FileManagerProps> = ({
         {mode === "export" && (
           <Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Export the current model as an OBJ file. Configure the export
-              options below.
+              Export the current model. Choose a format and configure options below.
             </Typography>
+
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Export Format
+            </Typography>
+            <ToggleButtonGroup
+              value={exportFormat}
+              exclusive
+              onChange={(_, v) => { if (v) setExportFormat(v as ExportFormat); }}
+              sx={{ mb: 2, display: "flex" }}
+              size="small"
+            >
+              <ToggleButton value="glb" sx={{ flex: 1 }}>GLB (Binary)</ToggleButton>
+              <ToggleButton value="gltf" sx={{ flex: 1 }}>glTF (JSON)</ToggleButton>
+              <ToggleButton value="obj" sx={{ flex: 1 }}>OBJ</ToggleButton>
+            </ToggleButtonGroup>
 
             <TextField
               fullWidth
@@ -307,59 +338,63 @@ const FileManager: React.FC<FileManagerProps> = ({
               value={exportFilename}
               onChange={(e) => setExportFilename(e.target.value)}
               sx={{ mb: 2 }}
-              helperText="File will be saved as [filename].obj"
+              helperText={`File will be saved as [filename].${exportFormat}`}
             />
 
-            <Divider sx={{ my: 2 }} />
+            {exportFormat === "obj" && (
+              <>
+                <Divider sx={{ my: 2 }} />
 
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Export Options
-            </Typography>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  OBJ Export Options
+                </Typography>
 
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={exportOptions.includeNormals || false}
-                  onChange={(e) =>
-                    setExportOptions((prev) => ({
-                      ...prev,
-                      includeNormals: e.target.checked,
-                    }))
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={exportOptions.includeNormals || false}
+                      onChange={(e) =>
+                        setExportOptions((prev) => ({
+                          ...prev,
+                          includeNormals: e.target.checked,
+                        }))
+                      }
+                    />
                   }
+                  label="Include Normals"
                 />
-              }
-              label="Include Normals"
-            />
 
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={exportOptions.includeUVs || false}
-                  onChange={(e) =>
-                    setExportOptions((prev) => ({
-                      ...prev,
-                      includeUVs: e.target.checked,
-                    }))
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={exportOptions.includeUVs || false}
+                      onChange={(e) =>
+                        setExportOptions((prev) => ({
+                          ...prev,
+                          includeUVs: e.target.checked,
+                        }))
+                      }
+                    />
                   }
+                  label="Include UV Coordinates"
                 />
-              }
-              label="Include UV Coordinates"
-            />
 
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={exportOptions.flipYUV || false}
-                  onChange={(e) =>
-                    setExportOptions((prev) => ({
-                      ...prev,
-                      flipYUV: e.target.checked,
-                    }))
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={exportOptions.flipYUV || false}
+                      onChange={(e) =>
+                        setExportOptions((prev) => ({
+                          ...prev,
+                          flipYUV: e.target.checked,
+                        }))
+                      }
+                    />
                   }
+                  label="Flip Y UV Coordinate"
                 />
-              }
-              label="Flip Y UV Coordinate"
-            />
+              </>
+            )}
           </Box>
         )}
 
