@@ -2,6 +2,8 @@ import { Node, NodeConnection, NodeExecutionResult } from '../types/nodeTypes';
 import { ModelMetadata, GeometryType, MaterialType } from '../types';
 import store from '../store';
 import { addModel, updateModelMetadata, updateModelTransform, updateModelMaterial, removeModel } from '../store/slices/modelSlice';
+import { setNodeSceneLights, setNodeSceneCamera } from '../store/slices/nodeSlice';
+import { NodeGraphState } from '../types/nodeTypes';
 
 export class NodeExecutor {
   private nodes: Node[];
@@ -619,6 +621,44 @@ export class NodeExecutor {
         store.dispatch(addModel(modelData));
       }
     }
+
+    // Process light nodes and apply to scene
+    const lightOutputs: Array<{
+      nodeId: string;
+      type: string;
+      intensity: number;
+      color: string;
+      castShadows: boolean;
+      position?: [number, number, number];
+    }> = [];
+    for (const [nodeId, outputs] of executionEntries) {
+      if (outputs.light) {
+        lightOutputs.push({
+          nodeId,
+          type: outputs.light.type,
+          intensity: outputs.light.intensity,
+          color: outputs.light.color,
+          castShadows: outputs.light.castShadows,
+          ...(outputs.light.position ? { position: outputs.light.position } : {}),
+        });
+      }
+    }
+    store.dispatch(setNodeSceneLights(lightOutputs));
+
+    // Process camera nodes and apply to scene (use last camera node)
+    let cameraOutput: NodeGraphState['nodeSceneCamera'] = null;
+    for (const [nodeId, outputs] of executionEntries) {
+      if (outputs.camera) {
+        cameraOutput = {
+          type: outputs.camera.type,
+          fov: outputs.camera.fov,
+          near: outputs.camera.near,
+          far: outputs.camera.far,
+          nodeId,
+        };
+      }
+    }
+    store.dispatch(setNodeSceneCamera(cameraOutput));
 
     // Clean up models that no longer have corresponding nodes
     const nodeGeneratedModels = existingModels.filter((m: ModelMetadata) => m.id.startsWith('node_generated_'));

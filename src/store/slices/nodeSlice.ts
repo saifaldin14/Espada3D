@@ -17,6 +17,8 @@ const initialState: NodeGraphState = {
     nodes: [],
     connections: [],
   },
+  nodeSceneLights: [],
+  nodeSceneCamera: null,
 };
 
 // Helper function to generate unique IDs
@@ -254,6 +256,8 @@ const nodeSlice = createSlice({
       state.selectedNodeId = null;
       state.selectedConnectionId = null;
       state.executionResults = {};
+      state.nodeSceneLights = [];
+      state.nodeSceneCamera = null;
     },
 
     // Clipboard operations
@@ -567,6 +571,12 @@ const nodeSlice = createSlice({
         });
       }
     },
+    setNodeSceneLights: (state, action: PayloadAction<NodeGraphState['nodeSceneLights']>) => {
+      state.nodeSceneLights = action.payload;
+    },
+    setNodeSceneCamera: (state, action: PayloadAction<NodeGraphState['nodeSceneCamera']>) => {
+      state.nodeSceneCamera = action.payload;
+    },
   },
 });
 
@@ -602,6 +612,8 @@ export const {
   moveSelectedNodes,
   alignSelectedNodes,
   distributeSelectedNodes,
+  setNodeSceneLights,
+  setNodeSceneCamera,
 } = nodeSlice.actions;
 
 export default nodeSlice.reducer;

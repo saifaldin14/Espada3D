@@ -173,6 +173,21 @@ export interface NodeGraphState {
     nodes: Node[];
     connections: NodeConnection[];
   };
+  nodeSceneLights: Array<{
+    nodeId: string;
+    type: string;
+    intensity: number;
+    color: string;
+    castShadows: boolean;
+    position?: [number, number, number];
+  }>;
+  nodeSceneCamera: {
+    type: string;
+    fov: number;
+    near: number;
+    far: number;
+    nodeId: string;
+  } | null;
 }
 
 export interface NodeEditorSettings {
