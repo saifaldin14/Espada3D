@@ -131,7 +131,12 @@ export class CollaborationManager {
   }
 
   get roomId(): string | null {
-    return this.provider ? (this.provider as any).roomname ?? null : null;
+    if (!this.provider) return null;
+    // WebsocketProvider stores the room name but the property is not in the
+    // public type definition, so we read it from the documented constructor
+    // parameter that is stored on the instance.
+    const prov = this.provider as WebsocketProvider & { roomname?: string };
+    return prov.roomname ?? null;
   }
 
   getUsers(): CollaborationUser[] {

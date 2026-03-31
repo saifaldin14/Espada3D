@@ -564,19 +564,25 @@ export class NodeExecutor {
     // We expose a small, safe API surface: the node inputs, basic math, and a
     // return-value mechanism. No access to DOM, fetch, require, etc.
     try {
+      const scriptLog: string[] = [];
+
+      const safeConsole = Object.freeze({
+        log: (...args: any[]) => { scriptLog.push(args.map(String).join(' ')); },
+        warn: (...args: any[]) => { scriptLog.push('[warn] ' + args.map(String).join(' ')); },
+        error: (...args: any[]) => { scriptLog.push('[error] ' + args.map(String).join(' ')); },
+      });
+
       const safeGlobals: Record<string, any> = {
-        Math,
+        Math: Object.freeze({ ...Math }),
         Number,
         String,
         Boolean,
-        Array,
-        Object,
-        JSON,
         parseFloat,
         parseInt,
         isNaN,
         isFinite,
-        console: { log: () => {}, warn: () => {}, error: () => {} },
+        console: safeConsole,
+        JSON: Object.freeze({ parse: JSON.parse, stringify: JSON.stringify }),
       };
 
       const argNames = Object.keys(safeGlobals);
@@ -605,6 +611,7 @@ export class NodeExecutor {
           inputs,
           nodeId: node.id,
           result: result !== undefined ? result : null,
+          log: scriptLog,
           executed: true,
         },
       };
