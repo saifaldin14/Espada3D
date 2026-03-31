@@ -4,11 +4,9 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  Paper,
   Collapse,
 } from "@mui/material";
 import {
-  Add,
   Delete,
   PlayArrow,
   Stop,
@@ -25,7 +23,6 @@ import {
 import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import {
   Node,
-  NodeConnection,
   NodeType,
   NodeData,
   Position,
@@ -35,7 +32,6 @@ import NodeLibrary from "./NodeLibrary";
 import NodeProperties from "./NodeProperties";
 import {
   addNode,
-  deleteNode,
   connectNodes,
   disconnectNodes,
   updateNodePosition,

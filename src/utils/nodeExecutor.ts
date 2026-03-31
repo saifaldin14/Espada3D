@@ -1,4 +1,4 @@
-import { Node, NodeConnection, NodeData, NodeExecutionResult } from '../types/nodeTypes';
+import { Node, NodeConnection, NodeExecutionResult } from '../types/nodeTypes';
 import { ModelMetadata, GeometryType, MaterialType } from '../types';
 import store from '../store';
 import { addModel, updateModelMetadata, removeModel } from '../store/slices/modelSlice';

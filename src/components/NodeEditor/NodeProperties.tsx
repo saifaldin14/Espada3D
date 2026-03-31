@@ -8,8 +8,6 @@ import {
   FormControl,
   InputLabel,
   Slider,
-  Switch,
-  FormControlLabel,
   Button,
   Divider,
 } from "@mui/material";

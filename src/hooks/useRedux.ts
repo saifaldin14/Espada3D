@@ -1,6 +1,6 @@
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import { useMemo, useCallback } from 'react';
-import { RootState, ModelMetadata } from '../types';
+import { RootState } from '../types';
 import { AppDispatch } from '../store';
 import { 
   createNewModel, 

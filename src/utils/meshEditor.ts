@@ -411,7 +411,7 @@ export class MeshEditor {
     // Since we cannot access edge vertices without meshData here, caller functions that need precise vertex adjacency
     // will compute it directly. For now approximate by faces: collect all vertices from faces containing this vertex.
     faces.forEach(faceIdx => {
-      const faceSet = this.faceAdjacency.get(faceIdx); // unused but keep for potential extension
+      this.faceAdjacency.get(faceIdx); // keep call for potential extension
     });
 
     return {
