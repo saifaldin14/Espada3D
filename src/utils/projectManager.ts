@@ -39,6 +39,10 @@ export interface ProjectData {
     };
   };
   geometryData: { [modelId: string]: SerializedGeometry };
+  nodeGraph?: {
+    nodes: any[];
+    connections: any[];
+  };
 }
 
 export interface SerializedGeometry {
@@ -206,7 +210,8 @@ export class ProjectManager {
     geometryData: { [modelId: string]: THREE.BufferGeometry },
     sceneState: any,
     projectInfo: { name: string; description?: string; author?: string },
-    options: ProjectSaveOptions = {}
+    options: ProjectSaveOptions = {},
+    nodeGraphState?: { nodes: any[]; connections: any[] }
   ): Promise<string> {
     const {
       includeGeometry = true,
@@ -281,6 +286,14 @@ export class ProjectManager {
           projectData.geometryData[modelId] = serializeGeometry(geometry);
         }
       });
+    }
+
+    // Save node graph state if provided
+    if (nodeGraphState) {
+      projectData.nodeGraph = {
+        nodes: nodeGraphState.nodes,
+        connections: nodeGraphState.connections,
+      };
     }
 
     return JSON.stringify(projectData, null, 2);
