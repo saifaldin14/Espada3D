@@ -6,6 +6,7 @@ import meshReducer from './slices/meshSlice';
 import nodeReducer from './slices/nodeSlice';
 import rootSaga from './sagas/modelSagas';
 import { RootState } from '../types';
+import { collaborationMiddleware } from './middleware/collaborationMiddleware';
 
 // Create the saga middleware
 const sagaMiddleware = createSagaMiddleware();
@@ -23,7 +24,7 @@ const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST'],
       },
-    }).concat(sagaMiddleware),
+    }).concat(sagaMiddleware, collaborationMiddleware),
 });
 
 // Run the root saga

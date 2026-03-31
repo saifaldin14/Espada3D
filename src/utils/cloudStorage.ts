@@ -118,3 +118,183 @@ export async function deleteProjectFromCloud(projectId: string): Promise<void> {
   const docRef = doc(db, PROJECTS_COLLECTION, projectId);
   await deleteDoc(docRef);
 }
+
+// ---- Project Sharing ----
+
+export type ProjectPermission = 'owner' | 'editor' | 'viewer';
+
+export interface ProjectShare {
+  projectId: string;
+  uid: string;
+  email: string;
+  displayName: string;
+  permission: ProjectPermission;
+  sharedAt: string;
+  sharedBy: string;
+}
+
+const SHARES_COLLECTION = 'projectShares';
+
+/**
+ * Share a project with another user.
+ */
+export async function shareProject(
+  projectId: string,
+  targetUid: string,
+  targetEmail: string,
+  targetDisplayName: string,
+  permission: ProjectPermission,
+  sharedByUid: string
+): Promise<void> {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured.');
+  }
+
+  const shareId = `${projectId}_${targetUid}`;
+  const shareRef = doc(db, SHARES_COLLECTION, shareId);
+  await setDoc(shareRef, {
+    projectId,
+    uid: targetUid,
+    email: targetEmail,
+    displayName: targetDisplayName,
+    permission,
+    sharedAt: new Date().toISOString(),
+    sharedBy: sharedByUid,
+  });
+}
+
+/**
+ * Remove project sharing for a user.
+ */
+export async function unshareProject(projectId: string, targetUid: string): Promise<void> {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured.');
+  }
+
+  const shareId = `${projectId}_${targetUid}`;
+  const shareRef = doc(db, SHARES_COLLECTION, shareId);
+  await deleteDoc(shareRef);
+}
+
+/**
+ * List all shares for a project.
+ */
+export async function listProjectShares(projectId: string): Promise<ProjectShare[]> {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured.');
+  }
+
+  const q = query(
+    collection(db, SHARES_COLLECTION),
+    where('projectId', '==', projectId)
+  );
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => d.data() as ProjectShare);
+}
+
+/**
+ * List all projects shared with a user.
+ */
+export async function listSharedProjects(userId: string): Promise<CloudProjectMeta[]> {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured.');
+  }
+
+  // Find all share records for this user
+  const sharesQuery = query(
+    collection(db, SHARES_COLLECTION),
+    where('uid', '==', userId)
+  );
+
+  const sharesSnapshot = await getDocs(sharesQuery);
+  const projectIds = sharesSnapshot.docs.map((d) => d.data().projectId as string);
+
+  // Fetch project metadata for each shared project
+  const projects: CloudProjectMeta[] = [];
+  for (const projectId of projectIds) {
+    const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+    const projectSnap = await getDoc(projectRef);
+    if (projectSnap.exists()) {
+      const data = projectSnap.data();
+      projects.push({
+        id: projectSnap.id,
+        name: data.name,
+        description: data.metadata?.description,
+        updatedAt: data.updatedAt,
+        createdAt: data.createdAt,
+        ownerId: data.ownerId,
+        ownerName: data.ownerName,
+        modelCount: data.scene?.models?.length ?? 0,
+        version: data.version,
+      });
+    }
+  }
+
+  return projects;
+}
+
+/**
+ * Share a project with an entire team.
+ * Creates share records for all team members.
+ */
+export async function shareProjectWithTeam(
+  projectId: string,
+  teamId: string,
+  permission: ProjectPermission,
+  sharedByUid: string
+): Promise<void> {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured.');
+  }
+
+  // Fetch team members
+  const membersRef = collection(db, 'teams', teamId, 'members');
+  const membersSnapshot = await getDocs(membersRef);
+
+  const sharePromises = membersSnapshot.docs.map(async (memberDoc) => {
+    const member = memberDoc.data();
+    if (member.uid !== sharedByUid) {
+      await shareProject(
+        projectId,
+        member.uid,
+        member.email,
+        member.displayName,
+        permission,
+        sharedByUid
+      );
+    }
+  });
+
+  await Promise.all(sharePromises);
+}
+
+/**
+ * Check if a user has access to a project (owner or shared).
+ */
+export async function checkProjectAccess(
+  projectId: string,
+  userId: string
+): Promise<ProjectPermission | null> {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured.');
+  }
+
+  // Check if user is the owner
+  const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+  const projectSnap = await getDoc(projectRef);
+  if (projectSnap.exists() && projectSnap.data().ownerId === userId) {
+    return 'owner';
+  }
+
+  // Check share records
+  const shareId = `${projectId}_${userId}`;
+  const shareRef = doc(db, SHARES_COLLECTION, shareId);
+  const shareSnap = await getDoc(shareRef);
+
+  if (shareSnap.exists()) {
+    return shareSnap.data().permission as ProjectPermission;
+  }
+
+  return null;
+}

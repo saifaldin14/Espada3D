@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -22,6 +22,7 @@ import {
   LinkOff as LinkOffIcon,
 } from '@mui/icons-material';
 import { useCollaboration } from '../../hooks/useCollaboration';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface CollaborationPanelProps {
   open: boolean;
@@ -30,20 +31,28 @@ interface CollaborationPanelProps {
 
 const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ open, onClose }) => {
   const { connected, users, roomId, joinRoom, leaveRoom } = useCollaboration();
+  const { user: authUser } = useAuth();
   const [joinRoomId, setJoinRoomId] = useState('');
   const [userName, setUserName] = useState('');
   const [serverUrl, setServerUrl] = useState('');
 
+  // Auto-populate userName from auth when available
+  useEffect(() => {
+    if (authUser?.displayName && !userName) {
+      setUserName(authUser.displayName);
+    }
+  }, [authUser, userName]);
+
   const handleJoin = () => {
-    if (!joinRoomId || !userName) return;
-    joinRoom(joinRoomId, userName, serverUrl || undefined);
+    if (!joinRoomId) return;
+    // userName is optional when logged in — the hook uses auth identity
+    joinRoom(joinRoomId, userName || undefined, serverUrl || undefined);
   };
 
   const handleCreateRoom = () => {
-    if (!userName) return;
     const newRoomId = `room_${Date.now().toString(36)}`;
     setJoinRoomId(newRoomId);
-    joinRoom(newRoomId, userName, serverUrl || undefined);
+    joinRoom(newRoomId, userName || undefined, serverUrl || undefined);
   };
 
   return (
@@ -121,11 +130,12 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ open, onClose }
 
             <TextField
               fullWidth
-              label="Your Name"
+              label={authUser ? "Display Name (from account)" : "Your Name"}
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               sx={{ mb: 2 }}
-              placeholder="Enter your display name"
+              placeholder={authUser?.displayName || "Enter your display name"}
+              helperText={authUser ? "Logged in — name is auto-filled from your account" : undefined}
             />
 
             <TextField
@@ -163,14 +173,14 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ open, onClose }
           </Button>
         ) : (
           <>
-            <Button onClick={handleCreateRoom} disabled={!userName} variant="outlined">
+            <Button onClick={handleCreateRoom} variant="outlined">
               Create Room
             </Button>
             <Button
               variant="contained"
               startIcon={<LinkIcon />}
               onClick={handleJoin}
-              disabled={!joinRoomId || !userName}
+              disabled={!joinRoomId}
             >
               Join Room
             </Button>
