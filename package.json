@@ -38,13 +38,17 @@
     "web-vitals": "^2.1.4",
     "y-websocket": "^2.1.0",
     "yjs": "^13.6.27",
-    "zod": "^3.25.74"
+    "zod": "^3.25.74",
+    "firebase-admin": "^13.0.0",
+    "ws": "^8.18.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "node server/collab-server.js",
+    "dev:server": "node server/collab-server.js"
   },
   "eslintConfig": {
     "extends": [
