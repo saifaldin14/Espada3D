@@ -22,6 +22,7 @@ import {
   ViewInAr,
 } from "@mui/icons-material";
 import { modernTheme } from "./config/theme";
+import { Z_INDEX } from "./config/constants";
 
 const AppContent: React.FC = () => {
   const ui = useAppSelector((state) => state.ui);
@@ -170,7 +171,7 @@ const styles = {
       "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
   headerRegion: {
-    zIndex: 1000,
+    zIndex: Z_INDEX.toolbar,
     position: "sticky" as const,
     top: 0,
     borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
@@ -229,19 +230,19 @@ const styles = {
     border: "1px solid rgba(255, 255, 255, 0.06)",
   },
   hierarchyPanel: {
-    position: "absolute" as const,
+    position: "fixed" as const,
     top: "80px",
-    right: "320px",
-    zIndex: 500,
+    right: "260px",
+    zIndex: Z_INDEX.floatingPanel,
     animation: "slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4))",
   },
   animationPanel: {
-    position: "absolute" as const,
+    position: "fixed" as const,
     top: "120px",
     left: "50%",
     transform: "translateX(-50%)",
-    zIndex: 500,
+    zIndex: Z_INDEX.floatingPanel,
     animation: "slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4))",
   },
@@ -258,6 +259,8 @@ const styles = {
     color: "rgba(255, 255, 255, 0.6)",
     fontWeight: 500,
     userSelect: "none",
+    zIndex: Z_INDEX.statusBar,
+    position: "relative" as const,
   },
   statusLeft: {
     display: "flex",

@@ -101,23 +101,39 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
     start: Position;
     current: Position;
   } | null>(null);
+  const spaceHeldRef = useRef(false);
 
-  // Handle mouse wheel for zooming
+  // Handle mouse wheel for zooming (zoom toward cursor)
   const handleWheel = useCallback(
     (event: React.WheelEvent) => {
       event.preventDefault();
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
       const delta = event.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = zoom * delta;
-      onZoomChange(Math.max(0.1, Math.min(3, newZoom)));
+      const newZoom = Math.max(0.1, Math.min(3, zoom * delta));
+
+      // World-space point under cursor before zoom
+      const cursorX = event.clientX - rect.left;
+      const cursorY = event.clientY - rect.top;
+      const worldX = (cursorX - viewportOffset.x) / zoom;
+      const worldY = (cursorY - viewportOffset.y) / zoom;
+
+      // Adjust offset so the same world point stays under the cursor
+      onViewportChange({
+        x: cursorX - worldX * newZoom,
+        y: cursorY - worldY * newZoom,
+      });
+      onZoomChange(newZoom);
     },
-    [zoom, onZoomChange]
+    [zoom, viewportOffset, onZoomChange, onViewportChange]
   );
 
   // Handle canvas panning
   const handleMouseDown = useCallback(
     (event: React.MouseEvent) => {
-      if (event.button === 1 || (event.button === 0 && event.shiftKey)) {
-        // Middle mouse button or Shift+Left click for panning
+      if (event.button === 1 || (event.button === 0 && event.shiftKey) || (event.button === 0 && spaceHeldRef.current)) {
+        // Middle mouse button, Shift+Left click, or Space+Left click for panning
         event.preventDefault();
         setIsPanning(true);
         setLastPanPoint({ x: event.clientX, y: event.clientY });
@@ -154,9 +170,10 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
         const deltaX = event.clientX - lastPanPoint.x;
         const deltaY = event.clientY - lastPanPoint.y;
 
+        // Divide delta by zoom so panning speed feels consistent at all zoom levels
         onViewportChange({
-          x: viewportOffset.x + deltaX,
-          y: viewportOffset.y + deltaY,
+          x: viewportOffset.x + deltaX / zoom,
+          y: viewportOffset.y + deltaY / zoom,
         });
 
         setLastPanPoint({ x: event.clientX, y: event.clientY });
@@ -374,6 +391,25 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           setShowSearchMenu(true);
         }
       }
+      // Track Space key for Space+drag panning
+      if (event.key === " " || event.code === "Space") {
+        const activeEl = document.activeElement;
+        const isInInput = activeEl && (
+          activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          (activeEl as HTMLElement).contentEditable === "true"
+        );
+        if (!isInInput) {
+          event.preventDefault();
+          spaceHeldRef.current = true;
+        }
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === " " || event.code === "Space") {
+        spaceHeldRef.current = false;
+      }
     };
 
     if (isPanning || draggedNode) {
@@ -382,11 +418,13 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
     }
 
     document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
 
     return () => {
       document.removeEventListener("mousemove", handleGlobalMouseMove);
       document.removeEventListener("mouseup", handleGlobalMouseUp);
       document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
     };
   }, [isPanning, draggedNode, handleMouseMove, handleMouseUp]);
 

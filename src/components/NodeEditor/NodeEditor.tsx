@@ -43,13 +43,22 @@ import {
   pasteFromClipboard,
   alignSelectedNodes,
   distributeSelectedNodes,
+  selectMultipleNodes,
 } from "../../store/slices/nodeSlice";
 import { toggleNodeEditor } from "../../store/slices/uiSlice";
 import { createNodeExecutor } from "../../utils/nodeExecutor";
+import { commandManager } from "../../utils/commandManager";
 
 interface NodeEditorProps {
   isOpen: boolean;
 }
+
+// Layout constants for workspace bounds
+const TOOLBAR_HEIGHT = 56;
+const STATUS_BAR_HEIGHT = 28;
+const MINIMIZED_HEIGHT = 40;
+const LEFT_SIDEBAR_WIDTH = 240;
+const RIGHT_PANEL_WIDTH = 240;
 
 const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const dispatch = useAppDispatch();
@@ -73,34 +82,71 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const [executionStatus, setExecutionStatus] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+  const executionStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMinimizedRef = useRef(isMinimized);
+  isMinimizedRef.current = isMinimized;
 
-  // Initialize default size
+  // Initialize default size — centered in viewport between sidebars, clamped
   useEffect(() => {
     if (isOpen && editorSize.width === 0) {
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
 
-      // Calculate optimal size - more conservative to prevent cutoff
-      // Account for panels: sidebar (220px) + properties (280px when shown) + margins
-      // Also account for top nav bar (estimated ~60-80px)
-      const topNavHeight = 80;
       const optimalWidth = Math.max(800, Math.min(1100, windowWidth * 0.75));
       const optimalHeight = Math.max(
         600,
-        Math.min(750, (windowHeight - topNavHeight) * 0.8)
+        Math.min(750, (windowHeight - TOOLBAR_HEIGHT - STATUS_BAR_HEIGHT) * 0.8)
+      );
+
+      // Center in the viewport area between left sidebar and right panel
+      const availableLeft = LEFT_SIDEBAR_WIDTH;
+      const availableRight = windowWidth - RIGHT_PANEL_WIDTH;
+      const availableWidth = availableRight - availableLeft;
+      const centerX = availableLeft + (availableWidth - optimalWidth) / 2;
+      const availableTop = TOOLBAR_HEIGHT;
+      const availableBottom = windowHeight - STATUS_BAR_HEIGHT;
+      const availableHeight = availableBottom - availableTop;
+      const centerY = availableTop + (availableHeight - optimalHeight) / 2;
+
+      // Clamp to stay fully visible within workspace
+      const clampedX = Math.max(0, Math.min(centerX, windowWidth - optimalWidth));
+      const clampedY = Math.max(
+        TOOLBAR_HEIGHT,
+        Math.min(centerY, windowHeight - STATUS_BAR_HEIGHT - optimalHeight)
       );
 
       setEditorSize({
         width: optimalWidth,
         height: optimalHeight,
-        x: Math.max(10, (windowWidth - optimalWidth) / 2),
-        y: Math.max(
-          topNavHeight + 10,
-          (windowHeight - optimalHeight) / 2 + topNavHeight / 2
-        ),
+        x: clampedX,
+        y: clampedY,
       });
     }
   }, [isOpen, editorSize.width]);
+
+  // Clamp window position when browser viewport is resized
+  useEffect(() => {
+    const handleWindowResize = () => {
+      if (isFullscreen || isMinimized) return;
+      setEditorSize((prev) => {
+        const maxX = window.innerWidth - MIN_VISIBLE_PX;
+        const maxY = window.innerHeight - HEADER_HEIGHT;
+        return {
+          ...prev,
+          width: Math.min(prev.width, window.innerWidth),
+          height: Math.min(prev.height, window.innerHeight),
+          x: Math.max(-prev.width + MIN_VISIBLE_PX, Math.min(prev.x, maxX)),
+          y: Math.max(0, Math.min(prev.y, maxY)),
+        };
+      });
+    };
+    window.addEventListener("resize", handleWindowResize);
+    return () => window.removeEventListener("resize", handleWindowResize);
+  }, [isFullscreen, isMinimized]);
 
   const handleNodeDragStart = useCallback((nodeType: NodeType) => {
     setDraggedNodeType(nodeType);
@@ -139,11 +185,16 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (isDragging) {
-        setEditorSize((prev) => ({
-          ...prev,
-          x: event.clientX - dragStart.x,
-          y: event.clientY - dragStart.y,
-        }));
+        setEditorSize((prev) => {
+          const newX = event.clientX - dragStart.x;
+          const newY = event.clientY - dragStart.y;
+          // Clamp so at least MIN_VISIBLE_PX of the window stays visible on each edge
+          return {
+            ...prev,
+            x: Math.max(-prev.width + MIN_VISIBLE_PX, Math.min(newX, window.innerWidth - MIN_VISIBLE_PX)),
+            y: Math.max(0, Math.min(newY, window.innerHeight - HEADER_HEIGHT)),
+          };
+        });
       } else if (isResizing && resizeHandle) {
         const deltaX = event.movementX;
         const deltaY = event.movementY;
@@ -152,25 +203,39 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
           let newSize = { ...prev };
 
           if (resizeHandle.includes("right")) {
-            newSize.width = Math.max(600, prev.width + deltaX);
+            newSize.width = Math.max(600, Math.min(prev.width + deltaX, window.innerWidth - prev.x));
           }
           if (resizeHandle.includes("left")) {
             const newWidth = Math.max(600, prev.width - deltaX);
-            if (newWidth > 600) {
+            const newX = prev.x + (prev.width - newWidth);
+            if (newWidth > 600 && newX >= 0) {
               newSize.width = newWidth;
-              newSize.x = prev.x + deltaX;
+              newSize.x = newX;
             }
           }
           if (resizeHandle.includes("bottom")) {
-            newSize.height = Math.max(400, prev.height + deltaY);
+            newSize.height = Math.max(400, Math.min(prev.height + deltaY, window.innerHeight - prev.y));
           }
           if (resizeHandle.includes("top")) {
             const newHeight = Math.max(400, prev.height - deltaY);
-            if (newHeight > 400) {
+            const newY = prev.y + (prev.height - newHeight);
+            if (newHeight > 400 && newY >= 0) {
               newSize.height = newHeight;
-              newSize.y = prev.y + deltaY;
+              newSize.y = newY;
             }
           }
+
+          // Clamp to workspace bounds
+          newSize.x = Math.max(0, newSize.x);
+          newSize.y = Math.max(TOOLBAR_HEIGHT, newSize.y);
+          newSize.width = Math.min(
+            newSize.width,
+            window.innerWidth - newSize.x
+          );
+          newSize.height = Math.min(
+            newSize.height,
+            window.innerHeight - STATUS_BAR_HEIGHT - newSize.y
+          );
 
           return newSize;
         });
@@ -318,6 +383,21 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
       ) {
         handleNodeDelete();
       }
+      // Ctrl/Cmd + A for select all nodes
+      else if ((event.ctrlKey || event.metaKey) && event.key === "a") {
+        event.preventDefault();
+        dispatch(selectMultipleNodes(nodes.map((n) => n.id)));
+      }
+      // Ctrl/Cmd + Z for undo
+      else if ((event.ctrlKey || event.metaKey) && event.key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        commandManager.undo();
+      }
+      // Ctrl/Cmd + Y or Ctrl/Cmd + Shift + Z for redo
+      else if ((event.ctrlKey || event.metaKey) && (event.key === "y" || (event.key === "z" && event.shiftKey))) {
+        event.preventDefault();
+        commandManager.redo();
+      }
       // Ctrl/Cmd + D for duplicate
       else if ((event.ctrlKey || event.metaKey) && event.key === "d") {
         event.preventDefault();
@@ -350,7 +430,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, handleNodeDelete, handleNodeDuplicate, handleCopy, handlePaste]);
+  }, [isOpen, nodes, dispatch, handleNodeDelete, handleNodeDuplicate, handleCopy, handlePaste]);
 
   const handleNodeResize = useCallback(
     (nodeId: string, width: number, height: number) => {
@@ -370,10 +450,36 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
       Object.values(results).forEach((result) => {
         dispatch(setNodeExecutionResult(result));
       });
+
+      // Show execution feedback
+      const errorCount = Object.values(results).filter((r) => r.error).length;
+      if (errorCount > 0) {
+        setExecutionStatus({
+          message: `Executed with ${errorCount} error${errorCount > 1 ? "s" : ""}`,
+          type: "error",
+        });
+      } else {
+        setExecutionStatus({
+          message: "Executed successfully",
+          type: "success",
+        });
+      }
     } catch (error) {
       console.error("Node execution failed:", error);
+      setExecutionStatus({
+        message: `Execution failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        type: "error",
+      });
     } finally {
       dispatch(setExecuting(false));
+
+      // Auto-dismiss the status after 3 seconds
+      if (executionStatusTimeoutRef.current) {
+        clearTimeout(executionStatusTimeoutRef.current);
+      }
+      executionStatusTimeoutRef.current = setTimeout(() => {
+        setExecutionStatus(null);
+      }, 3000);
     }
   }, [nodes, connections, dispatch]);
 
@@ -411,14 +517,13 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
 
   const containerStyle = isFullscreen
     ? styles.containerFullscreen
-    : isMinimized
-      ? styles.containerMinimized
-      : {
+    : {
           ...styles.containerWindowed,
           width: editorSize.width,
-          height: editorSize.height,
+          height: isMinimized ? MINIMIZED_HEIGHT : editorSize.height,
           left: editorSize.x,
           top: editorSize.y,
+          transition: isResizing ? "none" : "height 200ms ease",
         };
 
   return (
@@ -597,6 +702,65 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
           )}
         </Box>
       )}
+
+      {/* Execution Status Toast */}
+      {executionStatus && (
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            padding: "8px 20px",
+            borderRadius: "8px",
+            backgroundColor:
+              executionStatus.type === "success"
+                ? "rgba(67, 233, 123, 0.15)"
+                : "rgba(244, 67, 54, 0.15)",
+            border: `1px solid ${
+              executionStatus.type === "success"
+                ? "rgba(67, 233, 123, 0.4)"
+                : "rgba(244, 67, 54, 0.4)"
+            }`,
+            backdropFilter: "blur(8px)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            animation: "fadeIn 0.2s ease",
+            "@keyframes fadeIn": {
+              from: { opacity: 0, transform: "translateX(-50%) translateY(8px)" },
+              to: { opacity: 1, transform: "translateX(-50%) translateY(0)" },
+            },
+          }}
+        >
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              backgroundColor:
+                executionStatus.type === "success" ? "#43e97b" : "#f44336",
+              boxShadow: `0 0 6px ${
+                executionStatus.type === "success"
+                  ? "rgba(67, 233, 123, 0.5)"
+                  : "rgba(244, 67, 54, 0.5)"
+              }`,
+            }}
+          />
+          <Typography
+            variant="caption"
+            sx={{
+              color:
+                executionStatus.type === "success" ? "#43e97b" : "#f44336",
+              fontWeight: 600,
+              fontSize: "11px",
+            }}
+          >
+            {executionStatus.message}
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 };
@@ -681,8 +845,8 @@ const styles = {
     position: "fixed" as const,
     bottom: 20,
     right: 20,
-    width: 320,
-    height: 56,
+    width: "min(320px, calc(100vw - 40px))",
+    height: HEADER_HEIGHT,
     display: "flex",
     flexDirection: "column" as const,
     backgroundColor: "rgba(20, 25, 35, 0.95)",
@@ -692,6 +856,7 @@ const styles = {
     overflow: "hidden",
     zIndex: 900,
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   },
   containerWindowed: {
     position: "fixed" as const,
@@ -704,6 +869,7 @@ const styles = {
     overflow: "hidden",
     zIndex: 900,
     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
+    transition: "box-shadow 0.3s ease",
   },
   container: {
     display: "flex",
@@ -793,7 +959,7 @@ const styles = {
     top: 0,
     left: 0,
     right: 0,
-    height: 4,
+    height: 6,
     cursor: "ns-resize",
     zIndex: 10,
     "&:hover": {
@@ -805,7 +971,7 @@ const styles = {
     top: 0,
     right: 0,
     bottom: 0,
-    width: 4,
+    width: 6,
     cursor: "ew-resize",
     zIndex: 10,
     "&:hover": {
@@ -817,7 +983,7 @@ const styles = {
     bottom: 0,
     left: 0,
     right: 0,
-    height: 4,
+    height: 6,
     cursor: "ns-resize",
     zIndex: 10,
     "&:hover": {
@@ -829,7 +995,7 @@ const styles = {
     top: 0,
     left: 0,
     bottom: 0,
-    width: 4,
+    width: 6,
     cursor: "ew-resize",
     zIndex: 10,
     "&:hover": {
@@ -840,8 +1006,8 @@ const styles = {
     position: "absolute" as const,
     top: 0,
     left: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nwse-resize",
     zIndex: 11,
     "&:hover": {
@@ -852,8 +1018,8 @@ const styles = {
     position: "absolute" as const,
     top: 0,
     right: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nesw-resize",
     zIndex: 11,
     "&:hover": {
@@ -864,8 +1030,8 @@ const styles = {
     position: "absolute" as const,
     bottom: 0,
     left: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nesw-resize",
     zIndex: 11,
     "&:hover": {
@@ -876,8 +1042,8 @@ const styles = {
     position: "absolute" as const,
     bottom: 0,
     right: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nwse-resize",
     zIndex: 11,
     "&:hover": {
