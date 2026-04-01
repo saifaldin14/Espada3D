@@ -31,6 +31,7 @@ describe('nodeSlice', () => {
     clipboard: { nodes: [], connections: [] },
     nodeSceneLights: [],
     nodeSceneCamera: null,
+    executionFeedback: null,
   };
 
   describe('addNode', () => {

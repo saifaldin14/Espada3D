@@ -170,7 +170,7 @@ const styles = {
       "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
   headerRegion: {
-    zIndex: 1000,
+    zIndex: 1100,
     position: "sticky" as const,
     top: 0,
     borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
@@ -258,6 +258,7 @@ const styles = {
     color: "rgba(255, 255, 255, 0.6)",
     fontWeight: 500,
     userSelect: "none",
+    zIndex: 100,
   },
   statusLeft: {
     display: "flex",
