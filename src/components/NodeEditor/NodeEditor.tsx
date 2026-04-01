@@ -51,6 +51,13 @@ interface NodeEditorProps {
   isOpen: boolean;
 }
 
+// Layout constants for workspace bounds
+const TOOLBAR_HEIGHT = 56;
+const STATUS_BAR_HEIGHT = 28;
+const MINIMIZED_HEIGHT = 40;
+const LEFT_SIDEBAR_DEFAULT = 240;
+const RIGHT_PANEL_DEFAULT = 240;
+
 const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const dispatch = useAppDispatch();
   const { nodes, connections, selectedNodeId, isExecuting } = useAppSelector(
@@ -73,34 +80,70 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const isMinimizedRef = useRef(isMinimized);
+  isMinimizedRef.current = isMinimized;
 
-  // Initialize default size
+  // Initialize default size — centered in viewport between sidebars, clamped
   useEffect(() => {
     if (isOpen && editorSize.width === 0) {
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
 
-      // Calculate optimal size - more conservative to prevent cutoff
-      // Account for panels: sidebar (220px) + properties (280px when shown) + margins
-      // Also account for top nav bar (estimated ~60-80px)
-      const topNavHeight = 80;
       const optimalWidth = Math.max(800, Math.min(1100, windowWidth * 0.75));
       const optimalHeight = Math.max(
         600,
-        Math.min(750, (windowHeight - topNavHeight) * 0.8)
+        Math.min(750, (windowHeight - TOOLBAR_HEIGHT - STATUS_BAR_HEIGHT) * 0.8)
+      );
+
+      // Center in the viewport area between left sidebar and right panel
+      const availableLeft = LEFT_SIDEBAR_DEFAULT;
+      const availableRight = windowWidth - RIGHT_PANEL_DEFAULT;
+      const availableWidth = availableRight - availableLeft;
+      const centerX = availableLeft + (availableWidth - optimalWidth) / 2;
+      const availableTop = TOOLBAR_HEIGHT;
+      const availableBottom = windowHeight - STATUS_BAR_HEIGHT;
+      const availableHeight = availableBottom - availableTop;
+      const centerY = availableTop + (availableHeight - optimalHeight) / 2;
+
+      // Clamp to stay fully visible within workspace
+      const clampedX = Math.max(0, Math.min(centerX, windowWidth - optimalWidth));
+      const clampedY = Math.max(
+        TOOLBAR_HEIGHT,
+        Math.min(centerY, windowHeight - STATUS_BAR_HEIGHT - optimalHeight)
       );
 
       setEditorSize({
         width: optimalWidth,
         height: optimalHeight,
-        x: Math.max(10, (windowWidth - optimalWidth) / 2),
-        y: Math.max(
-          topNavHeight + 10,
-          (windowHeight - optimalHeight) / 2 + topNavHeight / 2
-        ),
+        x: clampedX,
+        y: clampedY,
       });
     }
   }, [isOpen, editorSize.width]);
+
+  // Re-clamp position on window resize
+  useEffect(() => {
+    const handleWindowResize = () => {
+      setEditorSize((prev) => {
+        if (prev.width === 0) return prev;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        return {
+          ...prev,
+          width: Math.min(prev.width, w),
+          height: Math.min(prev.height, h - TOOLBAR_HEIGHT - STATUS_BAR_HEIGHT),
+          x: Math.max(0, Math.min(prev.x, w - prev.width)),
+          y: Math.max(
+            TOOLBAR_HEIGHT,
+            Math.min(prev.y, h - STATUS_BAR_HEIGHT - prev.height)
+          ),
+        };
+      });
+    };
+
+    window.addEventListener("resize", handleWindowResize);
+    return () => window.removeEventListener("resize", handleWindowResize);
+  }, []);
 
   const handleNodeDragStart = useCallback((nodeType: NodeType) => {
     setDraggedNodeType(nodeType);
@@ -139,11 +182,24 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (isDragging) {
-        setEditorSize((prev) => ({
-          ...prev,
-          x: event.clientX - dragStart.x,
-          y: event.clientY - dragStart.y,
-        }));
+        const rawX = event.clientX - dragStart.x;
+        const rawY = event.clientY - dragStart.y;
+        setEditorSize((prev) => {
+          const visibleHeight = isMinimizedRef.current
+            ? MINIMIZED_HEIGHT
+            : prev.height;
+          return {
+            ...prev,
+            x: Math.max(0, Math.min(rawX, window.innerWidth - prev.width)),
+            y: Math.max(
+              TOOLBAR_HEIGHT,
+              Math.min(
+                rawY,
+                window.innerHeight - STATUS_BAR_HEIGHT - visibleHeight
+              )
+            ),
+          };
+        });
       } else if (isResizing && resizeHandle) {
         const deltaX = event.movementX;
         const deltaY = event.movementY;
@@ -171,6 +227,18 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
               newSize.y = prev.y + deltaY;
             }
           }
+
+          // Clamp to workspace bounds
+          newSize.x = Math.max(0, newSize.x);
+          newSize.y = Math.max(TOOLBAR_HEIGHT, newSize.y);
+          newSize.width = Math.min(
+            newSize.width,
+            window.innerWidth - newSize.x
+          );
+          newSize.height = Math.min(
+            newSize.height,
+            window.innerHeight - STATUS_BAR_HEIGHT - newSize.y
+          );
 
           return newSize;
         });
@@ -392,14 +460,13 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
 
   const containerStyle = isFullscreen
     ? styles.containerFullscreen
-    : isMinimized
-      ? styles.containerMinimized
-      : {
+    : {
           ...styles.containerWindowed,
           width: editorSize.width,
-          height: editorSize.height,
+          height: isMinimized ? MINIMIZED_HEIGHT : editorSize.height,
           left: editorSize.x,
           top: editorSize.y,
+          transition: isResizing ? "none" : "height 200ms ease",
         };
 
   return (
@@ -656,23 +723,7 @@ const styles = {
     border: "none",
     borderRadius: 0,
     overflow: "hidden",
-    zIndex: 10000,
-  },
-  containerMinimized: {
-    position: "fixed" as const,
-    bottom: 20,
-    right: 20,
-    width: 320,
-    height: 56,
-    display: "flex",
-    flexDirection: "column" as const,
-    backgroundColor: "rgba(20, 25, 35, 0.95)",
-    backdropFilter: "blur(10px)",
-    border: "1px solid rgba(102, 126, 234, 0.3)",
-    borderRadius: "10px",
-    overflow: "hidden",
-    zIndex: 900,
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+    zIndex: 1000,
   },
   containerWindowed: {
     position: "fixed" as const,
