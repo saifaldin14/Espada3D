@@ -43,9 +43,11 @@ import {
   pasteFromClipboard,
   alignSelectedNodes,
   distributeSelectedNodes,
+  selectMultipleNodes,
 } from "../../store/slices/nodeSlice";
 import { toggleNodeEditor } from "../../store/slices/uiSlice";
 import { createNodeExecutor } from "../../utils/nodeExecutor";
+import { commandManager } from "../../utils/commandManager";
 
 interface NodeEditorProps {
   isOpen: boolean;
@@ -73,6 +75,11 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const [executionStatus, setExecutionStatus] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+  const executionStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize default size
   useEffect(() => {
@@ -303,9 +310,32 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Skip if typing in an input or textarea
+      const activeEl = document.activeElement;
+      const isInInput = activeEl && (
+        activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        (activeEl as HTMLElement).contentEditable === "true"
+      );
+
       // Delete key
-      if (event.key === "Delete" || event.key === "Backspace") {
+      if (!isInInput && (event.key === "Delete" || event.key === "Backspace")) {
         handleNodeDelete();
+      }
+      // Ctrl/Cmd + A for select all nodes
+      else if ((event.ctrlKey || event.metaKey) && event.key === "a") {
+        event.preventDefault();
+        dispatch(selectMultipleNodes(nodes.map((n) => n.id)));
+      }
+      // Ctrl/Cmd + Z for undo
+      else if ((event.ctrlKey || event.metaKey) && event.key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        commandManager.undo();
+      }
+      // Ctrl/Cmd + Y or Ctrl/Cmd + Shift + Z for redo
+      else if ((event.ctrlKey || event.metaKey) && (event.key === "y" || (event.key === "z" && event.shiftKey))) {
+        event.preventDefault();
+        commandManager.redo();
       }
       // Ctrl/Cmd + D for duplicate
       else if ((event.ctrlKey || event.metaKey) && event.key === "d") {
@@ -331,7 +361,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, handleNodeDelete, handleNodeDuplicate, handleCopy, handlePaste]);
+  }, [isOpen, nodes, dispatch, handleNodeDelete, handleNodeDuplicate, handleCopy, handlePaste]);
 
   const handleNodeResize = useCallback(
     (nodeId: string, width: number, height: number) => {
@@ -351,10 +381,36 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
       Object.values(results).forEach((result) => {
         dispatch(setNodeExecutionResult(result));
       });
+
+      // Show execution feedback
+      const errorCount = Object.values(results).filter((r) => r.error).length;
+      if (errorCount > 0) {
+        setExecutionStatus({
+          message: `Executed with ${errorCount} error${errorCount > 1 ? "s" : ""}`,
+          type: "error",
+        });
+      } else {
+        setExecutionStatus({
+          message: "Executed successfully",
+          type: "success",
+        });
+      }
     } catch (error) {
       console.error("Node execution failed:", error);
+      setExecutionStatus({
+        message: `Execution failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        type: "error",
+      });
     } finally {
       dispatch(setExecuting(false));
+
+      // Auto-dismiss the status after 3 seconds
+      if (executionStatusTimeoutRef.current) {
+        clearTimeout(executionStatusTimeoutRef.current);
+      }
+      executionStatusTimeoutRef.current = setTimeout(() => {
+        setExecutionStatus(null);
+      }, 3000);
     }
   }, [nodes, connections, dispatch]);
 
@@ -576,6 +632,65 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
               />
             </Box>
           )}
+        </Box>
+      )}
+
+      {/* Execution Status Toast */}
+      {executionStatus && (
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            padding: "8px 20px",
+            borderRadius: "8px",
+            backgroundColor:
+              executionStatus.type === "success"
+                ? "rgba(67, 233, 123, 0.15)"
+                : "rgba(244, 67, 54, 0.15)",
+            border: `1px solid ${
+              executionStatus.type === "success"
+                ? "rgba(67, 233, 123, 0.4)"
+                : "rgba(244, 67, 54, 0.4)"
+            }`,
+            backdropFilter: "blur(8px)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            animation: "fadeIn 0.2s ease",
+            "@keyframes fadeIn": {
+              from: { opacity: 0, transform: "translateX(-50%) translateY(8px)" },
+              to: { opacity: 1, transform: "translateX(-50%) translateY(0)" },
+            },
+          }}
+        >
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              backgroundColor:
+                executionStatus.type === "success" ? "#43e97b" : "#f44336",
+              boxShadow: `0 0 6px ${
+                executionStatus.type === "success"
+                  ? "rgba(67, 233, 123, 0.5)"
+                  : "rgba(244, 67, 54, 0.5)"
+              }`,
+            }}
+          />
+          <Typography
+            variant="caption"
+            sx={{
+              color:
+                executionStatus.type === "success" ? "#43e97b" : "#f44336",
+              fontWeight: 600,
+              fontSize: "11px",
+            }}
+          >
+            {executionStatus.message}
+          </Typography>
         </Box>
       )}
     </Box>
