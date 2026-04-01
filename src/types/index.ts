@@ -76,6 +76,8 @@ export interface ModelMetadata {
   updatedAt: string;
   userData?: Record<string, any>;
   animationData?: AnimationData;
+  manuallyEdited?: boolean;      // true if user manually transformed via viewport
+  sourceNodeId?: string | null;  // node ID that generated this model, null if manually created
 }
 
 export interface CreateModelPayload {
@@ -303,6 +305,7 @@ export interface UIState {
   isHierarchyPanelOpen: boolean;
   isAnimationPanelOpen: boolean;
   isNodeEditorOpen: boolean;
+  nodeEditorState: 'closed' | 'windowed' | 'fullscreen' | 'minimized';
   snap: boolean;
   snapSize: number;
   subObjectSelectionMode: SelectionMode;

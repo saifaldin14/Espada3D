@@ -188,6 +188,12 @@ export interface NodeGraphState {
     far: number;
     nodeId: string;
   } | null;
+  executionFeedback: {
+    status: 'idle' | 'running' | 'success' | 'error';
+    message: string;
+    duration: number; // ms
+    timestamp: number;
+  } | null;
 }
 
 export interface NodeEditorSettings {
@@ -415,6 +421,12 @@ export const NODE_REGISTRY: Record<NodeType, { name: string; description: string
     icon: 'format_list_numbered',
   },
 };
+
+export interface ComposedTransform {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+}
 
 export function canConnect(sourceType: PortDataType, targetType: PortDataType): boolean {
   if (sourceType === 'any' || targetType === 'any') return true;
