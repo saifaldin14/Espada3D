@@ -585,7 +585,7 @@ const nodeSlice = createSlice({
     },
 
     // Reverse sync: update node data from a scene interaction
-    updateNodeDataFromScene: (state, action: PayloadAction<{ nodeId: string; data: Partial<any> }>) => {
+    updateNodeDataFromScene: (state, action: PayloadAction<{ nodeId: string; data: Partial<NodeData> }>) => {
       const node = state.nodes.find(n => n.id === action.payload.nodeId);
       if (node) {
         node.data = { ...node.data, ...action.payload.data };
