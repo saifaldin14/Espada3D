@@ -51,6 +51,11 @@ interface NodeEditorProps {
   isOpen: boolean;
 }
 
+/** Minimum number of pixels of the window that must remain visible when dragging */
+const MIN_VISIBLE_PX = 100;
+/** Height of the NodeEditor header bar in pixels */
+const HEADER_HEIGHT = 56;
+
 const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const dispatch = useAppDispatch();
   const { nodes, connections, selectedNodeId, isExecuting } = useAppSelector(
@@ -107,13 +112,13 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     const handleWindowResize = () => {
       if (isFullscreen || isMinimized) return;
       setEditorSize((prev) => {
-        const maxX = window.innerWidth - 100;
-        const maxY = window.innerHeight - 56;
+        const maxX = window.innerWidth - MIN_VISIBLE_PX;
+        const maxY = window.innerHeight - HEADER_HEIGHT;
         return {
           ...prev,
           width: Math.min(prev.width, window.innerWidth),
           height: Math.min(prev.height, window.innerHeight),
-          x: Math.max(-prev.width + 100, Math.min(prev.x, maxX)),
+          x: Math.max(-prev.width + MIN_VISIBLE_PX, Math.min(prev.x, maxX)),
           y: Math.max(0, Math.min(prev.y, maxY)),
         };
       });
@@ -162,12 +167,11 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
         setEditorSize((prev) => {
           const newX = event.clientX - dragStart.x;
           const newY = event.clientY - dragStart.y;
-          // Clamp so at least 100px of the window stays visible on each edge
-          const minVisible = 100;
+          // Clamp so at least MIN_VISIBLE_PX of the window stays visible on each edge
           return {
             ...prev,
-            x: Math.max(-prev.width + minVisible, Math.min(newX, window.innerWidth - minVisible)),
-            y: Math.max(0, Math.min(newY, window.innerHeight - 56)), // 56 = header height, keep header reachable
+            x: Math.max(-prev.width + MIN_VISIBLE_PX, Math.min(newX, window.innerWidth - MIN_VISIBLE_PX)),
+            y: Math.max(0, Math.min(newY, window.innerHeight - HEADER_HEIGHT)),
           };
         });
       } else if (isResizing && resizeHandle) {
@@ -690,8 +694,8 @@ const styles = {
     position: "fixed" as const,
     bottom: 20,
     right: 20,
-    width: Math.min(320, typeof window !== 'undefined' ? window.innerWidth - 40 : 320),
-    height: 56,
+    width: "min(320px, calc(100vw - 40px))",
+    height: HEADER_HEIGHT,
     display: "flex",
     flexDirection: "column" as const,
     backgroundColor: "rgba(20, 25, 35, 0.95)",
