@@ -1,11 +1,13 @@
 import { Node, NodeConnection, NodeExecutionResult } from '../types/nodeTypes';
-import { ModelMetadata, GeometryType, MaterialType } from '../types';
+import { ModelMetadata, GeometryType, MaterialType, Vector3Tuple } from '../types';
 import store from '../store';
+// TODO: import upsertNodeModel from '../store/slices/modelSlice' when available (Agent 1)
 import { addModel, updateModelMetadata, updateModelTransform, updateModelMaterial, removeModel } from '../store/slices/modelSlice';
 import { setNodeSceneLights, setNodeSceneCamera, updateNodeData } from '../store/slices/nodeSlice';
 import { NodeGraphState } from '../types/nodeTypes';
 
 export class NodeExecutor {
+  private static readonly SCRIPT_TIMEOUT_MS = 3000;
   private nodes: Node[];
   private connections: NodeConnection[];
   private executionResults: Map<string, any> = new Map();
@@ -119,7 +121,7 @@ export class NodeExecutor {
       case 'camera':
         return this.executeCameraNode(node, inputValues);
       case 'script':
-        return this.executeScriptNode(node, inputValues);
+        return this.executeScriptNodeSafe(node, inputValues);
       case 'output':
         return this.executeOutputNode(node, inputValues);
       case 'filter':
@@ -521,6 +523,11 @@ export class NodeExecutor {
         type: lightType,
         intensity: inputs.intensity !== undefined ? inputs.intensity : intensity,
         color: inputs.color || color,
+        position: [
+          parseFloat(inputs.positionX ?? node.data.positionX ?? 10),
+          parseFloat(inputs.positionY ?? node.data.positionY ?? 10),
+          parseFloat(inputs.positionZ ?? node.data.positionZ ?? 10),
+        ],
         castShadows,
         nodeId: node.id,
       }
@@ -544,6 +551,30 @@ export class NodeExecutor {
         nodeId: node.id,
       }
     };
+  }
+
+  private async executeScriptNodeSafe(node: Node, inputs: Record<string, any>): Promise<Record<string, any>> {
+    try {
+      return await Promise.race([
+        new Promise<Record<string, any>>((resolve) => {
+          resolve(this.executeScriptNode(node, inputs));
+        }),
+        new Promise<Record<string, any>>((_, reject) => {
+          setTimeout(() => reject(new Error(`Script execution timed out (${NodeExecutor.SCRIPT_TIMEOUT_MS / 1000}s limit)`)), NodeExecutor.SCRIPT_TIMEOUT_MS);
+        }),
+      ]);
+    } catch (err) {
+      return {
+        script: {
+          content: node.data.scriptContent || '',
+          language: node.data.scriptLanguage || 'javascript',
+          inputs,
+          nodeId: node.id,
+          error: err instanceof Error ? err.message : 'Script execution failed',
+          executed: false,
+        },
+      };
+    }
   }
 
   private executeScriptNode(node: Node, inputs: Record<string, any>): Record<string, any> {
@@ -692,41 +723,82 @@ export class NodeExecutor {
   }
 
   /**
-   * Create a deterministic fingerprint for node output data. Used to detect
-   * when a source node's data has changed so the manuallyEdited flag can be cleared.
+   * Walk the connection chain backward from a given node, collecting all
+   * transform nodes, and compose their results into a single
+   * { position, rotation, scale } object.
    */
-  private createNodeFingerprint(data: Record<string, any>): string {
-    // Sort keys for deterministic serialization
-    const sortedEntries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
-    return JSON.stringify(sortedEntries);
-  }
+  private composeTransforms(
+    nodeId: string,
+    defaultDimensions?: number[]
+  ): { position: Vector3Tuple; rotation: Vector3Tuple; scale: Vector3Tuple } {
+    const position: Vector3Tuple = [0, 0, 0];
+    const rotation: Vector3Tuple = [0, 0, 0];
+    const scale: Vector3Tuple = defaultDimensions
+      ? [defaultDimensions[0] ?? 1, defaultDimensions[1] ?? 1, defaultDimensions[2] ?? 1]
+      : [1, 1, 1];
 
-  /**
-   * Resolve a list of accumulated transforms into final position/rotation/scale.
-   * Each transform in the chain applies its value for its type; later transforms
-   * of the same type overwrite earlier ones (last writer wins).
-   */
-  private resolveTransforms(
-    data: { transform?: { type: string; value: number[] }; transforms?: Array<{ type: string; value: number[] }> },
-    defaultScale: number[] | undefined
-  ): { position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] } {
-    const result: { position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] } = {
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: (defaultScale || [1, 1, 1]) as [number, number, number],
+    // Walk backward through the geometry connection chain collecting transform nodes
+    const visited = new Set<string>();
+    const collectTransforms = (currentNodeId: string) => {
+      if (visited.has(currentNodeId)) return;
+      visited.add(currentNodeId);
+
+      const node = this.nodes.find(n => n.id === currentNodeId);
+      if (!node) return;
+
+      if (node.type === 'transform') {
+        const outputs = this.executionResults.get(currentNodeId);
+        const transformType = node.data.transformType || 'translate';
+        // Prefer the value from the executed output; fall back to node data
+        const value = outputs?.geometry?.transform?.value ?? node.data.value ?? [0, 0, 0];
+        const v = Array.isArray(value) ? value : [0, 0, 0];
+
+        const n0 = Number(v[0]);
+        const n1 = Number(v[1]);
+        const n2 = Number(v[2]);
+
+        switch (transformType) {
+          case 'translate':
+            position[0] += isNaN(n0) ? 0 : n0;
+            position[1] += isNaN(n1) ? 0 : n1;
+            position[2] += isNaN(n2) ? 0 : n2;
+            break;
+          case 'rotate':
+            rotation[0] += isNaN(n0) ? 0 : n0;
+            rotation[1] += isNaN(n1) ? 0 : n1;
+            rotation[2] += isNaN(n2) ? 0 : n2;
+            break;
+          case 'scale':
+            scale[0] *= isNaN(n0) ? 1 : n0;
+            scale[1] *= isNaN(n1) ? 1 : n1;
+            scale[2] *= isNaN(n2) ? 1 : n2;
+            break;
+        }
+      }
+
+      // Continue walking backward through the geometry input
+      const incomingConnections = this.connections.filter(
+        conn => conn.targetNodeId === currentNodeId && conn.targetPort === 'geometry'
+      );
+      for (const conn of incomingConnections) {
+        collectTransforms(conn.sourceNodeId);
+      }
     };
 
-    const allTransforms: Array<{ type: string; value: number[] }> =
-      data.transforms || (data.transform ? [data.transform] : []);
-
-    for (const t of allTransforms) {
-      if (t.type === 'translate') result.position = t.value as [number, number, number];
-      else if (t.type === 'rotate') result.rotation = t.value as [number, number, number];
-      else if (t.type === 'scale') result.scale = t.value as [number, number, number];
+    // Start from connections feeding into the given node's geometry port
+    const incomingConnections = this.connections.filter(
+      conn => conn.targetNodeId === nodeId && conn.targetPort === 'geometry'
+    );
+    for (const conn of incomingConnections) {
+      collectTransforms(conn.sourceNodeId);
     }
 
-    return result;
+    return { position, rotation, scale };
   }
+
+  private async applySceneChanges(): Promise<void> {
+    const state = store.getState();
+    const existingModels = state.models.models;
 
   /**
    * Upsert a node-generated model: always read fresh state to avoid stale lookups,
@@ -839,35 +911,47 @@ export class NodeExecutor {
         }
       }
 
-      // Resolve chained transforms (translate→rotate→scale)
-      const resolved = this.resolveTransforms(mesh, mesh.dimensions);
-
-      // Read fresh state for createdAt
-      const freshCreatedAt = store.getState().models.models.find((m: ModelMetadata) => m.id === modelId)?.createdAt;
+      const composedTransform = this.composeTransforms(nodeId, mesh.dimensions);
 
       const modelData: ModelMetadata = {
         id: modelId,
         name: `${mesh.type || 'mesh'}_${nodeId.slice(-4)}`,
         type: (mesh.type || 'box') as GeometryType,
-        position: resolved.position,
-        rotation: resolved.rotation,
-        scale: resolved.scale,
+        position: composedTransform.position,
+        rotation: composedTransform.rotation,
+        scale: composedTransform.scale,
         material: appliedMaterial,
         parentId: null,
         visible: true,
         locked: false,
         createdAt: freshCreatedAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        userData: { sourceNodeId: nodeId },
       };
 
-      // Fingerprint the node output to detect when source data changes
-      const nodeFingerprint = this.createNodeFingerprint({
-        type: mesh.type, dimensions: mesh.dimensions,
-        transforms: mesh.transforms, transform: mesh.transform,
-        material: appliedMaterial,
-      });
-
-      this.upsertNodeModel(modelData, nodeFingerprint);
+      // TODO: Replace with store.dispatch(upsertNodeModel({...modelData, sourceNodeId: nodeId}))
+      // when upsertNodeModel is available in modelSlice (Agent 1).
+      if (existingModel) {
+        store.dispatch(updateModelMetadata({ 
+          id: modelId, 
+          name: modelData.name,
+          visible: modelData.visible,
+          locked: modelData.locked,
+          userData: { sourceNodeId: nodeId },
+        }));
+        store.dispatch(updateModelTransform({
+          id: modelId,
+          position: modelData.position,
+          rotation: modelData.rotation,
+          scale: modelData.scale,
+        }));
+        store.dispatch(updateModelMaterial({
+          id: modelId,
+          material: modelData.material,
+        }));
+      } else {
+        store.dispatch(addModel(modelData));
+      }
     }
 
     // Also handle geometry nodes that don't have mesh nodes
@@ -887,13 +971,15 @@ export class NodeExecutor {
 
       const freshCreatedAt = store.getState().models.models.find((m: ModelMetadata) => m.id === modelId)?.createdAt;
 
+      const composedTransform = this.composeTransforms(nodeId, geometry.dimensions);
+
       const modelData: ModelMetadata = {
         id: modelId,
         name: `${geometry.type}_${nodeId.slice(-4)}`,
         type: geometry.type as GeometryType,
-        position: resolved.position,
-        rotation: resolved.rotation,
-        scale: resolved.scale,
+        position: composedTransform.position,
+        rotation: composedTransform.rotation,
+        scale: composedTransform.scale,
         material: {
           type: 'standard' as MaterialType,
           color: '#ffffff',
@@ -905,14 +991,32 @@ export class NodeExecutor {
         locked: false,
         createdAt: freshCreatedAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        userData: { sourceNodeId: nodeId },
       };
 
-      const nodeFingerprint = this.createNodeFingerprint({
-        type: geometry.type, dimensions: geometry.dimensions,
-        transforms: geometry.transforms, transform: geometry.transform,
-      });
-
-      this.upsertNodeModel(modelData, nodeFingerprint);
+      // TODO: Replace with store.dispatch(upsertNodeModel({...modelData, sourceNodeId: nodeId}))
+      // when upsertNodeModel is available in modelSlice (Agent 1).
+      if (existingModel) {
+        store.dispatch(updateModelMetadata({ 
+          id: modelId, 
+          name: modelData.name,
+          visible: modelData.visible,
+          locked: modelData.locked,
+          userData: { sourceNodeId: nodeId },
+        }));
+        store.dispatch(updateModelTransform({
+          id: modelId,
+          position: modelData.position,
+          rotation: modelData.rotation,
+          scale: modelData.scale,
+        }));
+        store.dispatch(updateModelMaterial({
+          id: modelId,
+          material: modelData.material,
+        }));
+      } else {
+        store.dispatch(addModel(modelData));
+      }
     }
 
     // Process light nodes and apply to scene
@@ -953,12 +1057,18 @@ export class NodeExecutor {
     }
     store.dispatch(setNodeSceneCamera(cameraOutput));
 
-    // Clean up models that no longer have corresponding nodes (read fresh state)
-    const currentModels = store.getState().models.models;
-    const nodeGeneratedModels = currentModels.filter((m: ModelMetadata) => m.id.startsWith('node_generated_'));
+    // Clean up models that no longer have corresponding nodes.
+    // Only remove models that were created by the node system (have sourceNodeId in userData).
+    // Models without sourceNodeId are user-owned and should not be touched.
+    const currentNodeIds = new Set(this.nodes.map(n => n.id));
+    const nodeGeneratedModels = existingModels.filter((m: ModelMetadata) => m.id.startsWith('node_generated_'));
     for (const model of nodeGeneratedModels) {
-      const nodeId = model.id.replace('node_generated_', '');
-      if (!meshOutputs.has(nodeId) && !geometryOutputs.has(nodeId)) {
+      const sourceNodeId = model.userData?.sourceNodeId;
+      if (
+        sourceNodeId &&
+        (!currentNodeIds.has(sourceNodeId) ||
+          (!meshOutputs.has(sourceNodeId) && !geometryOutputs.has(sourceNodeId)))
+      ) {
         store.dispatch(removeModel(model.id));
       }
     }
