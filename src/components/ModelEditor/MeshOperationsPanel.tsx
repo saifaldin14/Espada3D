@@ -5,7 +5,6 @@ import {
   Typography,
   Box,
   Button,
-  ButtonGroup,
   TextField,
   Grid,
   FormControl,
@@ -15,8 +14,6 @@ import {
   Slider,
   FormControlLabel,
   Switch,
-  Divider,
-  Tooltip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -35,9 +32,6 @@ import {
   ContentCut,
   Architecture,
   Delete,
-  Undo,
-  Redo,
-  FlipToFront,
   Tune,
 } from "@mui/icons-material";
 import { useSelector } from "react-redux";

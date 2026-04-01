@@ -9,6 +9,14 @@ import {
   setModels 
 } from '../store/slices/modelSlice';
 import { updateMeshData } from '../store/slices/meshSlice';
+import {
+  addNode as addNodeAction,
+  deleteNode as deleteNodeAction,
+  updateNodeData,
+  connectNodes as connectNodesAction,
+  disconnectNodes as disconnectNodesAction,
+} from '../store/slices/nodeSlice';
+import { Node, NodeConnection } from '../types/nodeTypes';
 import * as THREE from 'three';
 
 /**
@@ -655,5 +663,211 @@ export class UpdateMeshFacesCommand extends BaseCommand {
       this.oldFaces,
       other.newFaces
     );
+  }
+}
+
+/**
+ * Command to add a node to the node graph
+ */
+export class AddNodeCommand extends BaseCommand {
+  private node: Omit<Node, 'id'>;
+  private addedNodeId: string | null = null;
+
+  constructor(node: Omit<Node, 'id'>) {
+    super();
+    this.node = node;
+  }
+
+  execute(): void {
+    const stateBefore = store.getState().nodes.nodes;
+    store.dispatch(addNodeAction(this.node));
+    const stateAfter = store.getState().nodes.nodes;
+
+    // Find the newly added node
+    const newNode = stateAfter.find(
+      (n: Node) => !stateBefore.some((b: Node) => b.id === n.id)
+    );
+    if (newNode) {
+      this.addedNodeId = newNode.id;
+    }
+  }
+
+  undo(): void {
+    if (this.addedNodeId) {
+      store.dispatch(deleteNodeAction(this.addedNodeId));
+    }
+  }
+
+  getDescription(): string {
+    return `Add ${this.node.type} node`;
+  }
+}
+
+/**
+ * Command to delete a node from the node graph
+ */
+export class DeleteNodeCommand extends BaseCommand {
+  private node: Node;
+  private relatedConnections: NodeConnection[];
+
+  constructor(node: Node, relatedConnections: NodeConnection[] = []) {
+    super();
+    this.node = { ...node };
+    this.relatedConnections = relatedConnections.map(c => ({ ...c }));
+  }
+
+  execute(): void {
+    store.dispatch(deleteNodeAction(this.node.id));
+  }
+
+  undo(): void {
+    // Re-add the node with its original properties
+    store.dispatch(addNodeAction({
+      type: this.node.type,
+      position: this.node.position,
+      data: this.node.data,
+      inputs: this.node.inputs,
+      outputs: this.node.outputs,
+      width: this.node.width,
+      height: this.node.height,
+      selected: this.node.selected,
+      collapsed: this.node.collapsed,
+    }));
+
+    // Get the newly created node's ID (reducer generates a new one)
+    const stateAfter = store.getState().nodes.nodes;
+    const restoredNode = stateAfter[stateAfter.length - 1];
+
+    // Re-add connections, remapping to new node ID
+    if (restoredNode) {
+      this.relatedConnections.forEach(conn => {
+        store.dispatch(connectNodesAction({
+          sourceId: conn.sourceNodeId === this.node.id ? restoredNode.id : conn.sourceNodeId,
+          targetId: conn.targetNodeId === this.node.id ? restoredNode.id : conn.targetNodeId,
+          sourcePort: conn.sourcePort,
+          targetPort: conn.targetPort,
+        }));
+      });
+    }
+  }
+
+  getDescription(): string {
+    return `Delete ${this.node.type} node`;
+  }
+}
+
+/**
+ * Command to update node data
+ */
+export class UpdateNodeDataCommand extends BaseCommand {
+  private nodeId: string;
+  private oldData: Record<string, any>;
+  private newData: Record<string, any>;
+
+  constructor(nodeId: string, oldData: Record<string, any>, newData: Record<string, any>) {
+    super();
+    this.nodeId = nodeId;
+    this.oldData = { ...oldData };
+    this.newData = { ...newData };
+  }
+
+  execute(): void {
+    store.dispatch(updateNodeData({ nodeId: this.nodeId, data: this.newData }));
+  }
+
+  undo(): void {
+    store.dispatch(updateNodeData({ nodeId: this.nodeId, data: this.oldData }));
+  }
+
+  getDescription(): string {
+    return `Update node data`;
+  }
+
+  canMerge(other: ICommand): boolean {
+    if (!(other instanceof UpdateNodeDataCommand)) return false;
+    if (other.nodeId !== this.nodeId) return false;
+    return (other as UpdateNodeDataCommand).timestamp - this.timestamp < 500;
+  }
+
+  merge(other: ICommand): ICommand {
+    const otherCmd = other as UpdateNodeDataCommand;
+    return new UpdateNodeDataCommand(this.nodeId, this.oldData, otherCmd.newData);
+  }
+}
+
+/**
+ * Command to connect two nodes
+ */
+export class ConnectNodesCommand extends BaseCommand {
+  private sourceId: string;
+  private targetId: string;
+  private sourcePort: string;
+  private targetPort: string;
+  private connectionId: string | null = null;
+
+  constructor(sourceId: string, targetId: string, sourcePort: string, targetPort: string) {
+    super();
+    this.sourceId = sourceId;
+    this.targetId = targetId;
+    this.sourcePort = sourcePort;
+    this.targetPort = targetPort;
+  }
+
+  execute(): void {
+    const stateBefore = store.getState().nodes.connections;
+    store.dispatch(connectNodesAction({
+      sourceId: this.sourceId,
+      targetId: this.targetId,
+      sourcePort: this.sourcePort,
+      targetPort: this.targetPort,
+    }));
+    const stateAfter = store.getState().nodes.connections;
+
+    // Find the newly added connection
+    const newConn = stateAfter.find(
+      (c: NodeConnection) => !stateBefore.some((b: NodeConnection) => b.id === c.id)
+    );
+    if (newConn) {
+      this.connectionId = newConn.id;
+    }
+  }
+
+  undo(): void {
+    if (this.connectionId) {
+      store.dispatch(disconnectNodesAction(this.connectionId));
+    }
+  }
+
+  getDescription(): string {
+    return `Connect nodes`;
+  }
+}
+
+/**
+ * Command to disconnect two nodes
+ */
+export class DisconnectNodesCommand extends BaseCommand {
+  private connection: NodeConnection;
+
+  constructor(connection: NodeConnection) {
+    super();
+    this.connection = { ...connection };
+  }
+
+  execute(): void {
+    store.dispatch(disconnectNodesAction(this.connection.id));
+  }
+
+  undo(): void {
+    store.dispatch(connectNodesAction({
+      sourceId: this.connection.sourceNodeId,
+      targetId: this.connection.targetNodeId,
+      sourcePort: this.connection.sourcePort,
+      targetPort: this.connection.targetPort,
+    }));
+  }
+
+  getDescription(): string {
+    return `Disconnect nodes`;
   }
 }

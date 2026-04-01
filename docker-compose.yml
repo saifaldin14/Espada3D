@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      collab:
+        condition: service_healthy
+    restart: unless-stopped
+
+  collab:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "1234:1234"
+    environment:
+      - PORT=1234
+      - REQUIRE_AUTH=${REQUIRE_AUTH:-false}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-30}
+    restart: unless-stopped

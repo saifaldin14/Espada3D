@@ -20,23 +20,17 @@ import {
   MenuItem,
   Slider,
   Paper,
-  Tooltip,
   Divider,
 } from "@mui/material";
 import {
   Delete,
   OpenInFull,
   ZoomOut,
-  Flip,
   SelectAll,
   DeselectOutlined,
   CallSplit,
-  Merge,
   Add,
   Remove,
-  Loop,
-  ContentCut,
-  Architecture,
 } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
@@ -65,7 +59,6 @@ const FaceEditor: React.FC<FaceEditorProps> = ({ modelId }) => {
     deselectAll,
     growSelection,
     shrinkSelection,
-    selectFaceLoop,
   } = useMeshEditor(modelId);
 
   // Operation parameters

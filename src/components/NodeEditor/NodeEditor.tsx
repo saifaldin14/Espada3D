@@ -1,14 +1,12 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
   IconButton,
   Tooltip,
-  Paper,
   Collapse,
 } from "@mui/material";
 import {
-  Add,
   Delete,
   PlayArrow,
   Stop,
@@ -25,17 +23,16 @@ import {
 import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import {
   Node,
-  NodeConnection,
   NodeType,
   NodeData,
   Position,
+  NODE_REGISTRY,
 } from "../../types/nodeTypes";
 import NodeCanvas from "./NodeCanvas";
 import NodeLibrary from "./NodeLibrary";
 import NodeProperties from "./NodeProperties";
 import {
   addNode,
-  deleteNode,
   connectNodes,
   disconnectNodes,
   updateNodePosition,
@@ -374,6 +371,32 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     }
   }, [nodes, connections, dispatch]);
 
+  // Auto-execute the node graph when node data or connections change
+  const autoExecuteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nodesDataFingerprint = useMemo(() => {
+    return JSON.stringify(nodes.map(n => ({ id: n.id, type: n.type, data: n.data })));
+  }, [nodes]);
+  const connectionsFingerprint = useMemo(() => {
+    return JSON.stringify(connections.map(c => ({ s: c.sourceNodeId, t: c.targetNodeId, sp: c.sourcePort, tp: c.targetPort })));
+  }, [connections]);
+
+  useEffect(() => {
+    if (!isOpen || nodes.length === 0) return;
+    // Debounce auto-execution to avoid rapid re-runs
+    if (autoExecuteTimeoutRef.current) {
+      clearTimeout(autoExecuteTimeoutRef.current);
+    }
+    autoExecuteTimeoutRef.current = setTimeout(() => {
+      handleExecute();
+    }, 500);
+    return () => {
+      if (autoExecuteTimeoutRef.current) {
+        clearTimeout(autoExecuteTimeoutRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handleExecute excluded to prevent double-trigger (it depends on nodes/connections which are already tracked via fingerprints)
+  }, [nodesDataFingerprint, connectionsFingerprint, isOpen]);
+
   const selectedNode = selectedNodeId
     ? nodes.find((n) => n.id === selectedNodeId)
     : null;
@@ -499,7 +522,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
       </Box>
 
       {/* Collapsible Content */}
-      <Collapse in={!isCollapsed} timeout="auto" unmountOnExit>
+      <Collapse in={!isCollapsed} timeout="auto" unmountOnExit sx={{ flex: 1, display: isCollapsed ? 'none' : 'flex', minHeight: 0 }}>
         <Box sx={isFullscreen ? styles.contentFullscreen : styles.content}>
           {/* Node Library */}
           <Box sx={styles.sidebar}>
@@ -529,6 +552,9 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
               }
               onDisconnect={(connectionId) =>
                 dispatch(disconnectNodes(connectionId))
+              }
+              onDataChange={(nodeId, data) =>
+                dispatch(updateNodeData({ nodeId, data }))
               }
               viewportOffset={viewportOffset}
               zoom={zoom}
@@ -593,79 +619,33 @@ const getDefaultNodeData = (type: NodeType): NodeData => {
       return { filterType: "blur", strength: 1.0 };
     case "condition":
       return { condition: "equals", value: 0 };
+    case "numberSlider":
+      return { value: 0.5, min: 0, max: 1 };
+    case "booleanToggle":
+      return { value: true };
+    case "point":
+      return { value: [0, 0, 0] };
+    case "list":
+      return { value: [] };
+    case "watch":
+      return {};
+    case "sequence":
+      return { start: 0, end: 10, step: 1 };
     default:
       return {};
   }
 };
 
 const getNodeInputs = (type: NodeType): string[] => {
-  switch (type) {
-    case "input":
-      return [];
-    case "color":
-      return [];
-    case "output":
-      return ["value"];
-    case "math":
-      return ["a", "b"];
-    case "transform":
-      return ["geometry", "value"];
-    case "material":
-      return ["color", "roughness", "metalness"];
-    case "geometry":
-      return ["dimensions"];
-    case "mesh":
-      return ["geometry", "material"];
-    case "texture":
-      return [];
-    case "light":
-      return ["intensity", "color"];
-    case "camera":
-      return ["fov", "near", "far"];
-    case "script":
-      return ["input"];
-    case "filter":
-      return ["input", "strength"];
-    case "condition":
-      return ["input", "compare"];
-    default:
-      return [];
-  }
+  const entry = NODE_REGISTRY[type];
+  if (entry) return entry.inputs.map(p => p.name);
+  return [];
 };
 
 const getNodeOutputs = (type: NodeType): string[] => {
-  switch (type) {
-    case "input":
-      return ["value"];
-    case "color":
-      return ["color"];
-    case "output":
-      return [];
-    case "math":
-      return ["result"];
-    case "transform":
-      return ["geometry"];
-    case "material":
-      return ["material"];
-    case "geometry":
-      return ["geometry"];
-    case "mesh":
-      return ["mesh"];
-    case "texture":
-      return ["texture"];
-    case "light":
-      return ["light"];
-    case "camera":
-      return ["camera"];
-    case "script":
-      return ["output"];
-    case "filter":
-      return ["output"];
-    case "condition":
-      return ["true", "false"];
-    default:
-      return [];
-  }
+  const entry = NODE_REGISTRY[type];
+  if (entry) return entry.outputs.map(p => p.name);
+  return [];
 };
 
 const styles = {
@@ -755,6 +735,7 @@ const styles = {
     flex: 1,
     overflow: "hidden",
     minHeight: 0,
+    height: "100%",
   },
   contentFullscreen: {
     display: "flex",

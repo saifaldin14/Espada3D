@@ -1,80 +1,47 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
-  updateModelTransform,
-  updateModelMaterial,
   updateModelMetadata,
   undo,
   redo,
   copyModels,
-  pasteModels,
   removeModel,
   duplicateModel,
   saveToHistory,
 } from "../../store/slices/modelSlice";
-import { setEditMode, setActiveTool } from "../../store/slices/uiSlice";
+import { setEditMode } from "../../store/slices/uiSlice";
 import {
-  Card,
-  CardContent,
   TextField,
   Typography,
   Grid,
   Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  Switch,
-  Tabs,
-  Tab,
   IconButton,
-  Slider,
   Tooltip,
   Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Button,
-  ButtonGroup,
   Collapse,
   Paper,
-  Fade,
   Drawer,
-  Stack,
   Divider,
 } from "@mui/material";
 import {
   Undo,
   Redo,
   ContentCopy,
-  ContentPaste,
   Delete,
   FileCopy,
-  Visibility,
-  VisibilityOff,
-  Lock,
-  LockOpen,
   ExpandMore,
   ExpandLess,
-  ThreeDRotation,
   Style,
   Settings,
-  Straighten,
-  ColorLens,
-  FormatPaint,
   Tune,
   Build,
   ViewInAr,
-  OpenWith,
-  ZoomOutMap,
-  RotateRight,
   SaveAlt,
   Category as CategoryIcon,
   Animation,
 } from "@mui/icons-material";
-import { SketchPicker } from "react-color";
-import { MaterialProperties, Vector3Tuple, EditMode } from "../../types";
+import { MaterialProperties, Vector3Tuple } from "../../types";
 import MeshEditPanel from "./MeshEditPanel";
 import { glassStyles } from "../../config/theme";
 import { EditModes } from "../../Enums";
@@ -84,24 +51,23 @@ const ModelEditor: React.FC = () => {
     (state: any) => state.models.selectedModelId
   );
   const models = useSelector((state: any) => state.models.models);
-  const activeTool = useSelector((state: any) => state.ui.activeTool);
   const editMode = useSelector((state: any) => state.ui.editMode);
   const dispatch = useDispatch();
 
-  const [position, setPosition] = useState<Vector3Tuple>([0, 0, 0]);
-  const [rotation, setRotation] = useState<Vector3Tuple>([0, 0, 0]);
-  const [scale, setScale] = useState<Vector3Tuple>([1, 1, 1]);
-  const [materialType, setMaterialType] =
+  const [, setPosition] = useState<Vector3Tuple>([0, 0, 0]);
+  const [, setRotation] = useState<Vector3Tuple>([0, 0, 0]);
+  const [, setScale] = useState<Vector3Tuple>([1, 1, 1]);
+  const [, setMaterialType] =
     useState<MaterialProperties["type"]>("standard");
-  const [color, setColor] = useState<string>("#00ff00");
-  const [opacity, setOpacity] = useState<number>(1);
-  const [metalness, setMetalness] = useState<number>(0);
-  const [roughness, setRoughness] = useState<number>(0.5);
-  const [emissive, setEmissive] = useState<string>("#000000");
-  const [emissiveIntensity, setEmissiveIntensity] = useState<number>(0);
-  const [transparent, setTransparent] = useState<boolean>(false);
-  const [wireframe, setWireframe] = useState<boolean>(false);
-  const [visible, setVisible] = useState<boolean>(true);
+  const [, setColor] = useState<string>("#00ff00");
+  const [, setOpacity] = useState<number>(1);
+  const [, setMetalness] = useState<number>(0);
+  const [, setRoughness] = useState<number>(0.5);
+  const [, setEmissive] = useState<string>("#000000");
+  const [, setEmissiveIntensity] = useState<number>(0);
+  const [, setTransparent] = useState<boolean>(false);
+  const [, setWireframe] = useState<boolean>(false);
+  const [, setVisible] = useState<boolean>(true);
   const [locked, setLocked] = useState<boolean>(false);
   const [modelName, setModelName] = useState<string>("");
 
@@ -147,97 +113,6 @@ const ModelEditor: React.FC = () => {
     }
   }, [selectedModel]);
 
-  const handleTransformChange = (axis: number, value: number) => {
-    if (!selectedModelId) return;
-
-    let newPosition: Vector3Tuple = [...position];
-    let newRotation: Vector3Tuple = [...rotation];
-    let newScale: Vector3Tuple = [...scale];
-
-    if (isNaN(value)) value = 0;
-
-    switch (activeTool) {
-      case "translate":
-        newPosition[axis] = value;
-        setPosition(newPosition);
-        break;
-      case "rotate":
-        newRotation[axis] = value;
-        setRotation(newRotation);
-        break;
-      case "scale":
-        newScale[axis] = value;
-        setScale(newScale);
-        break;
-      default:
-        return;
-    }
-
-    dispatch(
-      updateModelTransform({
-        id: selectedModelId as string,
-        position: newPosition,
-        rotation: newRotation,
-        scale: newScale,
-      })
-    );
-  };
-
-  const handleMaterialChange = (property: string, value: any) => {
-    if (!selectedModelId) return;
-
-    const newMaterial: MaterialProperties = {
-      type: materialType,
-      color,
-      opacity,
-      metalness,
-      roughness,
-      emissive,
-      emissiveIntensity,
-      transparent,
-      wireframe,
-      [property]: value,
-    };
-
-    // Update local state
-    switch (property) {
-      case "type":
-        setMaterialType(value);
-        break;
-      case "color":
-        setColor(value);
-        break;
-      case "opacity":
-        setOpacity(value);
-        break;
-      case "metalness":
-        setMetalness(value);
-        break;
-      case "roughness":
-        setRoughness(value);
-        break;
-      case "emissive":
-        setEmissive(value);
-        break;
-      case "emissiveIntensity":
-        setEmissiveIntensity(value);
-        break;
-      case "transparent":
-        setTransparent(value);
-        break;
-      case "wireframe":
-        setWireframe(value);
-        break;
-    }
-
-    dispatch(
-      updateModelMaterial({
-        id: selectedModelId as string,
-        material: newMaterial,
-      })
-    );
-  };
-
   const handleMetadataChange = (property: string, value: any) => {
     if (!selectedModelId) return;
 
@@ -260,102 +135,6 @@ const ModelEditor: React.FC = () => {
       })
     );
   };
-
-  // Function to handle edit mode switching between vertex, edge, and face modes
-  const handleMeshModeChange = (mode: EditMode) => {
-    dispatch(setEditMode(mode));
-  };
-
-  const renderTransformControls = () => (
-    <Paper elevation={0} sx={styles.section}>
-      <Box sx={styles.sectionHeader} onClick={() => toggleSection("transform")}>
-        <Box sx={styles.sectionHeaderLeft}>
-          <ThreeDRotation sx={styles.sectionIcon} />
-          <Typography variant="subtitle1" sx={styles.sectionTitle}>
-            Transform
-          </Typography>
-        </Box>
-        {expandedSections.transform ? <ExpandLess /> : <ExpandMore />}
-      </Box>
-
-      <Collapse in={expandedSections.transform}>
-        <Box sx={styles.sectionContent}>
-          {/* Transform Tool Selection */}
-          <Typography variant="body2" sx={styles.controlLabel}>
-            Transform Tool
-          </Typography>
-
-          <ButtonGroup size="small" fullWidth sx={{ mb: 2 }}>
-            <Button
-              variant={activeTool === "translate" ? "contained" : "outlined"}
-              onClick={() => dispatch(setActiveTool("translate"))}
-              startIcon={<OpenWith fontSize="small" />}
-              sx={styles.transformButton}
-            >
-              Move
-            </Button>
-            <Button
-              variant={activeTool === "rotate" ? "contained" : "outlined"}
-              onClick={() => dispatch(setActiveTool("rotate"))}
-              startIcon={<RotateRight fontSize="small" />}
-              sx={styles.transformButton}
-            >
-              Rotate
-            </Button>
-            <Button
-              variant={activeTool === "scale" ? "contained" : "outlined"}
-              onClick={() => dispatch(setActiveTool("scale"))}
-              startIcon={<ZoomOutMap fontSize="small" />}
-              sx={styles.transformButton}
-            >
-              Scale
-            </Button>
-          </ButtonGroup>
-
-          {/* Coordinate Inputs */}
-          <Typography variant="body2" sx={styles.controlLabel}>
-            {activeTool === "translate"
-              ? "Position"
-              : activeTool === "rotate"
-                ? "Rotation"
-                : "Scale"}
-          </Typography>
-          <Grid container spacing={2}>
-            {["X", "Y", "Z"].map((axis, i) => (
-              <Grid item xs={4} key={i}>
-                <TextField
-                  label={axis}
-                  value={
-                    activeTool === "translate"
-                      ? position[i]
-                      : activeTool === "rotate"
-                        ? rotation[i]
-                        : scale[i]
-                  }
-                  type="number"
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  onChange={(e) =>
-                    handleTransformChange(i, parseFloat(e.target.value))
-                  }
-                  sx={styles.textField}
-                  disabled={locked}
-                  InputProps={{
-                    endAdornment: (
-                      <Typography variant="caption" sx={styles.unitLabel}>
-                        {activeTool === "rotate" ? "°" : ""}
-                      </Typography>
-                    ),
-                  }}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      </Collapse>
-    </Paper>
-  );
 
   const renderObjectControls = () => (
     <Paper elevation={0} sx={styles.section}>

@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Box, Typography, Button, Alert, Paper } from "@mui/material";
+import { errorReporter } from "../../utils/errorReporter";
 
 interface Props {
   children: ReactNode;
@@ -46,8 +47,9 @@ class ErrorBoundary extends Component<Props, State> {
 
     // Log to error reporting service in production
     if (process.env.NODE_ENV === "production") {
-      // TODO: Add error reporting service integration
-      // Example: Sentry.captureException(error, { extra: errorInfo });
+      errorReporter.reportRenderError(error, errorInfo.componentStack || undefined);
+    } else {
+      errorReporter.reportRenderError(error, errorInfo.componentStack || undefined);
     }
   }
 

@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { TransformControls } from "@react-three/drei";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { useMeshEditor } from "../../hooks/useMeshEditor";
 import { useModelCommands } from "../../hooks/useModelCommands";
@@ -29,8 +29,6 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
   getTargetMatrixWorld,
   getMeshObject,
 }) => {
-  const dispatch = useDispatch();
-  const { camera, gl, scene } = useThree();
   const transformRef = useRef<any>(null);
   const helperGroupRef = useRef<THREE.Group>(null);
 
@@ -72,107 +70,6 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     scaleFaces,
   } = useMeshEditor(modelId);
 
-  // Calculate selection center in local mesh space (existing logic)
-  const selectionCenter = React.useMemo(() => {
-    if (!meshData || !MeshEditModes.includes(editMode)) {
-      return new THREE.Vector3(0, 0, 0);
-    }
-
-    let selectedElements: any[] = [];
-    if (currentSubObjectType === EditModes.vertex) {
-      selectedElements = meshData.vertices.filter((v) => v.selected);
-    } else if (currentSubObjectType === EditModes.edge) {
-      selectedElements = meshData.edges.filter((e) => e.selected);
-    } else if (currentSubObjectType === EditModes.face) {
-      selectedElements = meshData.faces.filter((f) => f.selected);
-    }
-
-    if (selectedElements.length === 0) {
-      return new THREE.Vector3(0, 0, 0);
-    }
-
-    const center = new THREE.Vector3();
-    let count = 0;
-
-    if (currentSubObjectType === EditModes.vertex) {
-      selectedElements.forEach((vertex) => {
-        center.add(new THREE.Vector3().fromArray(vertex.position));
-        count++;
-      });
-    } else if (currentSubObjectType === EditModes.edge) {
-      selectedElements.forEach((edge) => {
-        edge.vertices.forEach((vIndex: number) => {
-          const vertex = meshData.vertices[vIndex];
-          if (vertex) {
-            center.add(new THREE.Vector3().fromArray(vertex.position));
-            count++;
-          }
-        });
-      });
-    } else if (currentSubObjectType === EditModes.face) {
-      selectedElements.forEach((face) => {
-        face.vertices.forEach((vIndex: number) => {
-          const vertex = meshData.vertices[vIndex];
-          if (vertex) {
-            center.add(new THREE.Vector3().fromArray(vertex.position));
-            count++;
-          }
-        });
-      });
-    }
-
-    return count > 0 ? center.divideScalar(count) : new THREE.Vector3(0, 0, 0);
-  }, [meshData, editMode, currentSubObjectType]);
-
-  // Compute corrected gizmo position in world space
-  const correctedGizmoPosition = React.useMemo(() => {
-    if (!meshData || !MeshEditModes.includes(editMode))
-      return new THREE.Vector3(0, 0, 0);
-    const targetMatrix = getTargetMatrixWorld?.();
-    if (!targetMatrix) return selectionCenter.clone();
-
-    // Collect selected vertex indices depending on sub-object type
-    const selectedVertexIndices: number[] = [];
-    if (currentSubObjectType === EditModes.vertex) {
-      meshData.vertices.forEach((v) => {
-        if (v.selected) selectedVertexIndices.push(v.index);
-      });
-    } else if (currentSubObjectType === EditModes.edge) {
-      meshData.edges.forEach((e) => {
-        if (e.selected)
-          e.vertices.forEach((v) => selectedVertexIndices.push(v));
-      });
-    } else if (currentSubObjectType === EditModes.face) {
-      meshData.faces.forEach((f) => {
-        if (f.selected)
-          f.vertices.forEach((v) => selectedVertexIndices.push(v));
-      });
-    }
-    if (selectedVertexIndices.length === 0) return selectionCenter.clone();
-
-    // Calculate center in world space - no coordinate conversion needed
-    // since TransformGizmo is now at scene root level
-    const worldCenter = new THREE.Vector3();
-    selectedVertexIndices.forEach((idx) => {
-      const v = meshData.vertices[idx];
-      if (!v) return;
-      const local = new THREE.Vector3(
-        v.position[0],
-        v.position[1],
-        v.position[2]
-      );
-      worldCenter.add(local.applyMatrix4(targetMatrix));
-    });
-    worldCenter.multiplyScalar(1 / selectedVertexIndices.length);
-
-    return worldCenter;
-  }, [
-    meshData,
-    editMode,
-    currentSubObjectType,
-    selectionCenter,
-    getTargetMatrixWorld,
-  ]);
 
   // Handle transform start
   const handleTransformStart = useCallback(() => {
@@ -203,7 +100,7 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
     startWorldPosRef.current = wp.clone();
 
     onTransformStart?.();
-  }, [onTransformStart]);
+  }, [onTransformStart, editMode, selectedModel]);
 
   const startWorldPosRef = useRef<THREE.Vector3 | null>(null);
   const pivotLocalStartRef = useRef<THREE.Vector3 | null>(null);
@@ -464,21 +361,22 @@ const TransformGizmo: React.FC<TransformGizmoProps> = ({
 
   // Update gizmo position (legacy effect) -- now simplified, rely on frame updates
   useEffect(() => {
-    if (transformRef.current && helperGroupRef.current) {
+    const currentHelperGroup = helperGroupRef.current;
+    if (transformRef.current && currentHelperGroup) {
       const meshObj = getMeshObject?.();
-      if (meshObj && helperGroupRef.current.parent !== meshObj) {
-        meshObj.add(helperGroupRef.current);
+      if (meshObj && currentHelperGroup.parent !== meshObj) {
+        meshObj.add(currentHelperGroup);
       }
-      transformRef.current.object = helperGroupRef.current;
+      transformRef.current.object = currentHelperGroup;
     }
     return () => {
       const meshObj = getMeshObject?.();
       if (
         meshObj &&
-        helperGroupRef.current &&
-        helperGroupRef.current.parent === meshObj
+        currentHelperGroup &&
+        currentHelperGroup.parent === meshObj
       ) {
-        meshObj.remove(helperGroupRef.current);
+        meshObj.remove(currentHelperGroup);
       }
     };
   }, [meshData, editMode, currentSubObjectType, getMeshObject]);

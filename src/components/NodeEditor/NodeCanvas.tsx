@@ -27,6 +27,7 @@ interface NodeCanvasProps {
     targetPort: string
   ) => void;
   onDisconnect: (connectionId: string) => void;
+  onDataChange?: (nodeId: string, data: Partial<import("../../types/nodeTypes").NodeData>) => void;
   viewportOffset: Position;
   zoom: number;
   onViewportChange: (offset: Position) => void;
@@ -64,6 +65,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
   onNodeResize,
   onConnect,
   onDisconnect,
+  onDataChange,
   viewportOffset,
   zoom,
   onViewportChange,
@@ -500,6 +502,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
             key={node.id}
             node={node}
             selected={node.selected || selectedNodeId === node.id}
+            connections={connections}
             onMouseDown={(event: React.MouseEvent) =>
               handleNodeMouseDown(node.id, event, node.position)
             }
@@ -510,6 +513,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
               handlePortMouseUp(node.id, port, event)
             }
             onNodeResize={onNodeResize}
+            onDataChange={onDataChange}
           />
         ))}
       </Box>

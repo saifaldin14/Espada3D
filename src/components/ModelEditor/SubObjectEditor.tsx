@@ -4,15 +4,11 @@ import {
   CardContent,
   Typography,
   Box,
-  ButtonGroup,
-  Button,
   Alert,
   Divider,
-  useTheme,
   useMediaQuery,
   Tooltip,
 } from "@mui/material";
-import { CropFree, LinearScale, Crop } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { setCurrentSubObjectType } from "../../store/slices/uiSlice";
@@ -20,7 +16,6 @@ import {
   initializeMeshData,
   clearMeshData,
 } from "../../store/slices/meshSlice";
-import { SubObjectType } from "../../types";
 import { MeshEditor } from "../../utils/meshEditor";
 import VertexEditor from "./VertexEditor";
 import EdgeEditor from "./EdgeEditor";
@@ -34,7 +29,6 @@ interface SubObjectEditorProps {
 
 const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
   const dispatch = useDispatch();
-  const theme = useTheme();
   const isSmallPanel = useMediaQuery("(max-width:280px)");
   const isVerySmallPanel = useMediaQuery("(max-width:200px)");
 
@@ -99,10 +93,6 @@ const SubObjectEditor: React.FC<SubObjectEditorProps> = ({ modelId }) => {
       }
     }
   }, [editMode, currentSubObjectType, dispatch]);
-
-  const handleSubObjectTypeChange = (type: SubObjectType) => {
-    dispatch(setCurrentSubObjectType(type));
-  };
 
   // Helper function to recreate Three.js geometry from cache
   const createGeometryFromCache = (cache: any): THREE.BufferGeometry => {

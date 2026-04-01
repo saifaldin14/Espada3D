@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { Box } from "@mui/material";
 import { Node, Position } from "../../types/nodeTypes";
 
@@ -25,7 +25,7 @@ const Minimap: React.FC<MinimapProps> = ({
   const minimapHeight = 150;
 
   // Calculate bounds of all nodes
-  const getNodeBounds = () => {
+  const getNodeBounds = useCallback(() => {
     if (nodes.length === 0) {
       return { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
     }
@@ -53,7 +53,7 @@ const Minimap: React.FC<MinimapProps> = ({
       maxX: maxX + padding,
       maxY: maxY + padding,
     };
-  };
+  }, [nodes]);
 
   // Draw minimap
   useEffect(() => {
@@ -131,7 +131,7 @@ const Minimap: React.FC<MinimapProps> = ({
     // Viewport fill
     ctx.fillStyle = "rgba(102, 126, 234, 0.15)";
     ctx.fillRect(viewportX, viewportY, viewportWidth, viewportHeight);
-  }, [nodes, viewportOffset, zoom, canvasWidth, canvasHeight]);
+  }, [nodes, getNodeBounds, viewportOffset, zoom, canvasWidth, canvasHeight]);
 
   // Handle minimap click/drag
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {

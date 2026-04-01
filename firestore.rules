@@ -1,0 +1,280 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ──────────────────────────────────────────────
+    // Helper functions
+    // ──────────────────────────────────────────────
+
+    // Returns the authenticated user's UID, or null if unauthenticated.
+    function authUid() {
+      return request.auth != null ? request.auth.uid : null;
+    }
+
+    // Returns the authenticated user's email (verified only).
+    function authEmail() {
+      return (request.auth != null && request.auth.token.email_verified)
+        ? request.auth.token.email
+        : null;
+    }
+
+    // True when the caller is signed-in.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // True when the incoming data field equals the caller's UID.
+    function isOwnerField(field) {
+      return request.resource.data[field] == authUid();
+    }
+
+    // ── Project access helpers ──────────────────
+
+    // Check whether a projectShares document grants the caller access.
+    function projectShareDoc(projectId) {
+      return get(/databases/$(database)/documents/projectShares/$(projectId + '_' + authUid()));
+    }
+
+    function isProjectOwner(projectId) {
+      return get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == authUid();
+    }
+
+    function hasProjectAccess(projectId) {
+      return isProjectOwner(projectId)
+        || exists(/databases/$(database)/documents/projectShares/$(projectId + '_' + authUid()));
+    }
+
+    function hasProjectWriteAccess(projectId) {
+      return isProjectOwner(projectId)
+        || (exists(/databases/$(database)/documents/projectShares/$(projectId + '_' + authUid()))
+            && projectShareDoc(projectId).data.permission in ['owner', 'editor']);
+    }
+
+    // ── Team access helpers ─────────────────────
+
+    function teamMemberDoc(teamId) {
+      return get(/databases/$(database)/documents/teams/$(teamId)/members/$(authUid()));
+    }
+
+    function isTeamMember(teamId) {
+      return exists(/databases/$(database)/documents/teams/$(teamId)/members/$(authUid()));
+    }
+
+    function teamMemberRole(teamId) {
+      return teamMemberDoc(teamId).data.role;
+    }
+
+    function isTeamOwnerOrAdmin(teamId) {
+      return isTeamMember(teamId) && teamMemberRole(teamId) in ['owner', 'admin'];
+    }
+
+    function isTeamOwner(teamId) {
+      return isTeamMember(teamId) && teamMemberRole(teamId) == 'owner';
+    }
+
+    // ── Validation helpers ──────────────────────
+
+    function isValidPermission(perm) {
+      return perm in ['owner', 'editor', 'viewer'];
+    }
+
+    function isValidTeamRole(role) {
+      return role in ['owner', 'admin', 'editor', 'viewer'];
+    }
+
+    function isValidInviteStatus(status) {
+      return status in ['pending', 'accepted', 'declined'];
+    }
+
+    // ──────────────────────────────────────────────
+    // Collection: projects/{projectId}
+    // ──────────────────────────────────────────────
+    match /projects/{projectId} {
+
+      // Read: owner or anyone the project is shared with.
+      allow read: if isSignedIn() && hasProjectAccess(projectId);
+
+      // Create: authenticated user must set themselves as the owner.
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == authUid()
+        && request.resource.data.keys().hasAll(['ownerId', 'name', 'updatedAt', 'createdAt']);
+
+      // Update: must have write access (owner or editor share).
+      allow update: if isSignedIn()
+        && hasProjectWriteAccess(projectId)
+        // ownerId is immutable after creation.
+        && request.resource.data.ownerId == resource.data.ownerId;
+
+      // Delete: only the project owner.
+      allow delete: if isSignedIn() && isProjectOwner(projectId);
+    }
+
+    // ──────────────────────────────────────────────
+    // Collection: projectShares/{shareId}
+    //   Document ID format: {projectId}_{uid}
+    // ──────────────────────────────────────────────
+    match /projectShares/{shareId} {
+
+      // Read: the user the share targets, or the project owner.
+      allow read: if isSignedIn()
+        && (resource.data.uid == authUid()
+            || resource.data.sharedBy == authUid()
+            || isProjectOwner(resource.data.projectId));
+
+      // Create: only the project owner can share.
+      allow create: if isSignedIn()
+        && isProjectOwner(request.resource.data.projectId)
+        && request.resource.data.sharedBy == authUid()
+        && request.resource.data.keys().hasAll(['projectId', 'uid', 'email', 'permission', 'sharedAt', 'sharedBy'])
+        && isValidPermission(request.resource.data.permission)
+        // Enforce composite-key document ID.
+        && shareId == (request.resource.data.projectId + '_' + request.resource.data.uid);
+
+      // Update: only the project owner can change permission.
+      allow update: if isSignedIn()
+        && isProjectOwner(resource.data.projectId)
+        && isValidPermission(request.resource.data.permission)
+        // projectId and uid are immutable.
+        && request.resource.data.projectId == resource.data.projectId
+        && request.resource.data.uid == resource.data.uid;
+
+      // Delete: project owner, or the share target removing their own access.
+      allow delete: if isSignedIn()
+        && (isProjectOwner(resource.data.projectId)
+            || resource.data.uid == authUid());
+    }
+
+    // ──────────────────────────────────────────────
+    // Collection: teams/{teamId}
+    // ──────────────────────────────────────────────
+    match /teams/{teamId} {
+
+      // Read: only team members.
+      allow read: if isSignedIn() && isTeamMember(teamId);
+
+      // Create: caller must set themselves as the owner.
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == authUid()
+        && request.resource.data.keys().hasAll(['id', 'name', 'ownerId', 'ownerName', 'createdAt', 'updatedAt', 'memberCount'])
+        && request.resource.data.memberCount is int;
+
+      // Update: owner or admin can update team metadata.
+      allow update: if isSignedIn()
+        && isTeamOwnerOrAdmin(teamId)
+        // ownerId is immutable.
+        && request.resource.data.ownerId == resource.data.ownerId;
+
+      // Delete: only the team owner.
+      allow delete: if isSignedIn() && isTeamOwner(teamId);
+
+      // ────────────────────────────────────────────
+      // Subcollection: teams/{teamId}/members/{uid}
+      // ────────────────────────────────────────────
+      match /members/{uid} {
+
+        // Read: any team member can list other members.
+        allow read: if isSignedIn() && isTeamMember(teamId);
+
+        // Create: owner/admin adding a member, or the first member (team creator
+        // bootstrapping their own membership during team creation).
+        allow create: if isSignedIn()
+          && request.resource.data.uid == uid
+          && isValidTeamRole(request.resource.data.role)
+          && request.resource.data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'joinedAt'])
+          && (
+            // Bootstrap: creator adds themselves as owner.
+            (uid == authUid() && request.resource.data.role == 'owner')
+            // Normal: owner or admin adds another member.
+            || isTeamOwnerOrAdmin(teamId)
+          );
+
+        // Update: owner/admin can change a member's role.
+        allow update: if isSignedIn()
+          && isTeamOwnerOrAdmin(teamId)
+          && isValidTeamRole(request.resource.data.role)
+          // uid is immutable.
+          && request.resource.data.uid == resource.data.uid
+          // Cannot change the owner's role unless you are the owner.
+          && (resource.data.role != 'owner' || isTeamOwner(teamId));
+
+        // Delete: owner/admin removing a member, or a member leaving.
+        allow delete: if isSignedIn()
+          && (isTeamOwnerOrAdmin(teamId) || uid == authUid())
+          // The team owner cannot be removed (must delete the team instead).
+          && resource.data.role != 'owner';
+      }
+    }
+
+    // ──────────────────────────────────────────────
+    // Collection: userTeams/{uid}_{teamId}
+    //   Flat mapping so a user can efficiently list their teams.
+    // ──────────────────────────────────────────────
+    match /userTeams/{docId} {
+
+      // Read: only the user who owns the mapping.
+      allow read: if isSignedIn() && resource.data.uid == authUid();
+
+      // Create: the user themselves (when accepting invite or creating team),
+      //   or a team owner/admin adding someone.
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['uid', 'teamId'])
+        && docId == (request.resource.data.uid + '_' + request.resource.data.teamId)
+        && (
+          request.resource.data.uid == authUid()
+          || isTeamOwnerOrAdmin(request.resource.data.teamId)
+        );
+
+      // Update: not expected – mapping is created and deleted, never updated.
+      allow update: if false;
+
+      // Delete: the user themselves, or a team owner/admin.
+      allow delete: if isSignedIn()
+        && (resource.data.uid == authUid()
+            || isTeamOwnerOrAdmin(resource.data.teamId));
+    }
+
+    // ──────────────────────────────────────────────
+    // Collection: invites/{inviteId}
+    // ──────────────────────────────────────────────
+    match /invites/{inviteId} {
+
+      // Read: the inviter, or the invitee (by verified email).
+      allow read: if isSignedIn()
+        && (resource.data.invitedBy == authUid()
+            || resource.data.inviteeEmail == authEmail());
+
+      // Create: team owner or admin can invite people.
+      allow create: if isSignedIn()
+        && request.resource.data.invitedBy == authUid()
+        && request.resource.data.keys().hasAll([
+            'id', 'teamId', 'teamName', 'invitedBy', 'invitedByName',
+            'inviteeEmail', 'role', 'status', 'createdAt'
+          ])
+        && request.resource.data.status == 'pending'
+        && isValidTeamRole(request.resource.data.role)
+        && isTeamOwnerOrAdmin(request.resource.data.teamId);
+
+      // Update: only the invitee can accept/decline.
+      allow update: if isSignedIn()
+        && resource.data.inviteeEmail == authEmail()
+        && isValidInviteStatus(request.resource.data.status)
+        && resource.data.status == 'pending'
+        // Only the status field should change.
+        && request.resource.data.teamId == resource.data.teamId
+        && request.resource.data.invitedBy == resource.data.invitedBy
+        && request.resource.data.inviteeEmail == resource.data.inviteeEmail;
+
+      // Delete: the inviter (cancel) or the invitee (dismiss).
+      allow delete: if isSignedIn()
+        && (resource.data.invitedBy == authUid()
+            || resource.data.inviteeEmail == authEmail());
+    }
+
+    // ──────────────────────────────────────────────
+    // Default: deny everything else.
+    // ──────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import {
   Add,
   Delete,
   PlayArrow,
   Pause,
   Stop,
-  Timeline,
 } from "@mui/icons-material";
 import {
   Box,
@@ -25,16 +24,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Slider,
-  Grid,
 } from "@mui/material";
-import { AnimationData, AnimationKeyframe, Vector3Tuple } from "../../types";
-import { glassStyles } from "../../config/theme";
-
+import { AnimationData, AnimationKeyframe } from "../../types";
 interface AnimationPanelProps {
   isOpen: boolean;
 }

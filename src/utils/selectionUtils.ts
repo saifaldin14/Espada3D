@@ -33,7 +33,6 @@ export class SelectionUtils {
     const maxY = Math.max(startNDC.y, endNDC.y);
 
     const tempVector = new THREE.Vector3();
-    const tempVector2 = new THREE.Vector2();
 
     // Test vertices
     meshData.vertices?.forEach((vertex: any, index: number) => {

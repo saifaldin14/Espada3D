@@ -17,6 +17,8 @@ const initialState: NodeGraphState = {
     nodes: [],
     connections: [],
   },
+  nodeSceneLights: [],
+  nodeSceneCamera: null,
 };
 
 // Helper function to generate unique IDs
@@ -29,13 +31,29 @@ const nodeSlice = createSlice({
   reducers: {
     // Node operations
     addNode: (state, action: PayloadAction<Omit<Node, 'id'>>) => {
+      const nodeType = action.payload.type;
+      // Use taller heights for nodes with interactive content or many ports
+      const heightByType: Record<string, number> = {
+        point: 170,
+        sequence: 170,
+        numberSlider: 160,
+        transform: 160,
+        material: 150,
+        mesh: 140,
+        geometry: 140,
+        math: 140,
+        camera: 160,
+        light: 140,
+        filter: 140,
+        condition: 140,
+      };
       const newNode: Node = {
         ...action.payload,
         id: generateId(),
         selected: false,
         collapsed: false,
-        width: 150,
-        height: 100,
+        width: 180,
+        height: heightByType[nodeType] || 130,
       };
       state.nodes.push(newNode);
     },
@@ -238,6 +256,8 @@ const nodeSlice = createSlice({
       state.selectedNodeId = null;
       state.selectedConnectionId = null;
       state.executionResults = {};
+      state.nodeSceneLights = [];
+      state.nodeSceneCamera = null;
     },
 
     // Clipboard operations
@@ -551,6 +571,12 @@ const nodeSlice = createSlice({
         });
       }
     },
+    setNodeSceneLights: (state, action: PayloadAction<NodeGraphState['nodeSceneLights']>) => {
+      state.nodeSceneLights = action.payload;
+    },
+    setNodeSceneCamera: (state, action: PayloadAction<NodeGraphState['nodeSceneCamera']>) => {
+      state.nodeSceneCamera = action.payload;
+    },
   },
 });
 
@@ -586,6 +612,8 @@ export const {
   moveSelectedNodes,
   alignSelectedNodes,
   distributeSelectedNodes,
+  setNodeSceneLights,
+  setNodeSceneCamera,
 } = nodeSlice.actions;
 
 export default nodeSlice.reducer;

@@ -2,10 +2,8 @@ import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectModel,
-  updateModelHierarchy,
   groupModels,
   ungroupModels,
-  selectMultipleModels,
   toggleModelSelection,
   updateModelMetadata,
 } from "../../store/slices/modelSlice";
@@ -24,7 +22,6 @@ import {
   Checkbox,
   List,
   ListItem,
-  ListItemButton,
   ListItemText,
   ListItemIcon,
   Collapse,
@@ -44,7 +41,6 @@ import {
   FolderOpen,
 } from "@mui/icons-material";
 import { ModelMetadata } from "../../types";
-import { glassStyles } from "../../config/theme";
 
 interface HierarchyPanelProps {
   isOpen: boolean;

@@ -8,10 +8,10 @@ import {
   FormControl,
   InputLabel,
   Slider,
-  Switch,
-  FormControlLabel,
   Button,
   Divider,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import { SketchPicker } from "react-color";
 import { Node, NodeData } from "../../types/nodeTypes";
@@ -423,6 +423,491 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
               sx={styles.textField}
             />
           </>
+        );
+
+      case "numberSlider":
+        return (
+          <>
+            <Box sx={styles.sliderControl}>
+              <Typography variant="caption" sx={styles.label}>
+                Value: {Number(node.data.value ?? 0.5).toFixed(2)}
+              </Typography>
+              <Slider
+                value={Number(node.data.value ?? 0.5)}
+                onChange={(_: any, value: any) =>
+                  handleValueChange("value", value)
+                }
+                min={Number(node.data.min ?? 0)}
+                max={Number(node.data.max ?? 1)}
+                step={Number(node.data.step ?? 0.01)}
+                sx={styles.slider}
+              />
+            </Box>
+            <TextField
+              label="Min"
+              type="number"
+              value={node.data.min ?? 0}
+              onChange={(e) =>
+                handleValueChange("min", parseFloat(e.target.value) || 0)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Max"
+              type="number"
+              value={node.data.max ?? 1}
+              onChange={(e) =>
+                handleValueChange("max", parseFloat(e.target.value) || 1)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Step"
+              type="number"
+              value={node.data.step ?? 0.01}
+              onChange={(e) =>
+                handleValueChange("step", parseFloat(e.target.value) || 0.01)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+          </>
+        );
+
+      case "booleanToggle":
+        return (
+          <FormControlLabel
+            control={
+              <Switch
+                checked={Boolean(node.data.value)}
+                onChange={(e) =>
+                  handleValueChange("value", e.target.checked)
+                }
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": {
+                    color: "#667eea",
+                  },
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                    backgroundColor: "#667eea",
+                  },
+                }}
+              />
+            }
+            label={
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(255, 255, 255, 0.9)" }}
+              >
+                {node.data.value ? "True" : "False"}
+              </Typography>
+            }
+            sx={{ margin: 0 }}
+          />
+        );
+
+      case "color":
+        return (
+          <>
+            <Box sx={styles.colorControl}>
+              <Typography variant="caption" sx={styles.label}>
+                Color
+              </Typography>
+              <Box sx={styles.colorPreview}>
+                <Box
+                  sx={{
+                    ...styles.colorSwatch,
+                    backgroundColor: String(
+                      node.data.value || node.data.color || "#ffffff"
+                    ),
+                  }}
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                />
+                <Typography variant="caption" sx={styles.colorValue}>
+                  {String(
+                    node.data.value || node.data.color || "#ffffff"
+                  )}
+                </Typography>
+              </Box>
+              {showColorPicker && (
+                <Box sx={styles.colorPickerContainer}>
+                  <SketchPicker
+                    color={String(
+                      node.data.value || node.data.color || "#ffffff"
+                    )}
+                    onChange={(color: any) =>
+                      handleValueChange("value", color.hex)
+                    }
+                  />
+                </Box>
+              )}
+            </Box>
+          </>
+        );
+
+      case "point":
+        return (
+          <Box sx={styles.vectorInput}>
+            <Typography variant="caption" sx={styles.label}>
+              Point (X, Y, Z)
+            </Typography>
+            <Box sx={styles.vectorRow}>
+              {["X", "Y", "Z"].map((axis, idx) => (
+                <TextField
+                  key={axis}
+                  label={axis}
+                  type="number"
+                  value={
+                    (Array.isArray(node.data.value)
+                      ? node.data.value[idx]
+                      : 0) || 0
+                  }
+                  onChange={(e) => {
+                    const currentValue = Array.isArray(node.data.value)
+                      ? node.data.value
+                      : [0, 0, 0];
+                    const newValue = [...currentValue];
+                    newValue[idx] = parseFloat(e.target.value) || 0;
+                    handleValueChange("value", newValue);
+                  }}
+                  size="small"
+                  sx={styles.vectorField}
+                />
+              ))}
+            </Box>
+          </Box>
+        );
+
+      case "sequence":
+        return (
+          <>
+            <TextField
+              label="Start"
+              type="number"
+              value={node.data.start ?? 0}
+              onChange={(e) =>
+                handleValueChange("start", parseFloat(e.target.value) || 0)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="End"
+              type="number"
+              value={node.data.end ?? 10}
+              onChange={(e) =>
+                handleValueChange("end", parseFloat(e.target.value) || 0)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Step"
+              type="number"
+              value={node.data.step ?? 1}
+              onChange={(e) =>
+                handleValueChange("step", parseFloat(e.target.value) || 1)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+          </>
+        );
+
+      case "mesh":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Mesh Source</InputLabel>
+              <Select
+                value={node.data.meshSource || "geometry"}
+                onChange={(e) =>
+                  handleValueChange("meshSource", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="geometry">From Geometry</MenuItem>
+                <MenuItem value="file">From File</MenuItem>
+                <MenuItem value="generated">Generated</MenuItem>
+              </Select>
+            </FormControl>
+            {node.data.meshSource === "file" && (
+              <TextField
+                label="File Path"
+                value={node.data.meshFile || ""}
+                onChange={(e) =>
+                  handleValueChange("meshFile", e.target.value)
+                }
+                size="small"
+                fullWidth
+                sx={styles.textField}
+                placeholder="path/to/model.obj"
+              />
+            )}
+            <TextField
+              label="Subdivision"
+              type="number"
+              value={node.data.subdivision ?? 0}
+              onChange={(e) =>
+                handleValueChange(
+                  "subdivision",
+                  parseInt(e.target.value) || 0
+                )
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+          </>
+        );
+
+      case "light":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Light Type</InputLabel>
+              <Select
+                value={node.data.lightType || "directional"}
+                onChange={(e) =>
+                  handleValueChange("lightType", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="directional">Directional</MenuItem>
+                <MenuItem value="point">Point</MenuItem>
+                <MenuItem value="spot">Spot</MenuItem>
+                <MenuItem value="ambient">Ambient</MenuItem>
+              </Select>
+            </FormControl>
+            <Box sx={styles.sliderControl}>
+              <Typography variant="caption" sx={styles.label}>
+                Intensity: {(node.data.intensity || 1).toFixed(2)}
+              </Typography>
+              <Slider
+                value={node.data.intensity || 1}
+                onChange={(_: any, value: any) =>
+                  handleValueChange("intensity", value)
+                }
+                min={0}
+                max={10}
+                step={0.1}
+                sx={styles.slider}
+              />
+            </Box>
+            <Box sx={styles.colorControl}>
+              <Typography variant="caption" sx={styles.label}>
+                Color
+              </Typography>
+              <Box sx={styles.colorPreview}>
+                <Box
+                  sx={{
+                    ...styles.colorSwatch,
+                    backgroundColor: node.data.color || "#ffffff",
+                  }}
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                />
+                <Typography variant="caption" sx={styles.colorValue}>
+                  {node.data.color || "#ffffff"}
+                </Typography>
+              </Box>
+              {showColorPicker && (
+                <Box sx={styles.colorPickerContainer}>
+                  <SketchPicker
+                    color={node.data.color || "#ffffff"}
+                    onChange={(color: any) =>
+                      handleValueChange("color", color.hex)
+                    }
+                  />
+                </Box>
+              )}
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={node.data.castShadows !== false}
+                  onChange={(e) =>
+                    handleValueChange("castShadows", e.target.checked)
+                  }
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: "#667eea",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      backgroundColor: "#667eea",
+                    },
+                  }}
+                />
+              }
+              label={
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(255, 255, 255, 0.9)" }}
+                >
+                  Cast Shadows
+                </Typography>
+              }
+              sx={{ margin: 0 }}
+            />
+          </>
+        );
+
+      case "camera":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Camera Type</InputLabel>
+              <Select
+                value={node.data.cameraType || "perspective"}
+                onChange={(e) =>
+                  handleValueChange("cameraType", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="perspective">Perspective</MenuItem>
+                <MenuItem value="orthographic">Orthographic</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="FOV"
+              type="number"
+              value={node.data.fov ?? 75}
+              onChange={(e) =>
+                handleValueChange("fov", parseFloat(e.target.value) || 75)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Near Clip"
+              type="number"
+              value={node.data.near ?? 0.1}
+              onChange={(e) =>
+                handleValueChange("near", parseFloat(e.target.value) || 0.1)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+            <TextField
+              label="Far Clip"
+              type="number"
+              value={node.data.far ?? 1000}
+              onChange={(e) =>
+                handleValueChange("far", parseFloat(e.target.value) || 1000)
+              }
+              size="small"
+              fullWidth
+              sx={styles.textField}
+            />
+          </>
+        );
+
+      case "texture":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Texture Type</InputLabel>
+              <Select
+                value={node.data.textureType || "diffuse"}
+                onChange={(e) =>
+                  handleValueChange("textureType", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="diffuse">Diffuse</MenuItem>
+                <MenuItem value="normal">Normal</MenuItem>
+                <MenuItem value="roughness">Roughness</MenuItem>
+                <MenuItem value="metalness">Metalness</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Source</InputLabel>
+              <Select
+                value={node.data.textureSource || "file"}
+                onChange={(e) =>
+                  handleValueChange("textureSource", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="file">File</MenuItem>
+                <MenuItem value="generated">Generated</MenuItem>
+                <MenuItem value="procedural">Procedural</MenuItem>
+              </Select>
+            </FormControl>
+            {node.data.textureSource === "file" && (
+              <TextField
+                label="File Path"
+                value={node.data.textureFile || ""}
+                onChange={(e) =>
+                  handleValueChange("textureFile", e.target.value)
+                }
+                size="small"
+                fullWidth
+                sx={styles.textField}
+                placeholder="path/to/texture.png"
+              />
+            )}
+          </>
+        );
+
+      case "script":
+        return (
+          <>
+            <FormControl fullWidth size="small" sx={styles.formControl}>
+              <InputLabel sx={styles.inputLabel}>Language</InputLabel>
+              <Select
+                value={node.data.scriptLanguage || "javascript"}
+                onChange={(e) =>
+                  handleValueChange("scriptLanguage", e.target.value)
+                }
+                sx={styles.select}
+              >
+                <MenuItem value="javascript">JavaScript</MenuItem>
+                <MenuItem value="glsl">GLSL</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="Script"
+              value={node.data.scriptContent || ""}
+              onChange={(e) =>
+                handleValueChange("scriptContent", e.target.value)
+              }
+              size="small"
+              fullWidth
+              multiline
+              minRows={4}
+              maxRows={12}
+              sx={{
+                ...styles.textField,
+                "& .MuiOutlinedInput-root": {
+                  ...((styles.textField as any)["& .MuiOutlinedInput-root"]),
+                  fontFamily: "monospace",
+                  fontSize: "12px",
+                },
+              }}
+              placeholder={
+                node.data.scriptLanguage === "glsl"
+                  ? "void main() {\n  // GLSL code\n}"
+                  : "// JavaScript code\nreturn input;"
+              }
+            />
+          </>
+        );
+
+      case "watch":
+      case "list":
+        return (
+          <Typography variant="body2" sx={styles.noProperties}>
+            This node has no editable properties.
+          </Typography>
         );
 
       default:
