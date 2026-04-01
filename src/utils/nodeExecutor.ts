@@ -692,6 +692,16 @@ export class NodeExecutor {
   }
 
   /**
+   * Create a deterministic fingerprint for node output data. Used to detect
+   * when a source node's data has changed so the manuallyEdited flag can be cleared.
+   */
+  private createNodeFingerprint(data: Record<string, any>): string {
+    // Sort keys for deterministic serialization
+    const sortedEntries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
+    return JSON.stringify(sortedEntries);
+  }
+
+  /**
    * Resolve a list of accumulated transforms into final position/rotation/scale.
    * Each transform in the chain applies its value for its type; later transforms
    * of the same type overwrite earlier ones (last writer wins).
@@ -749,7 +759,8 @@ export class NodeExecutor {
       }));
 
       // Only skip transform overwrite if manually edited AND source node data hasn't changed
-      if (!(isManuallyEdited && !nodeDataChanged)) {
+      const shouldUpdateTransform = !isManuallyEdited || nodeDataChanged;
+      if (shouldUpdateTransform) {
         store.dispatch(updateModelTransform({
           id: modelData.id,
           position: modelData.position,
@@ -850,7 +861,7 @@ export class NodeExecutor {
       };
 
       // Fingerprint the node output to detect when source data changes
-      const nodeFingerprint = JSON.stringify({
+      const nodeFingerprint = this.createNodeFingerprint({
         type: mesh.type, dimensions: mesh.dimensions,
         transforms: mesh.transforms, transform: mesh.transform,
         material: appliedMaterial,
@@ -896,7 +907,7 @@ export class NodeExecutor {
         updatedAt: new Date().toISOString(),
       };
 
-      const nodeFingerprint = JSON.stringify({
+      const nodeFingerprint = this.createNodeFingerprint({
         type: geometry.type, dimensions: geometry.dimensions,
         transforms: geometry.transforms, transform: geometry.transform,
       });
