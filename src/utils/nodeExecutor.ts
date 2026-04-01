@@ -3,7 +3,7 @@ import { ModelMetadata, GeometryType, MaterialType, Vector3Tuple } from '../type
 import store from '../store';
 // TODO: import upsertNodeModel from '../store/slices/modelSlice' when available (Agent 1)
 import { addModel, updateModelMetadata, updateModelTransform, updateModelMaterial, removeModel } from '../store/slices/modelSlice';
-import { setNodeSceneLights, setNodeSceneCamera } from '../store/slices/nodeSlice';
+import { setNodeSceneLights, setNodeSceneCamera, updateNodeData } from '../store/slices/nodeSlice';
 import { NodeGraphState } from '../types/nodeTypes';
 
 export class NodeExecutor {
@@ -252,13 +252,15 @@ export class NodeExecutor {
       throw new Error('Transform node requires geometry input');
     }
 
+    // Accumulate transforms through the connection chain instead of replacing
+    const existingTransforms: Array<{ type: string; value: number[] }> =
+      geometry.transforms || (geometry.transform ? [geometry.transform] : []);
+
     return {
       geometry: {
         ...geometry,
-        transform: {
-          type: transformType,
-          value: transformValue,
-        }
+        transform: undefined, // Clear legacy single-transform field
+        transforms: [...existingTransforms, { type: transformType, value: transformValue }],
       }
     };
   }
@@ -798,6 +800,60 @@ export class NodeExecutor {
     const state = store.getState();
     const existingModels = state.models.models;
 
+  /**
+   * Upsert a node-generated model: always read fresh state to avoid stale lookups,
+   * skip transform overwrites when user has manually edited transforms (unless
+   * the source node's data has changed), and never call addModel for a model
+   * that already exists.
+   */
+  private upsertNodeModel(modelData: ModelMetadata, nodeFingerprint: string): void {
+    // Always read fresh state at dispatch time to avoid stale model list
+    const freshModels = store.getState().models.models;
+    const existingModel = freshModels.find((m: ModelMetadata) => m.id === modelData.id);
+
+    if (existingModel) {
+      const isManuallyEdited = existingModel.userData?.manuallyEdited === true;
+      const storedFingerprint = existingModel.userData?.nodeDataFingerprint;
+      const nodeDataChanged = storedFingerprint !== nodeFingerprint;
+
+      // Update metadata (always safe to apply)
+      store.dispatch(updateModelMetadata({
+        id: modelData.id,
+        name: modelData.name,
+        visible: modelData.visible,
+        locked: modelData.locked,
+        userData: {
+          ...existingModel.userData,
+          nodeDataFingerprint: nodeFingerprint,
+          // Clear manuallyEdited when source node data changed
+          ...(nodeDataChanged ? { manuallyEdited: false } : {}),
+        },
+      }));
+
+      // Only skip transform overwrite if manually edited AND source node data hasn't changed
+      const shouldUpdateTransform = !isManuallyEdited || nodeDataChanged;
+      if (shouldUpdateTransform) {
+        store.dispatch(updateModelTransform({
+          id: modelData.id,
+          position: modelData.position,
+          rotation: modelData.rotation,
+          scale: modelData.scale,
+        }));
+      }
+
+      store.dispatch(updateModelMaterial({
+        id: modelData.id,
+        material: modelData.material,
+      }));
+    } else {
+      store.dispatch(addModel({
+        ...modelData,
+        userData: { ...modelData.userData, nodeDataFingerprint: nodeFingerprint },
+      }));
+    }
+  }
+
+  private async applySceneChanges(): Promise<void> {
     // Find all mesh nodes and create/update corresponding models
     const meshOutputs = new Map<string, any>();
     const materialOutputs = new Map<string, any>();
@@ -819,7 +875,6 @@ export class NodeExecutor {
     const meshEntries = Array.from(meshOutputs.entries());
     for (const [nodeId, mesh] of meshEntries) {
       const modelId = `node_generated_${nodeId}`;
-      const existingModel = existingModels.find((m: ModelMetadata) => m.id === modelId);
 
       // Find connected material node or use material from mesh data
       const meshNode = this.nodes.find(n => n.id === nodeId);
@@ -869,7 +924,7 @@ export class NodeExecutor {
         parentId: null,
         visible: true,
         locked: false,
-        createdAt: existingModel?.createdAt || new Date().toISOString(),
+        createdAt: freshCreatedAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         userData: { sourceNodeId: nodeId },
       };
@@ -910,7 +965,11 @@ export class NodeExecutor {
     const geometryEntries = Array.from(geometryOutputs.entries());
     for (const [nodeId, geometry] of geometryEntries) {
       const modelId = `node_generated_${nodeId}`;
-      const existingModel = existingModels.find((m: ModelMetadata) => m.id === modelId);
+
+      // Resolve chained transforms
+      const resolved = this.resolveTransforms(geometry, geometry.dimensions);
+
+      const freshCreatedAt = store.getState().models.models.find((m: ModelMetadata) => m.id === modelId)?.createdAt;
 
       const composedTransform = this.composeTransforms(nodeId, geometry.dimensions);
 
@@ -930,7 +989,7 @@ export class NodeExecutor {
         parentId: null,
         visible: true,
         locked: false,
-        createdAt: existingModel?.createdAt || new Date().toISOString(),
+        createdAt: freshCreatedAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         userData: { sourceNodeId: nodeId },
       };
@@ -1019,3 +1078,66 @@ export class NodeExecutor {
 export const createNodeExecutor = (nodes: Node[], connections: NodeConnection[]) => {
   return new NodeExecutor(nodes, connections);
 };
+
+/**
+ * Sync scene-level transform changes back to the corresponding node editor nodes.
+ * Called when the user manually moves/rotates/scales a node_generated model in the 3D viewport.
+ * Traces upstream connections from the mesh/geometry node to find transform nodes
+ * and updates their data accordingly.
+ */
+export function syncSceneToNodes(
+  modelId: string,
+  position: [number, number, number],
+  rotation: [number, number, number],
+  scale: [number, number, number]
+): void {
+  if (!modelId.startsWith('node_generated_')) return;
+
+  const nodeId = modelId.replace('node_generated_', '');
+  const state = store.getState();
+  const nodes = state.nodes.nodes;
+  const connections = state.nodes.connections;
+
+  // Find the mesh/geometry node that generated this model
+  const sourceNode = nodes.find((n: Node) => n.id === nodeId);
+  if (!sourceNode) return;
+
+  // Trace upstream to find all transform nodes connected to this node
+  const visited = new Set<string>();
+  const transformUpdates: Array<{ nodeId: string; transformType: string }> = [];
+
+  const traceUpstream = (currentNodeId: string) => {
+    if (visited.has(currentNodeId)) return;
+    visited.add(currentNodeId);
+
+    const incomingConns = connections.filter(
+      (c: NodeConnection) => c.targetNodeId === currentNodeId
+    );
+
+    for (const conn of incomingConns) {
+      const upstreamNode = nodes.find((n: Node) => n.id === conn.sourceNodeId);
+      if (upstreamNode?.type === 'transform') {
+        transformUpdates.push({
+          nodeId: upstreamNode.id,
+          transformType: upstreamNode.data.transformType || 'translate',
+        });
+      }
+      if (upstreamNode) {
+        traceUpstream(upstreamNode.id);
+      }
+    }
+  };
+
+  traceUpstream(nodeId);
+
+  // Update each transform node's value based on its type
+  for (const { nodeId: tNodeId, transformType } of transformUpdates) {
+    let newValue: [number, number, number];
+    if (transformType === 'translate') newValue = position;
+    else if (transformType === 'rotate') newValue = rotation;
+    else if (transformType === 'scale') newValue = scale;
+    else continue;
+
+    store.dispatch(updateNodeData({ nodeId: tNodeId, data: { value: newValue } }));
+  }
+}

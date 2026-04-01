@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Node, NodeConnection, NodeGraphState, NodeData, Position } from '../../types/nodeTypes';
+import { Node, NodeConnection, NodeGraphState, NodeData, NodeExecutionResult, Position } from '../../types/nodeTypes';
 
 const initialState: NodeGraphState = {
   nodes: [],
@@ -19,6 +19,7 @@ const initialState: NodeGraphState = {
   },
   nodeSceneLights: [],
   nodeSceneCamera: null,
+  executionFeedback: null,
 };
 
 // Helper function to generate unique IDs
@@ -577,6 +578,35 @@ const nodeSlice = createSlice({
     setNodeSceneCamera: (state, action: PayloadAction<NodeGraphState['nodeSceneCamera']>) => {
       state.nodeSceneCamera = action.payload;
     },
+
+    // Batch set execution results (replaces per-node dispatch loop)
+    setNodeExecutionResults: (state, action: PayloadAction<Record<string, NodeExecutionResult>>) => {
+      state.executionResults = { ...state.executionResults, ...action.payload };
+    },
+
+    // Reverse sync: update node data from a scene interaction
+    updateNodeDataFromScene: (state, action: PayloadAction<{ nodeId: string; data: Partial<NodeData> }>) => {
+      const node = state.nodes.find(n => n.id === action.payload.nodeId);
+      if (node) {
+        node.data = { ...node.data, ...action.payload.data };
+      }
+    },
+
+    // Execution feedback for UI display
+    setExecutionFeedback: (state, action: PayloadAction<{
+      status: 'idle' | 'running' | 'success' | 'error';
+      message: string;
+      duration: number;
+    }>) => {
+      state.executionFeedback = {
+        ...action.payload,
+        timestamp: Date.now(),
+      };
+    },
+
+    clearExecutionFeedback: (state) => {
+      state.executionFeedback = null;
+    },
   },
 });
 
@@ -614,6 +644,10 @@ export const {
   distributeSelectedNodes,
   setNodeSceneLights,
   setNodeSceneCamera,
+  setNodeExecutionResults,
+  updateNodeDataFromScene,
+  setExecutionFeedback,
+  clearExecutionFeedback,
 } = nodeSlice.actions;
 
 export default nodeSlice.reducer;
