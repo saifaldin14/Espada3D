@@ -13,10 +13,8 @@ import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import { useModels } from "../../hooks/useRedux";
 import { ToolType } from "../../types";
 import { updateModelMetadata } from "../../store/slices/modelSlice";
-import { syncSceneToNodes } from "../../utils/nodeExecutor";
 import MeshEditableModel from "./MeshEditableModel";
 import { MeshEditModes } from "../../consts";
-import { updateModelMetadata } from "../../store/slices/modelSlice";
 import { updateNodeData } from "../../store/slices/nodeSlice";
 
 interface SceneContentProps {
@@ -30,7 +28,6 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   const orbitControlsRef = useRef<any>(null);
   const selectedMeshRef = useRef<Mesh | null>(null);
   const outlineMeshRef = useRef<Mesh | null>(null); // Reference to the outline mesh
-  const dispatch = useAppDispatch();
 
   const {
     models: modelsMetadata,
