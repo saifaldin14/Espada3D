@@ -9,11 +9,13 @@ import {
   DoubleSide,
   BackSide,
 } from "three";
-import { useAppSelector } from "../../hooks/useRedux";
+import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import { useModels } from "../../hooks/useRedux";
 import { ToolType } from "../../types";
 import MeshEditableModel from "./MeshEditableModel";
 import { MeshEditModes } from "../../consts";
+import { updateModelMetadata } from "../../store/slices/modelSlice";
+import { updateNodeData } from "../../store/slices/nodeSlice";
 
 interface SceneContentProps {
   models: { [id: string]: Group };
@@ -25,6 +27,7 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   const orbitControlsRef = useRef<any>(null);
   const selectedMeshRef = useRef<Mesh | null>(null);
   const outlineMeshRef = useRef<Mesh | null>(null); // Reference to the outline mesh
+  const dispatch = useAppDispatch();
 
   const {
     models: modelsMetadata,
@@ -35,6 +38,8 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
   } = useModels();
 
   const editMode = useAppSelector((state) => state.ui.editMode);
+  const nodeGraphNodes = useAppSelector((state) => state.nodes.nodes);
+  const nodeGraphConnections = useAppSelector((state) => state.nodes.connections);
   const uuidToModelId = useRef<{ [uuid: string]: string }>({});
   const [renderedModels, setRenderedModels] = useState<{ [id: string]: Group }>(
     {}
@@ -196,6 +201,46 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         rotation,
         scale,
       });
+
+      // Reverse sync: if this is a node-generated model, sync transform back to the source node
+      const modelId = selectedModelId as string;
+      if (modelId.startsWith('node_generated_')) {
+        const sourceNodeId = modelId.replace('node_generated_', '');
+
+        // Mark as manually edited so auto-execute doesn't overwrite the transform
+        dispatch(updateModelMetadata({
+          id: modelId,
+          userData: { manuallyEdited: true },
+        }));
+
+        // Find a connected transform node that feeds into this mesh/geometry node
+        const transformConnection = nodeGraphConnections.find(
+          (conn) =>
+            conn.targetNodeId === sourceNodeId &&
+            nodeGraphNodes.find(
+              (n) => n.id === conn.sourceNodeId && n.type === 'transform'
+            )
+        );
+
+        if (transformConnection) {
+          // Push transform values back to the transform node
+          const nodeData: Record<string, any> = {};
+          nodeData.x = position[0];
+          nodeData.y = position[1];
+          nodeData.z = position[2];
+          nodeData.rotationX = rotation[0];
+          nodeData.rotationY = rotation[1];
+          nodeData.rotationZ = rotation[2];
+          nodeData.scaleX = scale[0];
+          nodeData.scaleY = scale[1];
+          nodeData.scaleZ = scale[2];
+
+          dispatch(updateNodeData({
+            nodeId: transformConnection.sourceNodeId,
+            data: nodeData,
+          }));
+        }
+      }
 
       if (outlineMeshRef.current) {
         outlineMeshRef.current.position.copy(selectedMeshRef.current.position);
