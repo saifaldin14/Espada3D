@@ -43,3 +43,15 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 7
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build client Docker image
+        run: docker build -t espada3d-client .
+
+      - name: Build collab server Docker image
+        run: docker build -t espada3d-collab -f server/Dockerfile .

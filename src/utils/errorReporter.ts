@@ -6,6 +6,8 @@
  * and provides hooks for external reporting services.
  */
 
+import { captureError } from './monitoring';
+
 export interface ErrorReport {
   id: string;
   timestamp: string;
@@ -67,6 +69,10 @@ class ErrorReportingService {
     } else {
       console.warn(`[${category.toUpperCase()}] ${report.message}`, context || '');
     }
+
+    // Forward to external monitoring (Sentry when configured)
+    const err = typeof error === 'string' ? new Error(error) : error;
+    captureError(err, { category, severity, ...context });
 
     // Notify listeners
     this.listeners.forEach(listener => {
