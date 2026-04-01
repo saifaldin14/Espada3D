@@ -1,5 +1,5 @@
-import React, { useRef, useCallback, useMemo } from "react";
-import { Box, Typography, IconButton, Switch, Slider, Tooltip } from "@mui/material";
+import React, { useRef, useCallback, useMemo, useState } from "react";
+import { Box, Typography, IconButton, Switch, Slider } from "@mui/material";
 import {
   Input,
   Output,
@@ -86,6 +86,98 @@ const getPortDefinition = (
   return defs.find((d) => d.name === portName);
 };
 
+/**
+ * A controlled number input that uses local string state while editing.
+ * This allows the user to type intermediate values like "-", "0.", or ""
+ * without the field snapping to 0.  The committed numeric value is sent
+ * to onChange on blur or Enter.  All keyboard events are stopped from
+ * propagating so that the node-editor shortcut handler never fires while
+ * the user is typing.
+ */
+interface NodeNumberInputProps {
+  value: number;
+  onChange: (value: number) => void;
+  step?: number;
+  min?: number;
+  max?: number;
+  /** Use compact styling (point / sequence rows) */
+  compact?: boolean;
+}
+
+const NodeNumberInput: React.FC<NodeNumberInputProps> = React.memo(
+  ({ value, onChange, step, min, max, compact }) => {
+    const [localValue, setLocalValue] = useState<string | null>(null);
+    const editing = localValue !== null;
+
+    const commit = (raw: string) => {
+      const parsed = parseFloat(raw);
+      const num = Number.isFinite(parsed) ? parsed : value;
+      const clamped =
+        min !== undefined || max !== undefined
+          ? Math.min(max ?? Infinity, Math.max(min ?? -Infinity, num))
+          : num;
+      setLocalValue(null);
+      if (clamped !== value) onChange(clamped);
+    };
+
+    return (
+      <input
+        type="number"
+        value={editing ? localValue : value}
+        step={step}
+        min={min}
+        max={max}
+        onFocus={(e) => {
+          setLocalValue(String(value));
+          e.target.select();
+        }}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") {
+            commit((e.target as HTMLInputElement).value);
+            (e.target as HTMLInputElement).blur();
+          }
+          if (e.key === "Escape") {
+            setLocalValue(null);
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        style={
+          compact
+            ? {
+                flex: 1,
+                width: "100%",
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: 3,
+                color: "#fff",
+                padding: "2px 4px",
+                fontSize: 10,
+                textAlign: "center",
+                outline: "none",
+              }
+            : {
+                width: "80%",
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: 4,
+                color: "#fff",
+                padding: "4px 6px",
+                fontSize: 11,
+                textAlign: "center",
+                outline: "none",
+              }
+        }
+      />
+    );
+  }
+);
+NodeNumberInput.displayName = "NodeNumberInput";
+
 const NodeComponent: React.FC<NodeComponentProps> = ({
   node,
   selected,
@@ -154,6 +246,14 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
     [node.id, onDataChange]
   );
 
+  /** Prevent keyboard events on inputs from reaching the global shortcut handler */
+  const stopKeyPropagation = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.stopPropagation();
+    },
+    []
+  );
+
   const renderPortCircle = (
     portName: string,
     side: "input" | "output",
@@ -198,24 +298,10 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
       case "input":
         return (
           <Box sx={contentStyles.container}>
-            <input
-              type="number"
+            <NodeNumberInput
               value={Number(node.data.value ?? 0)}
-              onChange={(e) => handleDataChange({ value: parseFloat(e.target.value) || 0 })}
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              style={{
-                width: "80%",
-                background: "rgba(255,255,255,0.1)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: 4,
-                color: "#fff",
-                padding: "4px 6px",
-                fontSize: 11,
-                textAlign: "center",
-                outline: "none",
-              }}
+              onChange={(v) => handleDataChange({ value: v })}
+              step={0.1}
             />
           </Box>
         );
@@ -239,7 +325,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
               onChange={(_, v) => handleDataChange({ value: v as number })}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
-              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+              onKeyDown={stopKeyPropagation}
               sx={{
                 width: "90%",
                 color: headerColor,
@@ -263,7 +349,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
               onChange={(e) => handleDataChange({ value: e.target.checked })}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
-              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+              onKeyDown={stopKeyPropagation}
               sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: headerColor } }}
             />
           </Box>
@@ -344,29 +430,15 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
                 <Typography variant="caption" sx={{ ...contentStyles.label, width: 12 }}>
                   {axis.toUpperCase()}
                 </Typography>
-                <input
-                  type="number"
+                <NodeNumberInput
                   value={Number(pointVal[idx] ?? 0)}
-                  onChange={(e) => {
+                  onChange={(v) => {
                     const newVal = [...pointVal];
-                    newVal[idx] = parseFloat(e.target.value) || 0;
+                    newVal[idx] = v;
                     handleDataChange({ value: newVal });
                   }}
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  style={{
-                    flex: 1,
-                    width: "100%",
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: 3,
-                    color: "#fff",
-                    padding: "2px 4px",
-                    fontSize: 10,
-                    textAlign: "center",
-                    outline: "none",
-                  }}
+                  step={0.1}
+                  compact
                 />
               </Box>
             ))}
@@ -386,25 +458,11 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
                 <Typography variant="caption" sx={{ ...contentStyles.label, width: 28, fontSize: 8 }}>
                   {label}
                 </Typography>
-                <input
-                  type="number"
+                <NodeNumberInput
                   value={Number(node.data[key] ?? (key === "step" ? 1 : 0))}
-                  onChange={(e) => handleDataChange({ [key]: parseFloat(e.target.value) || 0 })}
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  style={{
-                    flex: 1,
-                    width: "100%",
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: 3,
-                    color: "#fff",
-                    padding: "2px 4px",
-                    fontSize: 10,
-                    textAlign: "center",
-                    outline: "none",
-                  }}
+                  onChange={(v) => handleDataChange({ [key]: v })}
+                  step={key === "step" ? 0.1 : 1}
+                  compact
                 />
               </Box>
             ))}

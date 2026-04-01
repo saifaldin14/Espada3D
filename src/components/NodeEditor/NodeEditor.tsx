@@ -368,16 +368,19 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Skip if typing in an input or textarea
-      const activeEl = document.activeElement;
-      const isInInput = activeEl && (
-        activeEl.tagName === "INPUT" ||
-        activeEl.tagName === "TEXTAREA" ||
-        (activeEl as HTMLElement).contentEditable === "true"
-      );
+      // Skip shortcuts when the user is typing in an input field
+      const target = event.target as HTMLElement;
+      const isEditing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable ||
+        target.closest('[role="textbox"]') !== null;
 
-      // Delete key
-      if (!isInInput && (event.key === "Delete" || event.key === "Backspace")) {
+      // Delete key — only when NOT editing text
+      if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        !isEditing
+      ) {
         handleNodeDelete();
       }
       // Ctrl/Cmd + A for select all nodes
@@ -400,13 +403,21 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
         event.preventDefault();
         handleNodeDuplicate();
       }
-      // Ctrl/Cmd + C for copy
-      else if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+      // Ctrl/Cmd + C for copy (only when not editing)
+      else if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key === "c" &&
+        !isEditing
+      ) {
         event.preventDefault();
         handleCopy();
       }
-      // Ctrl/Cmd + V for paste
-      else if ((event.ctrlKey || event.metaKey) && event.key === "v") {
+      // Ctrl/Cmd + V for paste (only when not editing)
+      else if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key === "v" &&
+        !isEditing
+      ) {
         event.preventDefault();
         handlePaste();
       }
