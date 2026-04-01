@@ -128,37 +128,25 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     }
   }, [isOpen, editorSize.width]);
 
-  // Re-clamp position on window resize
+  // Clamp window position when browser viewport is resized
   useEffect(() => {
     const handleWindowResize = () => {
+      if (isFullscreen || isMinimized) return;
       setEditorSize((prev) => {
-        if (prev.width === 0) return prev;
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        const clampedWidth = Math.min(prev.width, w);
-        // Don't adjust the stored height when minimized — only clamp position
-        const clampedHeight = isMinimizedRef.current
-          ? prev.height
-          : Math.min(prev.height, h - TOOLBAR_HEIGHT - STATUS_BAR_HEIGHT);
-        const visibleHeight = isMinimizedRef.current
-          ? MINIMIZED_HEIGHT
-          : clampedHeight;
+        const maxX = window.innerWidth - MIN_VISIBLE_PX;
+        const maxY = window.innerHeight - HEADER_HEIGHT;
         return {
           ...prev,
-          width: clampedWidth,
-          height: clampedHeight,
-          x: Math.max(0, Math.min(prev.x, w - clampedWidth)),
-          y: Math.max(
-            TOOLBAR_HEIGHT,
-            Math.min(prev.y, h - STATUS_BAR_HEIGHT - visibleHeight)
-          ),
+          width: Math.min(prev.width, window.innerWidth),
+          height: Math.min(prev.height, window.innerHeight),
+          x: Math.max(-prev.width + MIN_VISIBLE_PX, Math.min(prev.x, maxX)),
+          y: Math.max(0, Math.min(prev.y, maxY)),
         };
       });
     };
-
     window.addEventListener("resize", handleWindowResize);
     return () => window.removeEventListener("resize", handleWindowResize);
-  }, []);
+  }, [isFullscreen, isMinimized]);
 
   const handleNodeDragStart = useCallback((nodeType: NodeType) => {
     setDraggedNodeType(nodeType);
@@ -197,22 +185,14 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (isDragging) {
-        const rawX = event.clientX - dragStart.x;
-        const rawY = event.clientY - dragStart.y;
         setEditorSize((prev) => {
-          const visibleHeight = isMinimizedRef.current
-            ? MINIMIZED_HEIGHT
-            : prev.height;
+          const newX = event.clientX - dragStart.x;
+          const newY = event.clientY - dragStart.y;
+          // Clamp so at least MIN_VISIBLE_PX of the window stays visible on each edge
           return {
             ...prev,
-            x: Math.max(0, Math.min(rawX, window.innerWidth - prev.width)),
-            y: Math.max(
-              TOOLBAR_HEIGHT,
-              Math.min(
-                rawY,
-                window.innerHeight - STATUS_BAR_HEIGHT - visibleHeight
-              )
-            ),
+            x: Math.max(-prev.width + MIN_VISIBLE_PX, Math.min(newX, window.innerWidth - MIN_VISIBLE_PX)),
+            y: Math.max(0, Math.min(newY, window.innerHeight - HEADER_HEIGHT)),
           };
         });
       } else if (isResizing && resizeHandle) {
@@ -223,23 +203,25 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
           let newSize = { ...prev };
 
           if (resizeHandle.includes("right")) {
-            newSize.width = Math.max(600, prev.width + deltaX);
+            newSize.width = Math.max(600, Math.min(prev.width + deltaX, window.innerWidth - prev.x));
           }
           if (resizeHandle.includes("left")) {
             const newWidth = Math.max(600, prev.width - deltaX);
-            if (newWidth > 600) {
+            const newX = prev.x + (prev.width - newWidth);
+            if (newWidth > 600 && newX >= 0) {
               newSize.width = newWidth;
-              newSize.x = prev.x + deltaX;
+              newSize.x = newX;
             }
           }
           if (resizeHandle.includes("bottom")) {
-            newSize.height = Math.max(400, prev.height + deltaY);
+            newSize.height = Math.max(400, Math.min(prev.height + deltaY, window.innerHeight - prev.y));
           }
           if (resizeHandle.includes("top")) {
             const newHeight = Math.max(400, prev.height - deltaY);
-            if (newHeight > 400) {
+            const newY = prev.y + (prev.height - newHeight);
+            if (newHeight > 400 && newY >= 0) {
               newSize.height = newHeight;
-              newSize.y = prev.y + deltaY;
+              newSize.y = newY;
             }
           }
 
@@ -846,7 +828,24 @@ const styles = {
     border: "none",
     borderRadius: 0,
     overflow: "hidden",
-    zIndex: 1000,
+    zIndex: 10000,
+  },
+  containerMinimized: {
+    position: "fixed" as const,
+    bottom: 20,
+    right: 20,
+    width: "min(320px, calc(100vw - 40px))",
+    height: HEADER_HEIGHT,
+    display: "flex",
+    flexDirection: "column" as const,
+    backgroundColor: "rgba(20, 25, 35, 0.95)",
+    backdropFilter: "blur(10px)",
+    border: "1px solid rgba(102, 126, 234, 0.3)",
+    borderRadius: "10px",
+    overflow: "hidden",
+    zIndex: 900,
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   },
   containerWindowed: {
     position: "fixed" as const,
@@ -859,6 +858,7 @@ const styles = {
     overflow: "hidden",
     zIndex: 900,
     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
+    transition: "box-shadow 0.3s ease",
   },
   container: {
     display: "flex",
@@ -948,7 +948,7 @@ const styles = {
     top: 0,
     left: 0,
     right: 0,
-    height: 4,
+    height: 6,
     cursor: "ns-resize",
     zIndex: 10,
     "&:hover": {
@@ -960,7 +960,7 @@ const styles = {
     top: 0,
     right: 0,
     bottom: 0,
-    width: 4,
+    width: 6,
     cursor: "ew-resize",
     zIndex: 10,
     "&:hover": {
@@ -972,7 +972,7 @@ const styles = {
     bottom: 0,
     left: 0,
     right: 0,
-    height: 4,
+    height: 6,
     cursor: "ns-resize",
     zIndex: 10,
     "&:hover": {
@@ -984,7 +984,7 @@ const styles = {
     top: 0,
     left: 0,
     bottom: 0,
-    width: 4,
+    width: 6,
     cursor: "ew-resize",
     zIndex: 10,
     "&:hover": {
@@ -995,8 +995,8 @@ const styles = {
     position: "absolute" as const,
     top: 0,
     left: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nwse-resize",
     zIndex: 11,
     "&:hover": {
@@ -1007,8 +1007,8 @@ const styles = {
     position: "absolute" as const,
     top: 0,
     right: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nesw-resize",
     zIndex: 11,
     "&:hover": {
@@ -1019,8 +1019,8 @@ const styles = {
     position: "absolute" as const,
     bottom: 0,
     left: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nesw-resize",
     zIndex: 11,
     "&:hover": {
@@ -1031,8 +1031,8 @@ const styles = {
     position: "absolute" as const,
     bottom: 0,
     right: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nwse-resize",
     zIndex: 11,
     "&:hover": {

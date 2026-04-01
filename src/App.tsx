@@ -230,15 +230,15 @@ const styles = {
     border: "1px solid rgba(255, 255, 255, 0.06)",
   },
   hierarchyPanel: {
-    position: "absolute" as const,
+    position: "fixed" as const,
     top: "80px",
-    right: "320px",
+    right: "260px",
     zIndex: Z_INDEX.floatingPanel,
     animation: "slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4))",
   },
   animationPanel: {
-    position: "absolute" as const,
+    position: "fixed" as const,
     top: "120px",
     left: "50%",
     transform: "translateX(-50%)",
