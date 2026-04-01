@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useMemo } from "react";
-import { Box, Typography, IconButton, Switch, Slider } from "@mui/material";
+import { Box, Typography, IconButton, Switch, Slider, Tooltip } from "@mui/material";
 import {
   Input,
   Output,
@@ -204,6 +204,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
               onChange={(e) => handleDataChange({ value: parseFloat(e.target.value) || 0 })}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               style={{
                 width: "80%",
                 background: "rgba(255,255,255,0.1)",
@@ -238,6 +239,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
               onChange={(_, v) => handleDataChange({ value: v as number })}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
               sx={{
                 width: "90%",
                 color: headerColor,
@@ -261,6 +263,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
               onChange={(e) => handleDataChange({ value: e.target.checked })}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
               sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: headerColor } }}
             />
           </Box>
@@ -351,6 +354,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
                   }}
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
                   style={{
                     flex: 1,
                     width: "100%",
@@ -388,6 +392,7 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
                   onChange={(e) => handleDataChange({ [key]: parseFloat(e.target.value) || 0 })}
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
                   style={{
                     flex: 1,
                     width: "100%",
@@ -542,7 +547,25 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
     }
   };
 
-  return (
+  const hasError = Boolean(executionResult?.error);
+  const executionTimeMs = executionResult?.executionTime;
+
+  const tooltipContent = executionTimeMs != null
+    ? (
+      <Box>
+        <Typography variant="caption" sx={{ display: "block" }}>
+          Execution time: {executionTimeMs.toFixed(1)}ms
+        </Typography>
+        {hasError && (
+          <Typography variant="caption" sx={{ display: "block", color: "#f44336" }}>
+            Error: {executionResult?.error}
+          </Typography>
+        )}
+      </Box>
+    )
+    : "";
+
+  const nodeElement = (
     <Box
       ref={nodeRef}
       sx={{
@@ -552,13 +575,21 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
         width: node.width || 180,
         height: node.collapsed ? 50 : "auto",
         minHeight: node.collapsed ? 50 : node.height || 130,
-        background: selected
-          ? `linear-gradient(135deg, ${headerColor}20 0%, ${headerColor}10 100%)`
-          : "linear-gradient(135deg, rgba(30, 35, 45, 0.95) 0%, rgba(25, 30, 40, 0.95) 100%)",
-        borderColor: selected ? headerColor : "rgba(255, 255, 255, 0.1)",
-        boxShadow: selected
-          ? `0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px ${headerColor}40, 0 2px 8px rgba(0,0,0,0.4)`
-          : "0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3)",
+        background: hasError
+          ? "linear-gradient(135deg, rgba(244, 67, 54, 0.12) 0%, rgba(244, 67, 54, 0.06) 100%)"
+          : selected
+            ? `linear-gradient(135deg, ${headerColor}20 0%, ${headerColor}10 100%)`
+            : "linear-gradient(135deg, rgba(30, 35, 45, 0.95) 0%, rgba(25, 30, 40, 0.95) 100%)",
+        borderColor: hasError
+          ? "#f44336"
+          : selected
+            ? headerColor
+            : "rgba(255, 255, 255, 0.1)",
+        boxShadow: hasError
+          ? "0 4px 20px rgba(244, 67, 54, 0.25), 0 0 12px rgba(244, 67, 54, 0.15)"
+          : selected
+            ? `0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px ${headerColor}40, 0 2px 8px rgba(0,0,0,0.4)`
+            : "0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3)",
         transform: selected ? "translateY(-2px)" : "translateY(0)",
         overflow: "visible",
       }}
@@ -658,6 +689,22 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
       )}
     </Box>
   );
+
+  if (executionTimeMs != null) {
+    return (
+      <Tooltip
+        title={tooltipContent}
+        placement="top"
+        arrow
+        enterDelay={300}
+        PopperProps={{ style: { zIndex: 10001 } }}
+      >
+        {nodeElement}
+      </Tooltip>
+    );
+  }
+
+  return nodeElement;
 };
 
 const contentStyles = {

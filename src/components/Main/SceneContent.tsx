@@ -12,6 +12,8 @@ import {
 import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import { useModels } from "../../hooks/useRedux";
 import { ToolType } from "../../types";
+import { updateModelMetadata } from "../../store/slices/modelSlice";
+import { syncSceneToNodes } from "../../utils/nodeExecutor";
 import MeshEditableModel from "./MeshEditableModel";
 import { MeshEditModes } from "../../consts";
 import { updateModelMetadata } from "../../store/slices/modelSlice";
@@ -23,6 +25,7 @@ interface SceneContentProps {
 }
 
 const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
+  const dispatch = useAppDispatch();
   const transformControlsRef = useRef<any>(null);
   const orbitControlsRef = useRef<any>(null);
   const selectedMeshRef = useRef<Mesh | null>(null);

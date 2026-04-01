@@ -343,6 +343,49 @@ const modelSlice = createSlice({
         model.updatedAt = new Date().toISOString();
       }
     },
+
+    // Atomic upsert: if model with given id exists, update it; otherwise add it.
+    // This replaces the separate addModel/updateModel calls from nodeExecutor.
+    upsertNodeModel: (state, action: PayloadAction<ModelMetadata>) => {
+      const model = action.payload;
+      const index = state.models.findIndex(m => m.id === model.id);
+      if (index >= 0) {
+        // Preserve manuallyEdited flag — don't overwrite position if user edited
+        const existing = state.models[index];
+        if (existing.manuallyEdited) {
+          // Only update non-transform fields
+          state.models[index] = {
+            ...model,
+            position: existing.position,
+            rotation: existing.rotation,
+            scale: existing.scale,
+            manuallyEdited: true,
+          };
+        } else {
+          state.models[index] = { ...model, manuallyEdited: false };
+        }
+      } else {
+        state.models.push({ ...model, manuallyEdited: false });
+      }
+    },
+
+    // Mark a model as manually edited (called when user drags in viewport)
+    setModelManuallyEdited: (state, action: PayloadAction<{ id: string; edited: boolean }>) => {
+      const model = state.models.find(m => m.id === action.payload.id);
+      if (model) {
+        model.manuallyEdited = action.payload.edited;
+      }
+    },
+
+    // Clear manuallyEdited when the SOURCE node's data changes
+    // (user explicitly changed the node, so they want the new value)
+    clearManualEditForNode: (state, action: PayloadAction<string>) => {
+      const sourceNodeId = action.payload;
+      const model = state.models.find(m => m.sourceNodeId === sourceNodeId);
+      if (model) {
+        model.manuallyEdited = false;
+      }
+    },
   },
 });
 
@@ -372,6 +415,9 @@ export const {
   clearError,
   updateVertex,
   triggerMeshUpdate,
+  upsertNodeModel,
+  setModelManuallyEdited,
+  clearManualEditForNode,
 } = modelSlice.actions;
 
 export default modelSlice.reducer;
