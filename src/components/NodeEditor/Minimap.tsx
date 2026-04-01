@@ -186,17 +186,17 @@ const Minimap: React.FC<MinimapProps> = ({
         height: minimapHeight,
         borderRadius: "8px",
         overflow: "hidden",
-        border: "2px solid rgba(102, 126, 234, 0.4)",
+        border: "1px solid rgba(102, 126, 234, 0.3)",
         boxShadow:
-          "0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(102, 126, 234, 0.2)",
+          "0 4px 16px rgba(0, 0, 0, 0.4)",
         backdropFilter: "blur(5px)",
         zIndex: 100,
         cursor: "pointer",
         transition: "all 0.2s ease",
         "&:hover": {
-          border: "2px solid rgba(102, 126, 234, 0.6)",
+          border: "1px solid rgba(102, 126, 234, 0.5)",
           boxShadow:
-            "0 6px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(102, 126, 234, 0.3)",
+            "0 4px 20px rgba(0, 0, 0, 0.5)",
         },
       }}
     >

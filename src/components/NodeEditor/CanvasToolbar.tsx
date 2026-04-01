@@ -11,7 +11,7 @@ import {
   ViewWeek,
   ContentCopy,
   ContentPaste,
-  ContentCut,
+  FileCopy,
   Delete,
   ZoomIn,
   ZoomOut,
@@ -57,18 +57,18 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
     <Box
       sx={{
         position: "absolute",
-        top: 16,
+        top: 12,
         left: "50%",
         transform: "translateX(-50%)",
         display: "flex",
         alignItems: "center",
-        gap: 1,
+        gap: 0.5,
         backgroundColor: "rgba(20, 25, 35, 0.95)",
         backdropFilter: "blur(10px)",
-        border: "1px solid rgba(102, 126, 234, 0.3)",
-        borderRadius: "12px",
-        padding: "10px 14px",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+        border: "1px solid rgba(102, 126, 234, 0.2)",
+        borderRadius: "10px",
+        padding: "6px 10px",
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
         zIndex: 100,
       }}
     >
@@ -219,7 +219,7 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
             onClick={onDuplicate}
             sx={iconButtonStyle}
           >
-            <ContentCut fontSize="small" />
+            <FileCopy fontSize="small" />
           </IconButton>
         </span>
       </Tooltip>

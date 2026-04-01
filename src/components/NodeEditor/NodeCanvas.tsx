@@ -297,7 +297,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           y1={0}
           x2={x}
           y2={canvasHeight}
-          stroke="rgba(67, 233, 123, 0.05)"
+          stroke="rgba(102, 126, 234, 0.04)"
           strokeWidth={0.5}
         />
       );
@@ -312,7 +312,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           y1={y}
           x2={canvasWidth}
           y2={y}
-          stroke="rgba(67, 233, 123, 0.05)"
+          stroke="rgba(102, 126, 234, 0.04)"
           strokeWidth={0.5}
         />
       );
@@ -327,7 +327,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           y1={0}
           x2={x}
           y2={canvasHeight}
-          stroke="rgba(67, 233, 123, 0.1)"
+          stroke="rgba(102, 126, 234, 0.08)"
           strokeWidth={1}
         />
       );
@@ -342,7 +342,7 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
           y1={y}
           x2={canvasWidth}
           y2={y}
-          stroke="rgba(67, 233, 123, 0.1)"
+          stroke="rgba(102, 126, 234, 0.08)"
           strokeWidth={1}
         />
       );

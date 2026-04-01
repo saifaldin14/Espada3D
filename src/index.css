@@ -123,12 +123,12 @@ code {
 
 /* Hover effects */
 .hover-lift {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hover-lift:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 /* Professional focus states */
@@ -137,45 +137,17 @@ code {
   box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.5);
 }
 
-/* Workspace grid layout helpers */
-.workspace-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr 380px;
-  grid-template-rows: auto 1fr auto;
-  height: 100vh;
-  gap: 1px;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.workspace-header {
-  grid-column: 1 / -1;
-  background: rgba(10, 10, 15, 0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
+/* Workspace layout helpers */
 .workspace-sidebar-left {
   background: rgba(15, 15, 20, 0.8);
   backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.workspace-main {
-  background: rgba(20, 25, 35, 0.4);
-  position: relative;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .workspace-sidebar-right {
   background: rgba(15, 15, 20, 0.8);
   backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.workspace-footer {
-  grid-column: 1 / -1;
-  background: linear-gradient(90deg, rgba(10, 10, 15, 0.95) 0%, rgba(15, 20, 30, 0.9) 100%);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* Gradient backgrounds - Balanced and Professional */
@@ -329,18 +301,7 @@ code {
 }
 
 /* Responsive adjustments */
-@media (max-width: 1024px) {
-  .workspace-grid {
-    grid-template-columns: 280px 1fr 320px;
-  }
-}
-
 @media (max-width: 768px) {
-  .workspace-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
-  }
-  
   .workspace-sidebar-left,
   .workspace-sidebar-right {
     display: none;

@@ -40,7 +40,7 @@ import {
 import CreateModelModal from "./CreateModelModal";
 import FileManager from "../FileManager/FileManager";
 import { ProjectDialog } from "../ProjectManager";
-import { UndoRedoPanel, KeyboardShortcutsIndicator } from "../UndoRedo";
+import { UndoRedoPanel } from "../UndoRedo";
 import { glassStyles } from "../../config/theme";
 import { RootState } from "../../store";
 import * as THREE from "three";
@@ -308,11 +308,6 @@ const Sidebar: React.FC = () => {
         </FormGroup>
       </Box>
 
-      {/* Keyboard Shortcuts */}
-      <Box sx={styles.section}>
-        <KeyboardShortcutsIndicator compact={false} />
-      </Box>
-
       <CreateModelModal open={modalOpen} onClose={() => setModalOpen(false)} />
 
       {/* File Manager Dialog */}
@@ -341,7 +336,7 @@ const styles = {
     ...glassStyles.panel,
     display: "flex",
     flexDirection: "column" as "column",
-    padding: "20px",
+    padding: "16px",
     margin: 0,
     borderRadius: 0,
     position: "relative",
@@ -352,7 +347,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: "20px",
+    marginBottom: "16px",
   },
   headerTitle: {
     fontWeight: 700,
@@ -368,17 +363,17 @@ const styles = {
     fontSize: "0.75rem",
   },
   divider: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    marginBottom: "20px",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    marginBottom: "16px",
   },
   section: {
-    marginBottom: "24px",
+    marginBottom: "20px",
   },
   sectionTitle: {
-    marginBottom: "12px",
+    marginBottom: "10px",
     fontWeight: 600,
     color: "#ffffff",
-    fontSize: "1rem",
+    fontSize: "0.875rem",
     letterSpacing: "0.3px",
   },
   createButton: {
@@ -393,7 +388,7 @@ const styles = {
     },
   },
   modelList: {
-    maxHeight: "240px",
+    maxHeight: "320px",
     overflowY: "auto" as "auto",
     paddingRight: "4px",
     "&::-webkit-scrollbar": {

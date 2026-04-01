@@ -75,19 +75,19 @@ const ResizablePanel: React.FC<ResizablePanelProps> = ({
     position: "absolute" as const,
     top: 0,
     bottom: 0,
-    width: "6px", // Make resizer slightly wider for better usability
-    background: "transparent",
+    width: "4px",
+    background: "rgba(255, 255, 255, 0.06)",
     cursor: "col-resize",
-    zIndex: 1000, // Increase z-index to ensure it's always on top
-    transition: "background 0.2s ease",
+    zIndex: 1000,
+    transition: "background 0.2s ease, box-shadow 0.2s ease",
     "&:hover": {
-      background: "rgba(0, 255, 255, 0.4)",
-      boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
+      background: "rgba(0, 201, 255, 0.25)",
+      boxShadow: "0 0 6px rgba(0, 201, 255, 0.2)",
     },
     "&:active": {
-      background: "rgba(0, 255, 255, 0.6)",
+      background: "rgba(0, 201, 255, 0.4)",
     },
-    ...(side === "left" ? { right: "-3px" } : { left: "-3px" }), // Center the resizer on the border
+    ...(side === "left" ? { right: "-2px" } : { left: "-2px" }),
   };
 
   return (

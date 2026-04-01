@@ -15,17 +15,10 @@ import {
   ThemeProvider,
   CssBaseline,
   Box,
-  Chip,
-  IconButton,
   Typography,
-  Tooltip,
 } from "@mui/material";
 import {
-  Settings,
-  ZoomIn,
-  CameraAlt,
   RadioButtonChecked,
-  Speed,
   ViewInAr,
 } from "@mui/icons-material";
 import { modernTheme } from "./config/theme";
@@ -60,39 +53,6 @@ const AppContent: React.FC = () => {
 
         {/* Central Viewport */}
         <Box sx={styles.viewportRegion}>
-          <Box sx={styles.viewportHeader}>
-            <Box sx={styles.viewportTitle}>
-              <ViewInAr sx={styles.viewportIcon} />
-              <Typography
-                variant="h6"
-                component="span"
-                sx={{ fontWeight: 600 }}
-              >
-                3D Viewport
-              </Typography>
-              <Chip size="small" label="Active" sx={styles.activeChip} />
-            </Box>
-            <Box sx={styles.viewportControls}>
-              <Box sx={styles.viewportInfo}>Objects: {modelsCount}</Box>
-              <Box sx={styles.viewportActions}>
-                <Tooltip title="Viewport Settings">
-                  <IconButton size="small" sx={styles.viewportActionButton}>
-                    <Settings fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Zoom Controls">
-                  <IconButton size="small" sx={styles.viewportActionButton}>
-                    <ZoomIn fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Camera Settings">
-                  <IconButton size="small" sx={styles.viewportActionButton}>
-                    <CameraAlt fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Box>
-          </Box>
           <Box sx={styles.canvasWrapper}>
             <ErrorBoundary>
               <Canvas3D />
@@ -102,9 +62,17 @@ const AppContent: React.FC = () => {
               <Box sx={styles.viewportCornerInfo}>
                 <Typography
                   variant="caption"
-                  sx={{ color: "rgba(255, 255, 255, 0.7)", fontWeight: 500 }}
+                  sx={{ color: "rgba(255, 255, 255, 0.6)", fontWeight: 500 }}
                 >
                   Perspective View
+                </Typography>
+              </Box>
+              <Box sx={styles.viewportTopRight}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "rgba(255, 255, 255, 0.5)", fontWeight: 500 }}
+                >
+                  Objects: {modelsCount}
                 </Typography>
               </Box>
             </Box>
@@ -129,7 +97,7 @@ const AppContent: React.FC = () => {
 
       {/* Floating Panels */}
       {ui.isHierarchyPanelOpen && (
-        <Box sx={{ ...styles.floatingPanel, ...styles.hierarchyPanel }}>
+        <Box sx={styles.hierarchyPanel}>
           <ErrorBoundary>
             <HierarchyPanel isOpen={ui.isHierarchyPanelOpen} />
           </ErrorBoundary>
@@ -137,7 +105,7 @@ const AppContent: React.FC = () => {
       )}
 
       {ui.isAnimationPanelOpen && (
-        <Box sx={{ ...styles.floatingPanel, ...styles.animationPanel }}>
+        <Box sx={styles.animationPanel}>
           <ErrorBoundary>
             <AnimationPanel isOpen={ui.isAnimationPanelOpen} />
           </ErrorBoundary>
@@ -145,11 +113,9 @@ const AppContent: React.FC = () => {
       )}
 
       {ui.isNodeEditorOpen && (
-        <Box sx={{ ...styles.floatingPanel, ...styles.nodeEditorPanel }}>
-          <ErrorBoundary>
-            <NodeEditor isOpen={ui.isNodeEditorOpen} />
-          </ErrorBoundary>
-        </Box>
+        <ErrorBoundary>
+          <NodeEditor isOpen={ui.isNodeEditorOpen} />
+        </ErrorBoundary>
       )}
 
       {/* Status Bar */}
@@ -157,26 +123,18 @@ const AppContent: React.FC = () => {
         <Box sx={styles.statusLeft}>
           <Box sx={styles.statusItem}>
             <RadioButtonChecked
-              sx={{ color: "#43e97b", fontSize: 16, mr: 1 }}
+              sx={{ color: "#43e97b", fontSize: 12, mr: 0.5 }}
             />
             Ready
           </Box>
-          <Box sx={styles.statusItem}>Mode: {ui.editMode || "Object"}</Box>
-          <Box sx={styles.statusItem}>Tool: {ui.activeTool || "Select"}</Box>
+          <Box sx={styles.statusDivider} />
+          <Box sx={styles.statusItem}>{ui.editMode || "Object"}</Box>
+          <Box sx={styles.statusDivider} />
+          <Box sx={styles.statusItem}>{ui.activeTool || "Select"}</Box>
         </Box>
         <Box sx={styles.statusRight}>
           <Box sx={styles.statusItem}>
-            <Speed sx={{ mr: 0.5, fontSize: 14 }} />
-            FPS: 60
-          </Box>
-          <Box sx={styles.statusItem}>
-            Tris: {(modelsCount * 1200).toLocaleString()}
-          </Box>
-          <Box sx={styles.statusItem}>
-            Verts: {(modelsCount * 800).toLocaleString()}
-          </Box>
-          <Box sx={styles.statusItem}>
-            <ViewInAr sx={{ mr: 0.5, fontSize: 14 }} />
+            <ViewInAr sx={{ mr: 0.5, fontSize: 12, opacity: 0.6 }} />
             SaifEngine v1.0
           </Box>
         </Box>
@@ -215,7 +173,7 @@ const styles = {
     zIndex: 1000,
     position: "sticky" as const,
     top: 0,
-    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
     background: "rgba(10, 10, 15, 0.95)",
     backdropFilter: "blur(20px)",
   },
@@ -233,79 +191,6 @@ const styles = {
     background: "rgba(20, 25, 35, 0.4)",
     position: "relative",
     overflow: "hidden",
-  },
-  viewportHeader: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "14px 24px",
-    background:
-      "linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(15, 25, 35, 0.2) 100%)",
-    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-    backdropFilter: "blur(10px)",
-  },
-  viewportTitle: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    color: "#ffffff",
-    fontWeight: 600,
-    fontSize: "1.1rem",
-    letterSpacing: "0.5px",
-  },
-  viewportIcon: {
-    fontSize: 22,
-    color: "#00c9ff",
-    filter: "drop-shadow(0 0 8px rgba(0, 255, 255, 0.3))",
-  },
-  viewportControls: {
-    display: "flex",
-    alignItems: "center",
-    gap: 16,
-  },
-  viewportActions: {
-    display: "flex",
-    alignItems: "center",
-    gap: 5,
-    background: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 8,
-    padding: "4px",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-  },
-  viewportActionButton: {
-    color: "rgba(255, 255, 255, 0.7)",
-    backgroundColor: "rgba(255, 255, 255, 0.02)",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    borderRadius: "6px",
-    padding: "6px",
-    transition: "all 0.2s ease",
-    "&:hover": {
-      color: "#00c9ff",
-      backgroundColor: "rgba(0, 201, 255, 0.1)",
-      transform: "translateY(-1px)",
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-    },
-  },
-  viewportInfo: {
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: "0.875rem",
-    fontWeight: 500,
-    background: "rgba(255, 255, 255, 0.05)",
-    padding: "6px 12px",
-    borderRadius: "8px",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    letterSpacing: "0.3px",
-  },
-  activeChip: {
-    background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-    color: "rgba(0, 0, 0, 0.8)",
-    fontWeight: 600,
-    fontSize: "0.7rem",
-    height: "20px",
-    boxShadow: "0 2px 8px rgba(56, 249, 215, 0.3)",
   },
   canvasWrapper: {
     flex: 1,
@@ -325,77 +210,75 @@ const styles = {
   },
   viewportCornerInfo: {
     position: "absolute",
-    bottom: "16px",
-    left: "16px",
-    background: "rgba(10, 15, 25, 0.7)",
-    backdropFilter: "blur(10px)",
-    padding: "8px 12px",
-    borderRadius: "8px",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+    bottom: "12px",
+    left: "12px",
+    background: "rgba(10, 15, 25, 0.6)",
+    backdropFilter: "blur(8px)",
+    padding: "4px 10px",
+    borderRadius: "6px",
+    border: "1px solid rgba(255, 255, 255, 0.06)",
   },
-  floatingPanel: {
-    position: "absolute" as const,
-    top: "120px",
-    right: "420px",
-    zIndex: 500,
-    animation: "slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-    filter: "drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4))",
+  viewportTopRight: {
+    position: "absolute",
+    top: "12px",
+    right: "12px",
+    background: "rgba(10, 15, 25, 0.6)",
+    backdropFilter: "blur(8px)",
+    padding: "4px 10px",
+    borderRadius: "6px",
+    border: "1px solid rgba(255, 255, 255, 0.06)",
   },
   hierarchyPanel: {
-    top: "120px",
-    right: "420px",
+    position: "absolute" as const,
+    top: "80px",
+    right: "320px",
+    zIndex: 500,
+    animation: "slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4))",
   },
   animationPanel: {
-    top: "160px",
-    right: "840px",
-  },
-  nodeEditorPanel: {
+    position: "absolute" as const,
     top: "120px",
     left: "50%",
     transform: "translateX(-50%)",
-    width: "80vw",
-    height: "70vh",
+    zIndex: 500,
+    animation: "slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4))",
   },
   statusBar: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    height: "36px",
-    padding: "0 20px",
-    background:
-      "linear-gradient(90deg, rgba(10, 10, 15, 0.95) 0%, rgba(15, 20, 30, 0.9) 100%)",
+    height: "28px",
+    padding: "0 16px",
+    background: "rgba(10, 10, 15, 0.95)",
     backdropFilter: "blur(20px)",
-    borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-    fontSize: "0.75rem",
-    color: "rgba(255, 255, 255, 0.8)",
+    borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+    fontSize: "0.7rem",
+    color: "rgba(255, 255, 255, 0.6)",
     fontWeight: 500,
+    userSelect: "none",
   },
   statusLeft: {
     display: "flex",
     alignItems: "center",
-    gap: "20px",
+    gap: "8px",
   },
   statusRight: {
     display: "flex",
     alignItems: "center",
-    gap: "20px",
+    gap: "12px",
   },
   statusItem: {
-    padding: "6px 10px",
-    borderRadius: "8px",
-    background: "rgba(255, 255, 255, 0.05)",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    fontWeight: 500,
-    transition: "all 0.2s ease",
     display: "flex",
     alignItems: "center",
-    fontSize: "0.75rem",
-    "&:hover": {
-      background: "rgba(255, 255, 255, 0.08)",
-      transform: "translateY(-1px)",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
-    },
+    fontSize: "0.7rem",
+    whiteSpace: "nowrap",
+  },
+  statusDivider: {
+    width: "1px",
+    height: "12px",
+    background: "rgba(255, 255, 255, 0.12)",
   },
 };
 

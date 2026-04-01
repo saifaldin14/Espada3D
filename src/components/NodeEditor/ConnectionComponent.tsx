@@ -177,15 +177,12 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
       <path
         d={pathData}
         stroke={getConnectionGradient(!!connection.selected)}
-        strokeWidth={connection.selected ? 4 : 3}
+        strokeWidth={connection.selected ? 3.5 : 2.5}
         fill="none"
         style={{
-          cursor: "pointer",
-          transition: "all 0.2s ease-in-out",
+          transition: "stroke-width 0.2s ease-in-out",
         }}
-        onClick={handleConnectionClick}
-        onDoubleClick={handleConnectionDoubleClick}
-        onContextMenu={handleConnectionRightClick}
+        pointerEvents="none"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -278,13 +275,12 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({
         </path>
       )}
 
-      {/* Hidden path for animation reference */}
+      {/* Path for animation reference - must not have display:none for animateMotion to work */}
       <path
         id={`connection-path-${connection.id}`}
         d={pathData}
         stroke="none"
         fill="none"
-        style={{ display: "none" }}
       />
     </g>
   );
