@@ -176,6 +176,7 @@ const NodeNumberInput: React.FC<NodeNumberInputProps> = React.memo(
     );
   }
 );
+NodeNumberInput.displayName = "NodeNumberInput";
 
 const NodeComponent: React.FC<NodeComponentProps> = ({
   node,
