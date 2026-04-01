@@ -102,6 +102,26 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     }
   }, [isOpen, editorSize.width]);
 
+  // Clamp window position when browser viewport is resized
+  useEffect(() => {
+    const handleWindowResize = () => {
+      if (isFullscreen || isMinimized) return;
+      setEditorSize((prev) => {
+        const maxX = window.innerWidth - 100;
+        const maxY = window.innerHeight - 56;
+        return {
+          ...prev,
+          width: Math.min(prev.width, window.innerWidth),
+          height: Math.min(prev.height, window.innerHeight),
+          x: Math.max(-prev.width + 100, Math.min(prev.x, maxX)),
+          y: Math.max(0, Math.min(prev.y, maxY)),
+        };
+      });
+    };
+    window.addEventListener("resize", handleWindowResize);
+    return () => window.removeEventListener("resize", handleWindowResize);
+  }, [isFullscreen, isMinimized]);
+
   const handleNodeDragStart = useCallback((nodeType: NodeType) => {
     setDraggedNodeType(nodeType);
   }, []);
@@ -139,11 +159,17 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (isDragging) {
-        setEditorSize((prev) => ({
-          ...prev,
-          x: event.clientX - dragStart.x,
-          y: event.clientY - dragStart.y,
-        }));
+        setEditorSize((prev) => {
+          const newX = event.clientX - dragStart.x;
+          const newY = event.clientY - dragStart.y;
+          // Clamp so at least 100px of the window stays visible on each edge
+          const minVisible = 100;
+          return {
+            ...prev,
+            x: Math.max(-prev.width + minVisible, Math.min(newX, window.innerWidth - minVisible)),
+            y: Math.max(0, Math.min(newY, window.innerHeight - 56)), // 56 = header height, keep header reachable
+          };
+        });
       } else if (isResizing && resizeHandle) {
         const deltaX = event.movementX;
         const deltaY = event.movementY;
@@ -152,23 +178,25 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
           let newSize = { ...prev };
 
           if (resizeHandle.includes("right")) {
-            newSize.width = Math.max(600, prev.width + deltaX);
+            newSize.width = Math.max(600, Math.min(prev.width + deltaX, window.innerWidth - prev.x));
           }
           if (resizeHandle.includes("left")) {
             const newWidth = Math.max(600, prev.width - deltaX);
-            if (newWidth > 600) {
+            const newX = prev.x + (prev.width - newWidth);
+            if (newWidth > 600 && newX >= 0) {
               newSize.width = newWidth;
-              newSize.x = prev.x + deltaX;
+              newSize.x = newX;
             }
           }
           if (resizeHandle.includes("bottom")) {
-            newSize.height = Math.max(400, prev.height + deltaY);
+            newSize.height = Math.max(400, Math.min(prev.height + deltaY, window.innerHeight - prev.y));
           }
           if (resizeHandle.includes("top")) {
             const newHeight = Math.max(400, prev.height - deltaY);
-            if (newHeight > 400) {
+            const newY = prev.y + (prev.height - newHeight);
+            if (newHeight > 400 && newY >= 0) {
               newSize.height = newHeight;
-              newSize.y = prev.y + deltaY;
+              newSize.y = newY;
             }
           }
 
@@ -662,7 +690,7 @@ const styles = {
     position: "fixed" as const,
     bottom: 20,
     right: 20,
-    width: 320,
+    width: Math.min(320, typeof window !== 'undefined' ? window.innerWidth - 40 : 320),
     height: 56,
     display: "flex",
     flexDirection: "column" as const,
@@ -673,6 +701,7 @@ const styles = {
     overflow: "hidden",
     zIndex: 900,
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   },
   containerWindowed: {
     position: "fixed" as const,
@@ -685,6 +714,7 @@ const styles = {
     overflow: "hidden",
     zIndex: 900,
     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
+    transition: "box-shadow 0.3s ease",
   },
   container: {
     display: "flex",
@@ -774,7 +804,7 @@ const styles = {
     top: 0,
     left: 0,
     right: 0,
-    height: 4,
+    height: 6,
     cursor: "ns-resize",
     zIndex: 10,
     "&:hover": {
@@ -786,7 +816,7 @@ const styles = {
     top: 0,
     right: 0,
     bottom: 0,
-    width: 4,
+    width: 6,
     cursor: "ew-resize",
     zIndex: 10,
     "&:hover": {
@@ -798,7 +828,7 @@ const styles = {
     bottom: 0,
     left: 0,
     right: 0,
-    height: 4,
+    height: 6,
     cursor: "ns-resize",
     zIndex: 10,
     "&:hover": {
@@ -810,7 +840,7 @@ const styles = {
     top: 0,
     left: 0,
     bottom: 0,
-    width: 4,
+    width: 6,
     cursor: "ew-resize",
     zIndex: 10,
     "&:hover": {
@@ -821,8 +851,8 @@ const styles = {
     position: "absolute" as const,
     top: 0,
     left: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nwse-resize",
     zIndex: 11,
     "&:hover": {
@@ -833,8 +863,8 @@ const styles = {
     position: "absolute" as const,
     top: 0,
     right: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nesw-resize",
     zIndex: 11,
     "&:hover": {
@@ -845,8 +875,8 @@ const styles = {
     position: "absolute" as const,
     bottom: 0,
     left: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nesw-resize",
     zIndex: 11,
     "&:hover": {
@@ -857,8 +887,8 @@ const styles = {
     position: "absolute" as const,
     bottom: 0,
     right: 0,
-    width: 12,
-    height: 12,
+    width: 14,
+    height: 14,
     cursor: "nwse-resize",
     zIndex: 11,
     "&:hover": {
