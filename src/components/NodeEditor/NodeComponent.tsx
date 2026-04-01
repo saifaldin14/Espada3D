@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useMemo } from "react";
-import { Box, Typography, IconButton, Switch, Slider } from "@mui/material";
+import { Box, Typography, IconButton, Switch, Slider, Tooltip } from "@mui/material";
 import {
   Input,
   Output,
@@ -550,14 +550,24 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
   const hasError = Boolean(executionResult?.error);
   const executionTimeMs = executionResult?.executionTime;
 
-  return (
+  const tooltipContent = executionTimeMs != null
+    ? (
+      <Box>
+        <Typography variant="caption" sx={{ display: "block" }}>
+          Execution time: {executionTimeMs.toFixed(1)}ms
+        </Typography>
+        {hasError && (
+          <Typography variant="caption" sx={{ display: "block", color: "#f44336" }}>
+            Error: {executionResult?.error}
+          </Typography>
+        )}
+      </Box>
+    )
+    : "";
+
+  const nodeElement = (
     <Box
       ref={nodeRef}
-      title={
-        executionTimeMs != null
-          ? `Execution time: ${executionTimeMs.toFixed(1)}ms${hasError ? `\nError: ${executionResult?.error}` : ""}`
-          : undefined
-      }
       sx={{
         ...styles.node,
         left: node.position.x,
@@ -679,6 +689,22 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
       )}
     </Box>
   );
+
+  if (executionTimeMs != null) {
+    return (
+      <Tooltip
+        title={tooltipContent}
+        placement="top"
+        arrow
+        enterDelay={300}
+        PopperProps={{ style: { zIndex: 10001 } }}
+      >
+        {nodeElement}
+      </Tooltip>
+    );
+  }
+
+  return nodeElement;
 };
 
 const contentStyles = {

@@ -393,8 +393,16 @@ const NodeCanvas: React.FC<NodeCanvasProps> = ({
       }
       // Track Space key for Space+drag panning
       if (event.key === " " || event.code === "Space") {
-        event.preventDefault();
-        spaceHeldRef.current = true;
+        const activeEl = document.activeElement;
+        const isInInput = activeEl && (
+          activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          (activeEl as HTMLElement).contentEditable === "true"
+        );
+        if (!isInInput) {
+          event.preventDefault();
+          spaceHeldRef.current = true;
+        }
       }
     };
 
