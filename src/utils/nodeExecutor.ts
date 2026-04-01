@@ -7,6 +7,7 @@ import { setNodeSceneLights, setNodeSceneCamera } from '../store/slices/nodeSlic
 import { NodeGraphState } from '../types/nodeTypes';
 
 export class NodeExecutor {
+  private static readonly SCRIPT_TIMEOUT_MS = 3000;
   private nodes: Node[];
   private connections: NodeConnection[];
   private executionResults: Map<string, any> = new Map();
@@ -557,7 +558,7 @@ export class NodeExecutor {
           resolve(this.executeScriptNode(node, inputs));
         }),
         new Promise<Record<string, any>>((_, reject) => {
-          setTimeout(() => reject(new Error('Script execution timed out (3s limit)')), 3000);
+          setTimeout(() => reject(new Error(`Script execution timed out (${NodeExecutor.SCRIPT_TIMEOUT_MS / 1000}s limit)`)), NodeExecutor.SCRIPT_TIMEOUT_MS);
         }),
       ]);
     } catch (err) {
@@ -746,24 +747,29 @@ export class NodeExecutor {
       if (node.type === 'transform') {
         const outputs = this.executionResults.get(currentNodeId);
         const transformType = node.data.transformType || 'translate';
-        const value = outputs?.geometry?.transform?.value || node.data.value || [0, 0, 0];
+        // Prefer the value from the executed output; fall back to node data
+        const value = outputs?.geometry?.transform?.value ?? node.data.value ?? [0, 0, 0];
         const v = Array.isArray(value) ? value : [0, 0, 0];
+
+        const n0 = Number(v[0]);
+        const n1 = Number(v[1]);
+        const n2 = Number(v[2]);
 
         switch (transformType) {
           case 'translate':
-            position[0] += Number(v[0]) || 0;
-            position[1] += Number(v[1]) || 0;
-            position[2] += Number(v[2]) || 0;
+            position[0] += isNaN(n0) ? 0 : n0;
+            position[1] += isNaN(n1) ? 0 : n1;
+            position[2] += isNaN(n2) ? 0 : n2;
             break;
           case 'rotate':
-            rotation[0] += Number(v[0]) || 0;
-            rotation[1] += Number(v[1]) || 0;
-            rotation[2] += Number(v[2]) || 0;
+            rotation[0] += isNaN(n0) ? 0 : n0;
+            rotation[1] += isNaN(n1) ? 0 : n1;
+            rotation[2] += isNaN(n2) ? 0 : n2;
             break;
           case 'scale':
-            scale[0] *= Number(v[0]) || 1;
-            scale[1] *= Number(v[1]) || 1;
-            scale[2] *= Number(v[2]) || 1;
+            scale[0] *= isNaN(n0) ? 1 : n0;
+            scale[1] *= isNaN(n1) ? 1 : n1;
+            scale[2] *= isNaN(n2) ? 1 : n2;
             break;
         }
       }
@@ -995,10 +1001,15 @@ export class NodeExecutor {
     // Clean up models that no longer have corresponding nodes.
     // Only remove models that were created by the node system (have sourceNodeId in userData).
     // Models without sourceNodeId are user-owned and should not be touched.
+    const currentNodeIds = new Set(this.nodes.map(n => n.id));
     const nodeGeneratedModels = existingModels.filter((m: ModelMetadata) => m.id.startsWith('node_generated_'));
     for (const model of nodeGeneratedModels) {
       const sourceNodeId = model.userData?.sourceNodeId;
-      if (sourceNodeId && !meshOutputs.has(sourceNodeId) && !geometryOutputs.has(sourceNodeId)) {
+      if (
+        sourceNodeId &&
+        (!currentNodeIds.has(sourceNodeId) ||
+          (!meshOutputs.has(sourceNodeId) && !geometryOutputs.has(sourceNodeId)))
+      ) {
         store.dispatch(removeModel(model.id));
       }
     }
