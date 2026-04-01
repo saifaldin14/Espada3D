@@ -276,74 +276,54 @@ const EditorToolbar: React.FC = () => {
 
       <Divider orientation="vertical" flexItem sx={styles.divider} />
 
-      {/* History Controls */}
+      {/* History & Edit Controls */}
       <Box sx={styles.toolbarSection}>
-        <Box sx={styles.buttonGroupWithLabel}>
-          <Typography variant="caption" sx={styles.sectionTitle}>
-            History
-          </Typography>
-          <Box sx={styles.buttonGroup}>
-            <Tooltip title="Undo (Ctrl+Z)">
-              <span>
-                <IconButton
-                  size="small"
-                  onClick={() => dispatch(undo())}
-                  sx={styles.iconButton}
-                  className="hover-lift"
-                  disabled={historyIndex <= 0}
-                >
-                  <Undo fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Redo (Ctrl+Y)">
-              <span>
-                <IconButton
-                  size="small"
-                  onClick={() => dispatch(redo())}
-                  sx={styles.iconButton}
-                  className="hover-lift"
-                  disabled={historyIndex >= historySteps - 1}
-                >
-                  <Redo fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Edit Actions */}
-      <Box sx={styles.toolbarSection}>
-        <Box sx={styles.buttonGroupWithLabel}>
-          <Typography variant="caption" sx={styles.sectionTitle}>
-            Edit
-          </Typography>
-          <Box sx={styles.buttonGroup}>
-            <Tooltip title="Copy (Ctrl+C)">
-              <span>
-                <IconButton
-                  size="small"
-                  onClick={() => dispatch(copyModels(selectedModelIds))}
-                  disabled={selectedModelIds.length === 0}
-                  sx={styles.iconButton}
-                  className="hover-lift"
-                >
-                  <ContentCopy fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Paste (Ctrl+V)">
+        <Box sx={styles.buttonGroup}>
+          <Tooltip title="Undo (Ctrl+Z)">
+            <span>
               <IconButton
                 size="small"
-                onClick={() => dispatch(pasteModels([0, 0, 0]))}
+                onClick={() => dispatch(undo())}
                 sx={styles.iconButton}
-                className="hover-lift"
+                disabled={historyIndex <= 0}
               >
-                <ContentPaste fontSize="small" />
+                <Undo fontSize="small" />
               </IconButton>
-            </Tooltip>
-          </Box>
+            </span>
+          </Tooltip>
+          <Tooltip title="Redo (Ctrl+Y)">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => dispatch(redo())}
+                sx={styles.iconButton}
+                disabled={historyIndex >= historySteps - 1}
+              >
+                <Redo fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Copy (Ctrl+C)">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => dispatch(copyModels(selectedModelIds))}
+                disabled={selectedModelIds.length === 0}
+                sx={styles.iconButton}
+              >
+                <ContentCopy fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Paste (Ctrl+V)">
+            <IconButton
+              size="small"
+              onClick={() => dispatch(pasteModels([0, 0, 0]))}
+              sx={styles.iconButton}
+            >
+              <ContentPaste fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 
@@ -463,71 +443,61 @@ const EditorToolbar: React.FC = () => {
           marginLeft: "auto",
           display: "flex",
           alignItems: "center",
-          gap: 2,
+          gap: 1,
         }}
       >
         {/* Panels Toggle */}
         <Box sx={styles.toolbarSection}>
-          <Box sx={styles.buttonGroupWithLabel}>
-            <Typography variant="caption" sx={styles.sectionTitle}>
-              Panels
-            </Typography>
-            <Box sx={styles.buttonGroup}>
-              <Tooltip title="Hierarchy Panel">
-                <IconButton
-                  size="small"
-                  onClick={() => dispatch(toggleHierarchyPanel())}
-                  sx={{
-                    ...styles.iconButton,
-                    ...(isHierarchyPanelOpen ? styles.activeIconButton : {}),
-                  }}
-                  className="hover-lift"
-                >
-                  <AccountTree fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Animation Panel">
-                <IconButton
-                  size="small"
-                  onClick={() => dispatch(toggleAnimationPanel())}
-                  sx={{
-                    ...styles.iconButton,
-                    ...(isAnimationPanelOpen ? styles.activeIconButton : {}),
-                  }}
-                  className="hover-lift"
-                >
-                  <Timeline fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Node Editor">
-                <IconButton
-                  size="small"
-                  onClick={() => dispatch(toggleNodeEditor())}
-                  sx={{
-                    ...styles.iconButton,
-                    ...(isNodeEditorOpen ? styles.activeIconButton : {}),
-                  }}
-                  className="hover-lift"
-                >
-                  <AccountCircle fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
+          <Box sx={styles.buttonGroup}>
+            <Tooltip title="Hierarchy Panel">
+              <IconButton
+                size="small"
+                onClick={() => dispatch(toggleHierarchyPanel())}
+                sx={{
+                  ...styles.iconButton,
+                  ...(isHierarchyPanelOpen ? styles.activeIconButton : {}),
+                }}
+              >
+                <AccountTree fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Animation Panel">
+              <IconButton
+                size="small"
+                onClick={() => dispatch(toggleAnimationPanel())}
+                sx={{
+                  ...styles.iconButton,
+                  ...(isAnimationPanelOpen ? styles.activeIconButton : {}),
+                }}
+              >
+                <Timeline fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Node Editor">
+              <IconButton
+                size="small"
+                onClick={() => dispatch(toggleNodeEditor())}
+                sx={{
+                  ...styles.iconButton,
+                  ...(isNodeEditorOpen ? styles.activeIconButton : {}),
+                }}
+              >
+                <AccountCircle fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
 
         <Divider orientation="vertical" flexItem sx={styles.divider} />
 
-        {/* View Menu Button */}
+        {/* View & Tools Menus */}
         <Tooltip title="View Options">
-          <IconButton onClick={openViewMenu} sx={styles.menuIconButton}>
+          <IconButton onClick={openViewMenu} size="small" sx={styles.menuIconButton}>
             <CameraAlt fontSize="small" />
           </IconButton>
         </Tooltip>
-
-        {/* Tools Menu Button */}
         <Tooltip title="Tools">
-          <IconButton onClick={openToolsMenu} sx={styles.menuIconButton}>
+          <IconButton onClick={openToolsMenu} size="small" sx={styles.menuIconButton}>
             <TuneRounded fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -699,14 +669,14 @@ const styles = {
   toolbar: {
     display: "flex",
     alignItems: "center",
-    padding: "8px 12px",
+    padding: "6px 12px",
     ...glassStyles.panel,
-    margin: "12px 12px 8px 12px",
-    borderRadius: "16px",
-    minHeight: "68px",
+    margin: "8px 8px 4px 8px",
+    borderRadius: "12px",
+    minHeight: "56px",
     position: "relative",
     zIndex: 5,
-    gap: "12px",
+    gap: "8px",
   },
   toolbarSection: {
     display: "flex",
@@ -771,8 +741,8 @@ const styles = {
     gap: "4px",
   },
   sectionTitle: {
-    fontSize: "10px",
-    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: "11px",
+    color: "rgba(255, 255, 255, 0.5)",
     textTransform: "uppercase" as const,
     letterSpacing: "0.5px",
     fontWeight: 600,
@@ -829,9 +799,9 @@ const styles = {
     },
   },
   mainToggleButton: {
-    minWidth: "50px",
-    minHeight: "50px",
-    padding: "6px 10px",
+    minWidth: "44px",
+    minHeight: "44px",
+    padding: "4px 8px",
     color: "rgba(255, 255, 255, 0.7)",
     "&:hover": {
       backgroundColor: "rgba(255, 255, 255, 0.08)",
@@ -854,9 +824,9 @@ const styles = {
     gap: "4px",
   },
   buttonLabel: {
-    fontSize: "10px",
+    fontSize: "11px",
     textTransform: "none",
-    fontWeight: 600,
+    fontWeight: 500,
   },
   editModeButton: {
     minWidth: "32px",
@@ -909,16 +879,17 @@ const styles = {
   },
   snapTextField: {
     position: "absolute",
-    top: "40px",
+    top: "42px",
     left: "50%",
     transform: "translateX(-50%)",
     width: "60px",
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    borderRadius: "4px",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-    zIndex: 10,
+    backgroundColor: "rgba(15, 20, 30, 0.95)",
+    borderRadius: "6px",
+    border: "1px solid rgba(255, 255, 255, 0.15)",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+    zIndex: 100,
     "& .MuiOutlinedInput-input": {
-      padding: "6px 8px",
+      padding: "4px 6px",
       fontSize: "12px",
       textAlign: "center",
       color: "#ffffff",

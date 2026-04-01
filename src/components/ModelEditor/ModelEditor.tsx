@@ -2,42 +2,30 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   updateModelMetadata,
-  undo,
-  redo,
   copyModels,
   removeModel,
   duplicateModel,
-  saveToHistory,
 } from "../../store/slices/modelSlice";
-import { setEditMode } from "../../store/slices/uiSlice";
 import {
   TextField,
   Typography,
   Grid,
   Box,
-  IconButton,
   Tooltip,
   Chip,
   Button,
   Collapse,
   Paper,
-  Drawer,
-  Divider,
 } from "@mui/material";
 import {
-  Undo,
-  Redo,
   ContentCopy,
   Delete,
   FileCopy,
   ExpandMore,
   ExpandLess,
-  Style,
   Settings,
-  Tune,
   Build,
   ViewInAr,
-  SaveAlt,
   Category as CategoryIcon,
   Animation,
 } from "@mui/icons-material";
@@ -85,11 +73,6 @@ const ModelEditor: React.FC = () => {
       [section]: !expandedSections[section as keyof typeof expandedSections],
     });
   };
-
-  // State to track history panel visibility
-  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
-  const historyIndex = useSelector((state: any) => state.models.historyIndex);
-  const historySteps = useSelector((state: any) => state.models.history.length);
 
   const selectedModel = models.find((m: any) => m.id === selectedModelId);
 
@@ -213,150 +196,62 @@ const ModelEditor: React.FC = () => {
 
       <Collapse in={expandedSections.actions}>
         <Box sx={styles.sectionContent}>
-          <Grid container spacing={2}>
-            <Grid item xs={4}>
-              <Box sx={styles.actionButtonContainer}>
-                <Tooltip title="Undo (Ctrl+Z)" placement="top">
-                  <span>
-                    <IconButton
-                      onClick={() => dispatch(undo())}
-                      size="medium"
-                      sx={styles.largeActionButton}
-                      disabled={historyIndex <= 0}
-                    >
-                      <Undo />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                <Typography variant="caption" sx={styles.buttonLabel}>
-                  Undo
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={4}>
-              <Box sx={styles.actionButtonContainer}>
-                <Tooltip title="Redo (Ctrl+Y)" placement="top">
-                  <span>
-                    <IconButton
-                      onClick={() => dispatch(redo())}
-                      size="medium"
-                      sx={styles.largeActionButton}
-                      disabled={historyIndex >= historySteps - 1}
-                    >
-                      <Redo />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                <Typography variant="caption" sx={styles.buttonLabel}>
-                  Redo
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={4}>
-              <Box sx={styles.actionButtonContainer}>
-                <Tooltip title="Save State" placement="top">
-                  <IconButton
-                    onClick={() => dispatch(saveToHistory())}
-                    size="medium"
-                    sx={styles.largeActionButton}
-                  >
-                    <SaveAlt />
-                  </IconButton>
-                </Tooltip>
-                <Typography variant="caption" sx={styles.buttonLabel}>
-                  Save
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-
           {selectedModelId && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={6}>
-                <Tooltip title="Copy (Ctrl+C)" placement="top">
-                  <Button
-                    onClick={() => dispatch(copyModels([selectedModelId]))}
-                    disabled={!selectedModelId}
-                    sx={styles.secondaryActionButton}
-                    startIcon={<ContentCopy />}
-                    fullWidth
-                    size="small"
-                  >
-                    Copy
-                  </Button>
-                </Tooltip>
-              </Grid>
-              <Grid item xs={6}>
-                <Tooltip title="Duplicate" placement="top">
-                  <span>
+            <>
+              <Grid container spacing={1}>
+                <Grid item xs={6}>
+                  <Tooltip title="Copy (Ctrl+C)" placement="top">
                     <Button
-                      onClick={() =>
-                        dispatch(duplicateModel({ id: selectedModelId }))
-                      }
-                      disabled={!selectedModelId || locked}
+                      onClick={() => dispatch(copyModels([selectedModelId]))}
+                      disabled={!selectedModelId}
                       sx={styles.secondaryActionButton}
-                      startIcon={<FileCopy />}
+                      startIcon={<ContentCopy />}
                       fullWidth
                       size="small"
                     >
-                      Duplicate
+                      Copy
                     </Button>
-                  </span>
-                </Tooltip>
+                  </Tooltip>
+                </Grid>
+                <Grid item xs={6}>
+                  <Tooltip title="Duplicate" placement="top">
+                    <span>
+                      <Button
+                        onClick={() =>
+                          dispatch(duplicateModel({ id: selectedModelId }))
+                        }
+                        disabled={!selectedModelId || locked}
+                        sx={styles.secondaryActionButton}
+                        startIcon={<FileCopy />}
+                        fullWidth
+                        size="small"
+                      >
+                        Duplicate
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </Grid>
               </Grid>
-            </Grid>
-          )}
 
-          {selectedModelId && (
-            <Box sx={{ mt: 2 }}>
-              <Button
-                onClick={() => dispatch(removeModel(selectedModelId))}
-                disabled={!selectedModelId || locked}
-                sx={styles.dangerButton}
-                startIcon={<Delete />}
-                fullWidth
-                variant="contained"
-                color="error"
-                size="small"
-              >
-                Delete Object
-              </Button>
-            </Box>
+              <Box sx={{ mt: 1.5 }}>
+                <Button
+                  onClick={() => dispatch(removeModel(selectedModelId))}
+                  disabled={!selectedModelId || locked}
+                  sx={styles.dangerButton}
+                  startIcon={<Delete />}
+                  fullWidth
+                  variant="contained"
+                  color="error"
+                  size="small"
+                >
+                  Delete Object
+                </Button>
+              </Box>
+            </>
           )}
         </Box>
       </Collapse>
     </Paper>
-  );
-
-  // History panel drawer
-  const renderHistoryPanel = () => (
-    <Drawer
-      anchor="right"
-      open={historyPanelOpen}
-      onClose={() => setHistoryPanelOpen(false)}
-      PaperProps={{
-        sx: styles.historyDrawer,
-      }}
-    >
-      <Box sx={styles.historyDrawerHeader}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          History
-        </Typography>
-        <IconButton
-          size="small"
-          onClick={() => setHistoryPanelOpen(false)}
-          sx={{ color: "rgba(255, 255, 255, 0.7)" }}
-        >
-          <ExpandLess />
-        </IconButton>
-      </Box>
-      <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.1)" }} />
-      <Box sx={{ p: 2 }}>
-        <Typography variant="body2" color="textSecondary">
-          This feature is under construction.
-        </Typography>
-      </Box>
-    </Drawer>
   );
 
   return (
@@ -376,44 +271,6 @@ const ModelEditor: React.FC = () => {
               disabled={locked}
             />
           )}
-        </Box>
-
-        {/* Edit Mode Tabs */}
-        <Box sx={styles.editModeButtonContainer}>
-          <Tooltip title="Object Mode" placement="top">
-            <Button
-              size="small"
-              variant={editMode === EditModes.model ? "contained" : "outlined"}
-              onClick={() => dispatch(setEditMode(EditModes.model))}
-              sx={styles.editModeButton}
-            >
-              <ViewInAr sx={{ fontSize: "20px" }} />
-            </Button>
-          </Tooltip>
-
-          <Tooltip title="Material Mode" placement="top">
-            <Button
-              size="small"
-              variant={
-                editMode === EditModes.material ? "contained" : "outlined"
-              }
-              onClick={() => dispatch(setEditMode(EditModes.material))}
-              sx={styles.editModeButton}
-            >
-              <Style sx={{ fontSize: "20px" }} />
-            </Button>
-          </Tooltip>
-
-          <Tooltip title="Mesh Mode" placement="top">
-            <Button
-              size="small"
-              onClick={() => dispatch(setEditMode(EditModes.vertex))}
-              variant={editMode === EditModes.vertex ? "contained" : "outlined"}
-              sx={styles.editModeButton}
-            >
-              <Tune sx={{ fontSize: "20px" }} />
-            </Button>
-          </Tooltip>
         </Box>
       </Box>
 
@@ -476,7 +333,7 @@ const ModelEditor: React.FC = () => {
       ) : (
         <Box sx={styles.emptyState}>
           <Box sx={styles.emptyIcon}>
-            <ViewInAr sx={{ fontSize: 70, opacity: 0.3 }} />
+            <ViewInAr sx={{ fontSize: 40, opacity: 0.3 }} />
           </Box>
           <Typography variant="h6" sx={styles.emptyTitle}>
             No Model Selected
@@ -484,13 +341,8 @@ const ModelEditor: React.FC = () => {
           <Typography variant="body2" sx={styles.emptyText}>
             Select a model from the sidebar to edit its properties
           </Typography>
-          <Button variant="outlined" sx={{ mt: 2 }} size="small">
-            Create New Model
-          </Button>
         </Box>
       )}
-
-      {renderHistoryPanel()}
     </Box>
   );
 };
@@ -703,33 +555,6 @@ const styles = {
     color: "rgba(255, 255, 255, 0.6)",
     marginRight: "4px",
   },
-  actionButtonContainer: {
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    gap: "4px",
-  },
-  largeActionButton: {
-    width: "48px",
-    height: "48px",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-    borderRadius: "10px",
-    color: "rgba(255, 255, 255, 0.9)",
-    transition: "all 0.2s ease-in-out",
-    "&:hover": {
-      backgroundColor: "rgba(255, 255, 255, 0.1)",
-      transform: "translateY(-2px)",
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-    },
-    "&:disabled": {
-      opacity: 0.4,
-      backgroundColor: "rgba(255, 255, 255, 0.02)",
-      color: "rgba(255, 255, 255, 0.3)",
-      transform: "none",
-      boxShadow: "none",
-    },
-  },
   secondaryActionButton: {
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     color: "#ffffff",
@@ -813,13 +638,13 @@ const styles = {
     padding: "40px 20px",
   },
   emptyIcon: {
-    marginBottom: "20px",
+    marginBottom: "16px",
     opacity: 0.6,
     background: "rgba(255, 255, 255, 0.03)",
     borderRadius: "50%",
     padding: "16px",
-    width: "80px",
-    height: "80px",
+    width: "64px",
+    height: "64px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -834,55 +659,6 @@ const styles = {
     fontSize: "0.875rem",
     lineHeight: 1.6,
     maxWidth: "250px",
-  },
-  historyDrawer: {
-    backgroundColor: "rgba(30, 40, 50, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
-    width: "300px",
-  },
-  historyDrawerHeader: {
-    padding: "12px 16px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  editModeButtonContainer: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr 1fr",
-    gap: "6px",
-    backgroundColor: "rgba(17, 21, 34, 0.8)",
-    padding: "5px",
-    borderRadius: "8px",
-    width: "100%",
-    border: "1px solid rgba(72, 84, 139, 0.3)",
-  },
-  editModeButton: {
-    borderRadius: "6px",
-    padding: "8px",
-    minWidth: "40px",
-    height: "40px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "background-color 0.2s ease",
-    "&.MuiButton-contained": {
-      background: "rgba(79, 105, 198, 0.8)",
-      color: "#ffffff",
-      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
-      "&:hover": {
-        background: "rgba(79, 105, 198, 0.9)",
-      },
-    },
-    "&.MuiButton-outlined": {
-      borderColor: "rgba(255, 255, 255, 0.15)",
-      color: "rgba(255, 255, 255, 0.8)",
-      backgroundColor: "rgba(255, 255, 255, 0.03)",
-      "&:hover": {
-        borderColor: "rgba(255, 255, 255, 0.3)",
-        backgroundColor: "rgba(255, 255, 255, 0.08)",
-      },
-    },
   },
   switchControl: {
     margin: 0,
