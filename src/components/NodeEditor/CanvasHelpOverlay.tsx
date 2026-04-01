@@ -28,12 +28,11 @@ const CanvasHelpOverlay: React.FC<CanvasHelpOverlayProps> = ({
         bottom: 16,
         left: 16,
         maxWidth: 280,
-        backgroundColor: "rgba(20, 25, 35, 0.95)",
-        border: "1px solid rgba(102, 126, 234, 0.3)",
-        borderRadius: "12px",
-        padding: "12px",
-        boxShadow:
-          "0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(102, 126, 234, 0.15)",
+        backgroundColor: "rgba(20, 25, 35, 0.92)",
+        border: "1px solid rgba(102, 126, 234, 0.2)",
+        borderRadius: "10px",
+        padding: "10px 12px",
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
         backdropFilter: "blur(10px)",
         zIndex: 100,
       }}

@@ -113,11 +113,9 @@ const AppContent: React.FC = () => {
       )}
 
       {ui.isNodeEditorOpen && (
-        <Box sx={styles.nodeEditorPanel}>
-          <ErrorBoundary>
-            <NodeEditor isOpen={ui.isNodeEditorOpen} />
-          </ErrorBoundary>
-        </Box>
+        <ErrorBoundary>
+          <NodeEditor isOpen={ui.isNodeEditorOpen} />
+        </ErrorBoundary>
       )}
 
       {/* Status Bar */}
@@ -243,17 +241,6 @@ const styles = {
     top: "120px",
     left: "50%",
     transform: "translateX(-50%)",
-    zIndex: 500,
-    animation: "slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4))",
-  },
-  nodeEditorPanel: {
-    position: "absolute" as const,
-    top: "80px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: "80vw",
-    height: "70vh",
     zIndex: 500,
     animation: "slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     filter: "drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4))",

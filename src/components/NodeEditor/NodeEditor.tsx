@@ -4,16 +4,11 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  Collapse,
 } from "@mui/material";
 import {
   Delete,
   PlayArrow,
   Stop,
-  Save,
-  FolderOpen,
-  ExpandLess,
-  ExpandMore,
   Close,
   Fullscreen,
   FullscreenExit,
@@ -64,7 +59,6 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const [draggedNodeType, setDraggedNodeType] = useState<NodeType | null>(null);
   const [viewportOffset, setViewportOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [editorSize, setEditorSize] = useState({
@@ -116,10 +110,6 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
     dispatch(toggleNodeEditor());
   }, [dispatch]);
 
-  const handleToggleCollapse = useCallback(() => {
-    setIsCollapsed(!isCollapsed);
-  }, [isCollapsed]);
-
   const handleToggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
     if (!isFullscreen) {
@@ -129,9 +119,6 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
 
   const handleToggleMinimize = useCallback(() => {
     setIsMinimized(!isMinimized);
-    if (!isMinimized) {
-      setIsCollapsed(false);
-    }
   }, [isMinimized]);
 
   // Handle window dragging
@@ -463,66 +450,73 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
         }}
         onMouseDown={handleHeaderMouseDown}
       >
-        <Typography variant="h6" sx={{ color: "#fff", fontWeight: 600 }}>
+        <Typography variant="h6" sx={{ color: "#fff", fontWeight: 600, fontSize: "0.9rem" }}>
           Node Editor
         </Typography>
         <Box sx={styles.headerActions}>
-          <Tooltip title="Execute Graph">
+          <Tooltip title={isExecuting ? "Running..." : "Execute Graph"}>
             <IconButton
               onClick={handleExecute}
               disabled={isExecuting}
-              sx={styles.actionButton}
+              sx={{
+                ...styles.actionButton,
+                ...(isExecuting ? {} : {
+                  backgroundColor: "rgba(67, 233, 123, 0.1)",
+                  "&:hover": {
+                    backgroundColor: "rgba(67, 233, 123, 0.2)",
+                    color: "#43e97b",
+                  },
+                }),
+              }}
             >
-              {isExecuting ? <Stop /> : <PlayArrow />}
+              {isExecuting ? <Stop fontSize="small" /> : <PlayArrow fontSize="small" />}
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete Selected">
-            <IconButton
-              onClick={handleNodeDelete}
-              disabled={!selectedNodeId}
-              sx={styles.actionButton}
-            >
-              <Delete />
-            </IconButton>
+            <span>
+              <IconButton
+                onClick={handleNodeDelete}
+                disabled={!selectedNodeId}
+                sx={styles.actionButton}
+                size="small"
+              >
+                <Delete fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
-          <Tooltip title="Save Graph">
-            <IconButton sx={styles.actionButton}>
-              <Save />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Load Graph">
-            <IconButton sx={styles.actionButton}>
-              <FolderOpen />
-            </IconButton>
-          </Tooltip>
+
+          <Box sx={{ width: "1px", height: 20, background: "rgba(255,255,255,0.1)", mx: 0.5 }} />
+
           <Tooltip title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
             <IconButton
               onClick={handleToggleFullscreen}
               sx={styles.actionButton}
+              size="small"
             >
-              {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
+              {isFullscreen ? <FullscreenExit fontSize="small" /> : <Fullscreen fontSize="small" />}
             </IconButton>
           </Tooltip>
           <Tooltip title={isMinimized ? "Restore" : "Minimize"}>
-            <IconButton onClick={handleToggleMinimize} sx={styles.actionButton}>
-              {isMinimized ? <AspectRatio /> : <Minimize />}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={isCollapsed ? "Expand" : "Collapse"}>
-            <IconButton onClick={handleToggleCollapse} sx={styles.actionButton}>
-              {isCollapsed ? <ExpandMore /> : <ExpandLess />}
+            <IconButton onClick={handleToggleMinimize} sx={styles.actionButton} size="small">
+              {isMinimized ? <AspectRatio fontSize="small" /> : <Minimize fontSize="small" />}
             </IconButton>
           </Tooltip>
           <Tooltip title="Close">
-            <IconButton onClick={handleClose} sx={styles.actionButton}>
-              <Close />
+            <IconButton onClick={handleClose} sx={{
+              ...styles.actionButton,
+              "&:hover": {
+                backgroundColor: "rgba(244, 67, 54, 0.15)",
+                color: "#f44336",
+              },
+            }} size="small">
+              <Close fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
       </Box>
 
-      {/* Collapsible Content */}
-      <Collapse in={!isCollapsed} timeout="auto" unmountOnExit sx={{ flex: 1, display: isCollapsed ? 'none' : 'flex', minHeight: 0 }}>
+      {/* Content */}
+      {!isMinimized && (
         <Box sx={isFullscreen ? styles.contentFullscreen : styles.content}>
           {/* Node Library */}
           <Box sx={styles.sidebar}>
@@ -583,7 +577,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
             </Box>
           )}
         </Box>
-      </Collapse>
+      )}
     </Box>
   );
 };
@@ -706,28 +700,29 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "14px 18px",
+    padding: "10px 16px",
     background:
-      "linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)",
-    borderBottom: "1px solid rgba(102, 126, 234, 0.2)",
+      "linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%)",
+    borderBottom: "1px solid rgba(102, 126, 234, 0.15)",
     userSelect: "none" as const,
     cursor: "move",
   },
   headerActions: {
     display: "flex",
-    gap: "6px",
+    gap: "4px",
     alignItems: "center",
   },
   actionButton: {
-    color: "rgba(255, 255, 255, 0.9)",
-    padding: "6px",
+    color: "rgba(255, 255, 255, 0.8)",
+    padding: "5px",
     transition: "all 0.2s ease",
+    borderRadius: "6px",
     "&:hover": {
-      backgroundColor: "rgba(102, 126, 234, 0.2)",
+      backgroundColor: "rgba(102, 126, 234, 0.15)",
       color: "#667eea",
     },
     "&:disabled": {
-      color: "rgba(255, 255, 255, 0.3)",
+      color: "rgba(255, 255, 255, 0.25)",
     },
   },
   content: {
