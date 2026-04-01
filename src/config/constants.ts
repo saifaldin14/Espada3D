@@ -1,3 +1,17 @@
+export const Z_INDEX = {
+  canvas: 0,
+  statusBar: 100,
+  sidebar: 200,
+  floatingPanel: 500,
+  nodeEditorWindowed: 900,
+  nodeEditorMinimized: 900,
+  nodeEditorFullscreen: 950,
+  toolbar: 1000,
+  dropdown: 1200,
+  modal: 1300,
+  tooltip: 1400,
+} as const;
+
 export const APP_CONFIG = {
   SCENE: {
     DEFAULT_GRID_SIZE: 10,
