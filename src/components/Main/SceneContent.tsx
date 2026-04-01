@@ -9,9 +9,11 @@ import {
   DoubleSide,
   BackSide,
 } from "three";
-import { useAppSelector } from "../../hooks/useRedux";
+import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import { useModels } from "../../hooks/useRedux";
 import { ToolType } from "../../types";
+import { updateModelMetadata } from "../../store/slices/modelSlice";
+import { syncSceneToNodes } from "../../utils/nodeExecutor";
 import MeshEditableModel from "./MeshEditableModel";
 import { MeshEditModes } from "../../consts";
 
@@ -21,6 +23,7 @@ interface SceneContentProps {
 }
 
 const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
+  const dispatch = useAppDispatch();
   const transformControlsRef = useRef<any>(null);
   const orbitControlsRef = useRef<any>(null);
   const selectedMeshRef = useRef<Mesh | null>(null);
@@ -196,6 +199,15 @@ const SceneContent: React.FC<SceneContentProps> = ({ models, activeTool }) => {
         rotation,
         scale,
       });
+
+      // For node-generated models: mark as manually edited and sync back to nodes
+      if (selectedModelId && selectedModelId.startsWith('node_generated_')) {
+        dispatch(updateModelMetadata({
+          id: selectedModelId,
+          userData: { manuallyEdited: true },
+        }));
+        syncSceneToNodes(selectedModelId, position, rotation, scale);
+      }
 
       if (outlineMeshRef.current) {
         outlineMeshRef.current.position.copy(selectedMeshRef.current.position);
