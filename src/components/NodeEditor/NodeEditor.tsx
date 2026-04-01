@@ -55,8 +55,8 @@ interface NodeEditorProps {
 const TOOLBAR_HEIGHT = 56;
 const STATUS_BAR_HEIGHT = 28;
 const MINIMIZED_HEIGHT = 40;
-const LEFT_SIDEBAR_DEFAULT = 240;
-const RIGHT_PANEL_DEFAULT = 240;
+const LEFT_SIDEBAR_WIDTH = 240;
+const RIGHT_PANEL_WIDTH = 240;
 
 const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const dispatch = useAppDispatch();
@@ -96,8 +96,8 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
       );
 
       // Center in the viewport area between left sidebar and right panel
-      const availableLeft = LEFT_SIDEBAR_DEFAULT;
-      const availableRight = windowWidth - RIGHT_PANEL_DEFAULT;
+      const availableLeft = LEFT_SIDEBAR_WIDTH;
+      const availableRight = windowWidth - RIGHT_PANEL_WIDTH;
       const availableWidth = availableRight - availableLeft;
       const centerX = availableLeft + (availableWidth - optimalWidth) / 2;
       const availableTop = TOOLBAR_HEIGHT;
@@ -128,14 +128,22 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
         if (prev.width === 0) return prev;
         const w = window.innerWidth;
         const h = window.innerHeight;
+        const clampedWidth = Math.min(prev.width, w);
+        // Don't adjust the stored height when minimized — only clamp position
+        const clampedHeight = isMinimizedRef.current
+          ? prev.height
+          : Math.min(prev.height, h - TOOLBAR_HEIGHT - STATUS_BAR_HEIGHT);
+        const visibleHeight = isMinimizedRef.current
+          ? MINIMIZED_HEIGHT
+          : clampedHeight;
         return {
           ...prev,
-          width: Math.min(prev.width, w),
-          height: Math.min(prev.height, h - TOOLBAR_HEIGHT - STATUS_BAR_HEIGHT),
-          x: Math.max(0, Math.min(prev.x, w - prev.width)),
+          width: clampedWidth,
+          height: clampedHeight,
+          x: Math.max(0, Math.min(prev.x, w - clampedWidth)),
           y: Math.max(
             TOOLBAR_HEIGHT,
-            Math.min(prev.y, h - STATUS_BAR_HEIGHT - prev.height)
+            Math.min(prev.y, h - STATUS_BAR_HEIGHT - visibleHeight)
           ),
         };
       });
