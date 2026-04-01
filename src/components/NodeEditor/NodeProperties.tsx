@@ -31,6 +31,11 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
     onUpdateData({ [key]: value });
   };
 
+  /** Prevent keyboard events from reaching the global shortcut handler */
+  const stopKeyPropagation = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   const renderInputControls = () => {
     switch (node.type) {
       case "input":
@@ -920,7 +925,7 @@ const NodeProperties: React.FC<NodePropertiesProps> = ({
   };
 
   return (
-    <Box sx={styles.container}>
+    <Box sx={styles.container} onKeyDown={stopKeyPropagation}>
       <Typography variant="h6" sx={styles.header}>
         Node Properties
       </Typography>
