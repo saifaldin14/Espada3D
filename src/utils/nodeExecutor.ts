@@ -796,10 +796,6 @@ export class NodeExecutor {
     return { position, rotation, scale };
   }
 
-  private async applySceneChanges(): Promise<void> {
-    const state = store.getState();
-    const existingModels = state.models.models;
-
   /**
    * Upsert a node-generated model: always read fresh state to avoid stale lookups,
    * skip transform overwrites when user has manually edited transforms (unless
@@ -913,6 +909,8 @@ export class NodeExecutor {
 
       const composedTransform = this.composeTransforms(nodeId, mesh.dimensions);
 
+      const freshCreatedAt = store.getState().models.models.find((m: ModelMetadata) => m.id === modelId)?.createdAt;
+
       const modelData: ModelMetadata = {
         id: modelId,
         name: `${mesh.type || 'mesh'}_${nodeId.slice(-4)}`,
@@ -929,29 +927,9 @@ export class NodeExecutor {
         userData: { sourceNodeId: nodeId },
       };
 
-      // TODO: Replace with store.dispatch(upsertNodeModel({...modelData, sourceNodeId: nodeId}))
-      // when upsertNodeModel is available in modelSlice (Agent 1).
-      if (existingModel) {
-        store.dispatch(updateModelMetadata({ 
-          id: modelId, 
-          name: modelData.name,
-          visible: modelData.visible,
-          locked: modelData.locked,
-          userData: { sourceNodeId: nodeId },
-        }));
-        store.dispatch(updateModelTransform({
-          id: modelId,
-          position: modelData.position,
-          rotation: modelData.rotation,
-          scale: modelData.scale,
-        }));
-        store.dispatch(updateModelMaterial({
-          id: modelId,
-          material: modelData.material,
-        }));
-      } else {
-        store.dispatch(addModel(modelData));
-      }
+      const meshNode_ = this.nodes.find(n => n.id === nodeId);
+      const nodeFingerprint = meshNode_ ? JSON.stringify(meshNode_.data) : '';
+      this.upsertNodeModel(modelData, nodeFingerprint);
     }
 
     // Also handle geometry nodes that don't have mesh nodes
@@ -965,9 +943,6 @@ export class NodeExecutor {
     const geometryEntries = Array.from(geometryOutputs.entries());
     for (const [nodeId, geometry] of geometryEntries) {
       const modelId = `node_generated_${nodeId}`;
-
-      // Resolve chained transforms
-      const resolved = this.resolveTransforms(geometry, geometry.dimensions);
 
       const freshCreatedAt = store.getState().models.models.find((m: ModelMetadata) => m.id === modelId)?.createdAt;
 
@@ -994,29 +969,9 @@ export class NodeExecutor {
         userData: { sourceNodeId: nodeId },
       };
 
-      // TODO: Replace with store.dispatch(upsertNodeModel({...modelData, sourceNodeId: nodeId}))
-      // when upsertNodeModel is available in modelSlice (Agent 1).
-      if (existingModel) {
-        store.dispatch(updateModelMetadata({ 
-          id: modelId, 
-          name: modelData.name,
-          visible: modelData.visible,
-          locked: modelData.locked,
-          userData: { sourceNodeId: nodeId },
-        }));
-        store.dispatch(updateModelTransform({
-          id: modelId,
-          position: modelData.position,
-          rotation: modelData.rotation,
-          scale: modelData.scale,
-        }));
-        store.dispatch(updateModelMaterial({
-          id: modelId,
-          material: modelData.material,
-        }));
-      } else {
-        store.dispatch(addModel(modelData));
-      }
+      const geoNode = this.nodes.find(n => n.id === nodeId);
+      const nodeFingerprint = geoNode ? JSON.stringify(geoNode.data) : '';
+      this.upsertNodeModel(modelData, nodeFingerprint);
     }
 
     // Process light nodes and apply to scene
@@ -1061,6 +1016,7 @@ export class NodeExecutor {
     // Only remove models that were created by the node system (have sourceNodeId in userData).
     // Models without sourceNodeId are user-owned and should not be touched.
     const currentNodeIds = new Set(this.nodes.map(n => n.id));
+    const existingModels = store.getState().models.models;
     const nodeGeneratedModels = existingModels.filter((m: ModelMetadata) => m.id.startsWith('node_generated_'));
     for (const model of nodeGeneratedModels) {
       const sourceNodeId = model.userData?.sourceNodeId;
