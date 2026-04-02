@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -42,6 +42,13 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const { executeCommand } = useCommandManager();
+
+  // Clear validation error and reset form when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setValidationError(null);
+    }
+  }, [open]);
 
   const handleCreateModel = () => {
     try {
@@ -93,6 +100,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      aria-labelledby="create-model-dialog-title"
       PaperProps={{
         sx: {
           ...glassStyles.panel,
@@ -101,7 +109,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
         },
       }}
     >
-      <DialogTitle sx={styles.title}>
+      <DialogTitle id="create-model-dialog-title" sx={styles.title}>
         <Typography variant="h5" component="div" sx={styles.titleText}>
           ✨ Create New Model
         </Typography>

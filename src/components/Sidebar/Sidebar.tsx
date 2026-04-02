@@ -32,6 +32,7 @@ import {
   GridOff,
   Palette,
   Category,
+  Delete as DeleteIcon,
   CloudUpload as UploadIcon,
   CloudDownload as DownloadIcon,
   Save as SaveIcon,
@@ -41,8 +42,11 @@ import CreateModelModal from "./CreateModelModal";
 import FileManager from "../FileManager/FileManager";
 import { ProjectDialog } from "../ProjectManager";
 import { UndoRedoPanel } from "../UndoRedo";
+import { useCommandManager } from "../../hooks/useCommandManager";
+import { RemoveModelCommand } from "../../utils/commands";
 import { glassStyles } from "../../config/theme";
 import { RootState } from "../../store";
+import { ModelMetadata } from "../../types";
 import * as THREE from "three";
 
 const Sidebar: React.FC = () => {
@@ -66,6 +70,8 @@ const Sidebar: React.FC = () => {
     "save"
   );
 
+  const { executeCommand } = useCommandManager();
+
   // Get current selected model's geometry for export
   const selectedModel = models.find((model) => model.id === selectedModelId);
   const currentGeometry = selectedModel?.userData?.geometry as
@@ -78,6 +84,11 @@ const Sidebar: React.FC = () => {
 
   const toggleVisibility = (id: string, visible: boolean) => {
     dispatch(updateModelMetadata({ id, visible: !visible }));
+  };
+
+  const handleDeleteModel = (model: ModelMetadata) => {
+    const command = new RemoveModelCommand(model);
+    executeCommand(command);
   };
 
   const handleImportClick = () => {
@@ -106,7 +117,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <Box sx={styles.sidebar} className="slide-in-left">
+    <Box sx={styles.sidebar} className="slide-in-left" role="complementary" aria-label="Sidebar">
       {/* Header */}
       <Box sx={styles.header}>
         <Typography variant="h5" sx={styles.headerTitle}>
@@ -201,7 +212,7 @@ const Sidebar: React.FC = () => {
           </Badge>
         </Stack>
 
-        <Box sx={styles.modelList}>
+        <Box sx={styles.modelList} role="list" aria-label="Models list">
           {models.length === 0 ? (
             <Box sx={styles.emptyState}>
               <Category
@@ -210,10 +221,13 @@ const Sidebar: React.FC = () => {
               <Typography variant="body2" sx={styles.emptyText}>
                 No models yet
               </Typography>
+              <Typography variant="caption" sx={{ ...styles.emptyText, mt: 0.5 }}>
+                Click "Create Model" to get started
+              </Typography>
             </Box>
           ) : (
-            <List sx={{ padding: 0 }}>
-              {models.map((model: any, index: number) => (
+            <List sx={{ padding: 0 }} aria-label="Model list">
+              {models.map((model: ModelMetadata, index: number) => (
                 <ListItem
                   key={model.id}
                   disablePadding
@@ -228,6 +242,8 @@ const Sidebar: React.FC = () => {
                   <ListItemButton
                     onClick={() => handleModelSelect(model.id)}
                     sx={styles.modelItemButton}
+                    aria-selected={model.id === selectedModelId}
+                    aria-label={`Select model ${model.name || `Model ${index + 1}`}`}
                   >
                     <Avatar
                       sx={{
@@ -241,22 +257,38 @@ const Sidebar: React.FC = () => {
                       primary={model.name || `Model ${index + 1}`}
                       secondary={model.type || "Standard"}
                       sx={styles.modelItemText}
+                      primaryTypographyProps={{ noWrap: true }}
+                      secondaryTypographyProps={{ noWrap: true }}
                     />
-                    <Stack direction="row" spacing={0.5}>
-                      <Tooltip title={model.visible ? "Visible" : "Hidden"}>
+                    <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                      <Tooltip title={model.visible ? "Hide model" : "Show model"}>
                         <IconButton
                           size="small"
                           sx={styles.miniButton}
-                          onClick={(e: any) => {
+                          onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             toggleVisibility(model.id, model.visible);
                           }}
+                          aria-label={model.visible ? `Hide ${model.name}` : `Show ${model.name}`}
                         >
                           {model.visible ? (
                             <Visibility sx={{ fontSize: 16 }} />
                           ) : (
                             <VisibilityOff sx={{ fontSize: 16 }} />
                           )}
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete model">
+                        <IconButton
+                          size="small"
+                          sx={styles.deleteButton}
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            handleDeleteModel(model);
+                          }}
+                          aria-label={`Delete ${model.name}`}
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       </Tooltip>
                     </Stack>
@@ -461,14 +493,19 @@ const styles = {
     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
   },
   modelItemText: {
+    overflow: "hidden",
     "& .MuiListItemText-primary": {
       color: "#ffffff",
       fontWeight: 600,
       fontSize: "0.875rem",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
     },
     "& .MuiListItemText-secondary": {
       color: "rgba(255, 255, 255, 0.7)",
       fontSize: "0.75rem",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
     },
   },
   miniButton: {
@@ -483,6 +520,22 @@ const styles = {
     padding: 0,
     "&:hover": {
       backgroundColor: "rgba(255, 255, 255, 0.1)",
+    },
+  },
+  deleteButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    minWidth: "28px",
+    minHeight: "28px",
+    width: "28px",
+    height: "28px",
+    color: "rgba(255, 255, 255, 0.6)",
+    borderRadius: "6px",
+    padding: 0,
+    "&:hover": {
+      backgroundColor: "rgba(255, 80, 80, 0.2)",
+      borderColor: "rgba(255, 80, 80, 0.4)",
+      color: "#ff5050",
     },
   },
   settingsGroup: {
