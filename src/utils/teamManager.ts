@@ -19,6 +19,7 @@ import {
   query,
   where,
   serverTimestamp,
+  increment,
   Timestamp,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../config/firebase';
@@ -108,6 +109,10 @@ export async function createTeam(
     role: 'owner' as TeamRole,
     joinedAt: now,
   });
+
+  // Add to flat user-teams mapping so listUserTeams() finds it
+  const userTeamRef = doc(db!, 'userTeams', `${ownerId}_${teamId}`);
+  await setDoc(userTeamRef, { uid: ownerId, teamId });
 
   return team;
 }

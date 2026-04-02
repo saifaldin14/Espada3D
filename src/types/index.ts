@@ -310,6 +310,9 @@ export interface UIState {
   snapSize: number;
   subObjectSelectionMode: SelectionMode;
   currentSubObjectType: SubObjectType;
+  cameraPreset: string | null;
+  environmentPreset: string;
+  isShortcutsDialogOpen: boolean;
 }
 
 export interface RootState {
@@ -321,6 +324,15 @@ export interface RootState {
     pendingOperations: { [modelId: string]: any[] };
   };
   nodes: NodeGraphState;
+  notifications: {
+    notifications: Array<{
+      id: string;
+      message: string;
+      severity: 'success' | 'error' | 'warning' | 'info';
+      timestamp: number;
+      autoHideDuration?: number;
+    }>;
+  };
 }
 
 // Error types

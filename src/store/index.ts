@@ -4,6 +4,7 @@ import modelReducer from './slices/modelSlice';
 import uiReducer from './slices/uiSlice';
 import meshReducer from './slices/meshSlice';
 import nodeReducer from './slices/nodeSlice';
+import notificationReducer from './slices/notificationSlice';
 import rootSaga from './sagas/modelSagas';
 import { RootState } from '../types';
 import { collaborationMiddleware } from './middleware/collaborationMiddleware';
@@ -18,6 +19,7 @@ const store = configureStore({
     ui: uiReducer,
     mesh: meshReducer,
     nodes: nodeReducer,
+    notifications: notificationReducer,
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware({

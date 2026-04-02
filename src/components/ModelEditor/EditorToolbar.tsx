@@ -1,15 +1,17 @@
 import React, { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
 import {
   setActiveTool,
   setEditMode,
   setSnap,
   setSnapSize,
   setGrid,
+  setWireframe,
   toggleHierarchyPanel,
   toggleAnimationPanel,
   toggleNodeEditor,
+  setShortcutsDialogOpen,
 } from "../../store/slices/uiSlice";
+import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import {
   undo,
   redo,
@@ -63,9 +65,9 @@ import {
   CloudUpload,
   CloudDownload,
   Help,
+  Keyboard,
   KeyboardArrowRight,
   RadioButtonChecked,
-  AccountCircle,
   Group as GroupIcon,
   Login as LoginIcon,
 } from "@mui/icons-material";
@@ -77,30 +79,31 @@ import LoginDialog from "../Auth/LoginDialog";
 import CollaborationPanel from "../Collaboration/CollaborationPanel";
 
 const EditorToolbar: React.FC = () => {
-  const activeTool = useSelector((state: any) => state.ui.activeTool);
-  const editMode = useSelector((state: any) => state.ui.editMode);
-  const snap = useSelector((state: any) => state.ui.snap);
-  const snapSize = useSelector((state: any) => state.ui.snapSize);
-  const showGrid = useSelector((state: any) => state.ui.showGrid);
-  const isHierarchyPanelOpen = useSelector(
-    (state: any) => state.ui.isHierarchyPanelOpen
+  const activeTool = useAppSelector((state) => state.ui.activeTool);
+  const editMode = useAppSelector((state) => state.ui.editMode);
+  const snap = useAppSelector((state) => state.ui.snap);
+  const snapSize = useAppSelector((state) => state.ui.snapSize);
+  const showGrid = useAppSelector((state) => state.ui.showGrid);
+  const showWireframe = useAppSelector((state) => state.ui.showWireframe);
+  const isHierarchyPanelOpen = useAppSelector(
+    (state) => state.ui.isHierarchyPanelOpen
   );
-  const isAnimationPanelOpen = useSelector(
-    (state: any) => state.ui.isAnimationPanelOpen
+  const isAnimationPanelOpen = useAppSelector(
+    (state) => state.ui.isAnimationPanelOpen
   );
-  const isNodeEditorOpen = useSelector(
-    (state: any) => state.ui.isNodeEditorOpen
+  const isNodeEditorOpen = useAppSelector(
+    (state) => state.ui.isNodeEditorOpen
   );
-  const selectedModelId = useSelector(
-    (state: any) => state.models.selectedModelId
+  const selectedModelId = useAppSelector(
+    (state) => state.models.selectedModelId
   );
-  const selectedModelIds = useSelector(
-    (state: any) => state.models.selectedModelIds
+  const selectedModelIds = useAppSelector(
+    (state) => state.models.selectedModelIds
   );
-  const historyIndex = useSelector((state: any) => state.models.historyIndex);
-  const historySteps = useSelector((state: any) => state.models.history.length);
+  const historyIndex = useAppSelector((state) => state.models.historyIndex);
+  const historySteps = useAppSelector((state) => state.models.history.length);
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const { user, available: authAvailable, logout } = useAuth();
 
@@ -199,10 +202,10 @@ const EditorToolbar: React.FC = () => {
   };
 
   return (
-    <Box sx={styles.toolbar} className="fade-in">
+    <Box sx={styles.toolbar} className="fade-in" role="toolbar" aria-label="Editor Toolbar">
       {/* Left Section - Logo and Main Menu */}
       <Box sx={styles.toolbarSection}>
-        <IconButton onClick={openMainMenu} sx={styles.menuButton}>
+        <IconButton onClick={openMainMenu} sx={styles.menuButton} aria-label="Main menu">
           <MenuIcon />
         </IconButton>
 
@@ -286,6 +289,7 @@ const EditorToolbar: React.FC = () => {
                 onClick={() => dispatch(undo())}
                 sx={styles.iconButton}
                 disabled={historyIndex <= 0}
+                aria-label="Undo"
               >
                 <Undo fontSize="small" />
               </IconButton>
@@ -298,6 +302,7 @@ const EditorToolbar: React.FC = () => {
                 onClick={() => dispatch(redo())}
                 sx={styles.iconButton}
                 disabled={historyIndex >= historySteps - 1}
+                aria-label="Redo"
               >
                 <Redo fontSize="small" />
               </IconButton>
@@ -310,6 +315,7 @@ const EditorToolbar: React.FC = () => {
                 onClick={() => dispatch(copyModels(selectedModelIds))}
                 disabled={selectedModelIds.length === 0}
                 sx={styles.iconButton}
+                aria-label="Copy"
               >
                 <ContentCopy fontSize="small" />
               </IconButton>
@@ -320,6 +326,7 @@ const EditorToolbar: React.FC = () => {
               size="small"
               onClick={() => dispatch(pasteModels([0, 0, 0]))}
               sx={styles.iconButton}
+              aria-label="Paste"
             >
               <ContentPaste fontSize="small" />
             </IconButton>
@@ -343,6 +350,7 @@ const EditorToolbar: React.FC = () => {
                 onChange={handleEditModeChange}
                 size="small"
                 sx={styles.toggleGroup}
+                aria-label="Edit Mode"
               >
                 <ToggleButton value={EditModes.model} sx={styles.toggleButton}>
                   <Tooltip title="Object Mode">
@@ -393,6 +401,7 @@ const EditorToolbar: React.FC = () => {
                   ...(showGrid ? styles.activeIconButton : {}),
                 }}
                 className="hover-lift"
+                aria-label={showGrid ? "Hide grid" : "Show grid"}
               >
                 {showGrid ? (
                   <GridOn fontSize="small" />
@@ -410,8 +419,9 @@ const EditorToolbar: React.FC = () => {
                     ...styles.iconButton,
                     ...(snap ? styles.activeIconButton : {}),
                   }}
-                  onClick={(_: any) => dispatch(setSnap(!snap))}
+                  onClick={() => dispatch(setSnap(!snap))}
                   className="hover-lift"
+                  aria-label={snap ? "Disable grid snap" : "Enable grid snap"}
                 >
                   {snap ? (
                     <CenterFocusStrong fontSize="small" />
@@ -428,7 +438,7 @@ const EditorToolbar: React.FC = () => {
                       dispatch(setSnapSize(parseFloat(e.target.value) || 0.5))
                     }
                     sx={styles.snapTextField}
-                    inputProps={{ min: 0.1, max: 5, step: 0.1 }}
+                    inputProps={{ min: 0.1, max: 5, step: 0.1, "aria-label": "Snap size" }}
                   />
                 )}
               </Box>
@@ -457,6 +467,7 @@ const EditorToolbar: React.FC = () => {
                   ...styles.iconButton,
                   ...(isHierarchyPanelOpen ? styles.activeIconButton : {}),
                 }}
+                aria-label="Toggle hierarchy panel"
               >
                 <AccountTree fontSize="small" />
               </IconButton>
@@ -469,6 +480,7 @@ const EditorToolbar: React.FC = () => {
                   ...styles.iconButton,
                   ...(isAnimationPanelOpen ? styles.activeIconButton : {}),
                 }}
+                aria-label="Toggle animation panel"
               >
                 <Timeline fontSize="small" />
               </IconButton>
@@ -481,8 +493,9 @@ const EditorToolbar: React.FC = () => {
                   ...styles.iconButton,
                   ...(isNodeEditorOpen ? styles.activeIconButton : {}),
                 }}
+                aria-label="Toggle node editor"
               >
-                <AccountCircle fontSize="small" />
+                <Dashboard fontSize="small" />
               </IconButton>
             </Tooltip>
           </Box>
@@ -492,12 +505,12 @@ const EditorToolbar: React.FC = () => {
 
         {/* View & Tools Menus */}
         <Tooltip title="View Options">
-          <IconButton onClick={openViewMenu} size="small" sx={styles.menuIconButton}>
+          <IconButton onClick={openViewMenu} size="small" sx={styles.menuIconButton} aria-label="View options">
             <CameraAlt fontSize="small" />
           </IconButton>
         </Tooltip>
         <Tooltip title="Tools">
-          <IconButton onClick={openToolsMenu} size="small" sx={styles.menuIconButton}>
+          <IconButton onClick={openToolsMenu} size="small" sx={styles.menuIconButton} aria-label="Tools menu">
             <TuneRounded fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -510,6 +523,7 @@ const EditorToolbar: React.FC = () => {
             size="small"
             onClick={() => setShowCollab(true)}
             sx={styles.menuIconButton}
+            aria-label="Open collaboration panel"
           >
             <GroupIcon fontSize="small" />
           </IconButton>
@@ -519,7 +533,7 @@ const EditorToolbar: React.FC = () => {
         {authAvailable && (
           user ? (
             <Tooltip title={`Signed in as ${user.displayName || user.email}`}>
-              <IconButton size="small" onClick={() => logout()} sx={styles.menuIconButton}>
+              <IconButton size="small" onClick={() => logout()} sx={styles.menuIconButton} aria-label="Sign out">
                 <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: '#667eea' }}>
                   {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
                 </Avatar>
@@ -531,6 +545,7 @@ const EditorToolbar: React.FC = () => {
                 size="small"
                 onClick={() => setShowLogin(true)}
                 sx={styles.menuIconButton}
+                aria-label="Sign in"
               >
                 <LoginIcon fontSize="small" />
               </IconButton>
@@ -583,6 +598,12 @@ const EditorToolbar: React.FC = () => {
           <ListItemText primary="Settings" />
         </MenuItem>
         <Divider />
+        <MenuItem onClick={() => { dispatch(setShortcutsDialogOpen(true)); closeMainMenu(); }}>
+          <ListItemIcon>
+            <Keyboard fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Keyboard Shortcuts" secondary="Ctrl+/" />
+        </MenuItem>
         <MenuItem onClick={closeMainMenu}>
           <ListItemIcon>
             <Help fontSize="small" />
@@ -621,11 +642,16 @@ const EditorToolbar: React.FC = () => {
           </ListItemIcon>
           <ListItemText primary="Camera Settings" />
         </MenuItem>
-        <MenuItem onClick={closeViewMenu}>
+        <MenuItem
+          onClick={() => {
+            dispatch(setWireframe(!showWireframe));
+            closeViewMenu();
+          }}
+        >
           <ListItemIcon>
             <LayersClear fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Toggle Wireframe" />
+          <ListItemText primary={showWireframe ? "Hide Wireframe" : "Show Wireframe"} />
         </MenuItem>
       </Menu>
 

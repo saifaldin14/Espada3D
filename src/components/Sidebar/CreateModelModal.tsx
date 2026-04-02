@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -25,6 +25,8 @@ import { AddModelCommand } from "../../utils/commands";
 import { validateCreateModelPayload } from "../../utils/validation";
 import { glassStyles } from "../../config/theme";
 import { v4 as uuidv4 } from "uuid";
+import { addNotification } from "../../store/slices/notificationSlice";
+import { useAppDispatch } from "../../hooks/useRedux";
 
 interface CreateModelModalProps {
   open: boolean;
@@ -42,6 +44,14 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const { executeCommand } = useCommandManager();
+  const dispatch = useAppDispatch();
+
+  // Clear validation error and reset form when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setValidationError(null);
+    }
+  }, [open]);
 
   const handleCreateModel = () => {
     try {
@@ -78,6 +88,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
       const command = new AddModelCommand(model);
       executeCommand(command);
 
+      dispatch(addNotification({ message: `Created ${modelType} model`, severity: 'success' }));
       setValidationError(null);
       onClose();
     } catch (err) {
@@ -93,6 +104,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      aria-labelledby="create-model-dialog-title"
       PaperProps={{
         sx: {
           ...glassStyles.panel,
@@ -101,7 +113,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
         },
       }}
     >
-      <DialogTitle sx={styles.title}>
+      <DialogTitle id="create-model-dialog-title" sx={styles.title}>
         <Typography variant="h5" component="div" sx={styles.titleText}>
           ✨ Create New Model
         </Typography>

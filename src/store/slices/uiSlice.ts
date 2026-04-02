@@ -18,6 +18,9 @@ const initialState: UIState = {
   snapSize: 0.5,
   subObjectSelectionMode: 'single',
   currentSubObjectType: 'vertex',
+  cameraPreset: null,
+  environmentPreset: 'default',
+  isShortcutsDialogOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -71,6 +74,15 @@ const uiSlice = createSlice({
     setCurrentSubObjectType: (state, action: PayloadAction<SubObjectType>) => {
       state.currentSubObjectType = action.payload;
     },
+    setCameraPreset: (state, action: PayloadAction<string | null>) => {
+      state.cameraPreset = action.payload;
+    },
+    setEnvironmentPreset: (state, action: PayloadAction<string>) => {
+      state.environmentPreset = action.payload;
+    },
+    setShortcutsDialogOpen: (state, action: PayloadAction<boolean>) => {
+      state.isShortcutsDialogOpen = action.payload;
+    },
   },
 });
 
@@ -90,5 +102,8 @@ export const {
   setModalOpen,
   setSubObjectSelectionMode,
   setCurrentSubObjectType,
+  setCameraPreset,
+  setEnvironmentPreset,
+  setShortcutsDialogOpen,
 } = uiSlice.actions;
 export default uiSlice.reducer;

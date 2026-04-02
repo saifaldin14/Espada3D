@@ -14,6 +14,9 @@ import {
 import { ModelProvider } from "./ModelContext";
 import SceneContent from "./SceneContent";
 import SelectionModeIndicator from "./SelectionModeIndicator";
+import CameraController from "./CameraController";
+import { PerformanceMonitor } from "./PerformanceMonitor";
+import EnvironmentPresets from "./EnvironmentPresets";
 import ErrorBoundary from "../ErrorBoundary";
 import { createGeometry, createMaterial } from "../../utils/geometryFactory";
 import { useAppSelector } from "../../hooks/useRedux";
@@ -279,6 +282,10 @@ const Canvas3D: React.FC = () => {
             )}
 
             <SceneContent models={models} activeTool={activeTool} />
+
+            <CameraController />
+            <PerformanceMonitor />
+            <EnvironmentPresets />
 
             <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
               <GizmoViewcube />

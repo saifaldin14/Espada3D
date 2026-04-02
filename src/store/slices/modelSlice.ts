@@ -221,21 +221,32 @@ const modelSlice = createSlice({
     },
     removeModel: (state, action: PayloadAction<string>) => {
       const modelId = action.payload;
+      const removedIds: string[] = [];
       
       const removeRecursively = (id: string) => {
         const model = state.models.find(m => m.id === id);
         if (model && model.children) {
           model.children.forEach(childId => removeRecursively(childId));
         }
+        removedIds.push(id);
         state.models = state.models.filter(m => m.id !== id);
       };
       
+      // Remove from parent's children array before deleting
+      const targetModel = state.models.find(m => m.id === modelId);
+      if (targetModel?.parentId) {
+        const parent = state.models.find(m => m.id === targetModel.parentId);
+        if (parent?.children) {
+          parent.children = parent.children.filter(id => id !== modelId);
+        }
+      }
+      
       removeRecursively(modelId);
       
-      if (state.selectedModelId === modelId) {
+      if (removedIds.includes(state.selectedModelId as string)) {
         state.selectedModelId = null;
       }
-      state.selectedModelIds = state.selectedModelIds.filter(id => id !== modelId);
+      state.selectedModelIds = state.selectedModelIds.filter(id => !removedIds.includes(id));
     },
     clearModels: (state) => {
       state.models = [];
@@ -263,6 +274,8 @@ const modelSlice = createSlice({
             originalModel.position[1],
             originalModel.position[2]
           ],
+          parentId: null,
+          children: undefined,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -289,6 +302,8 @@ const modelSlice = createSlice({
             model.position[1] + offset[1],
             model.position[2] + offset[2]
           ],
+          parentId: null,
+          children: undefined,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

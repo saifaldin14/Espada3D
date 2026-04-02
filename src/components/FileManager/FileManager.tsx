@@ -25,6 +25,7 @@ import {
 } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
+import { addNotification } from "../../store/slices/notificationSlice";
 import {
   OBJLoader,
   OBJExporter,
@@ -149,6 +150,7 @@ const FileManager: React.FC<FileManagerProps> = ({
       );
 
       setSuccess(`Successfully imported "${selectedFile.name}"!`);
+      dispatch(addNotification({ message: `Imported "${selectedFile.name}"`, severity: 'success' }));
       setSelectedFile(null);
 
       // Close dialog after a short delay
@@ -195,6 +197,7 @@ const FileManager: React.FC<FileManagerProps> = ({
         const filename = selectedModel?.name || exportFilename;
         OBJExporter.downloadOBJ(geometryToExport!, filename, exportOptions);
         setSuccess(`Successfully exported "${exportFilename}.obj"!`);
+        dispatch(addNotification({ message: `Exported "${exportFilename}.obj"`, severity: 'success' }));
       } else {
         // glTF / GLB export
         if (!selectedModel) {
@@ -207,6 +210,7 @@ const FileManager: React.FC<FileManagerProps> = ({
         const filename = selectedModel.name || exportFilename;
         await downloadModelGLTF(selectedModel, geometryToExport ?? undefined, filename, gltfOpts);
         setSuccess(`Successfully exported "${filename}.${exportFormat}"!`);
+        dispatch(addNotification({ message: `Exported "${filename}.${exportFormat}"`, severity: 'success' }));
       }
 
       // Close dialog after a short delay

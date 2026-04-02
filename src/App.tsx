@@ -10,6 +10,11 @@ import MeshEditingKeyboardShortcuts from "./components/Main/MeshEditingKeyboardS
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ResizablePanel } from "./components/Layout";
 import { ModelProvider } from "./components/Main/ModelContext";
+import { NotificationCenter } from "./components/Notifications";
+import { ShortcutsDialog } from "./components/KeyboardShortcuts";
+import ViewportControls from "./components/Main/ViewportControls";
+import EnvironmentSelector from "./components/Main/EnvironmentSelector";
+import SceneStats from "./components/Main/SceneStats";
 import { useAppSelector } from "./hooks/useRedux";
 import {
   ThemeProvider,
@@ -60,6 +65,7 @@ const AppContent: React.FC = () => {
             </ErrorBoundary>
             {/* Viewport overlay info */}
             <Box sx={styles.viewportOverlay}>
+              <EnvironmentSelector />
               <Box sx={styles.viewportCornerInfo}>
                 <Typography
                   variant="caption"
@@ -76,6 +82,7 @@ const AppContent: React.FC = () => {
                   Objects: {modelsCount}
                 </Typography>
               </Box>
+              <ViewportControls />
             </Box>
           </Box>
         </Box>
@@ -97,6 +104,8 @@ const AppContent: React.FC = () => {
       </Box>
 
       {/* Floating Panels */}
+      <NotificationCenter />
+      <ShortcutsDialog />
       {ui.isHierarchyPanelOpen && (
         <Box sx={styles.hierarchyPanel}>
           <ErrorBoundary>
@@ -134,6 +143,8 @@ const AppContent: React.FC = () => {
           <Box sx={styles.statusItem}>{ui.activeTool || "Select"}</Box>
         </Box>
         <Box sx={styles.statusRight}>
+          <SceneStats />
+          <Box sx={styles.statusDivider} />
           <Box sx={styles.statusItem}>
             <ViewInAr sx={{ mr: 0.5, fontSize: 12, opacity: 0.6 }} />
             SaifEngine v1.0
