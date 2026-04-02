@@ -59,6 +59,8 @@ const STATUS_BAR_HEIGHT = 28;
 const MINIMIZED_HEIGHT = 40;
 const LEFT_SIDEBAR_WIDTH = 240;
 const RIGHT_PANEL_WIDTH = 240;
+const MIN_VISIBLE_PX = 100;
+const HEADER_HEIGHT = 36;
 
 const NodeEditor: React.FC<NodeEditorProps> = ({ isOpen }) => {
   const dispatch = useAppDispatch();
