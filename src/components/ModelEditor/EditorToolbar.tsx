@@ -9,6 +9,7 @@ import {
   toggleHierarchyPanel,
   toggleAnimationPanel,
   toggleNodeEditor,
+  setShortcutsDialogOpen,
 } from "../../store/slices/uiSlice";
 import { useAppSelector, useAppDispatch } from "../../hooks/useRedux";
 import {
@@ -64,6 +65,7 @@ import {
   CloudUpload,
   CloudDownload,
   Help,
+  Keyboard,
   KeyboardArrowRight,
   RadioButtonChecked,
   Group as GroupIcon,
@@ -596,6 +598,12 @@ const EditorToolbar: React.FC = () => {
           <ListItemText primary="Settings" />
         </MenuItem>
         <Divider />
+        <MenuItem onClick={() => { dispatch(setShortcutsDialogOpen(true)); closeMainMenu(); }}>
+          <ListItemIcon>
+            <Keyboard fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Keyboard Shortcuts" secondary="Ctrl+/" />
+        </MenuItem>
         <MenuItem onClick={closeMainMenu}>
           <ListItemIcon>
             <Help fontSize="small" />

@@ -44,6 +44,7 @@ import { ProjectDialog } from "../ProjectManager";
 import { UndoRedoPanel } from "../UndoRedo";
 import { useCommandManager } from "../../hooks/useCommandManager";
 import { RemoveModelCommand } from "../../utils/commands";
+import { addNotification } from "../../store/slices/notificationSlice";
 import { glassStyles } from "../../config/theme";
 import { RootState } from "../../store";
 import { ModelMetadata } from "../../types";
@@ -89,6 +90,7 @@ const Sidebar: React.FC = () => {
   const handleDeleteModel = (model: ModelMetadata) => {
     const command = new RemoveModelCommand(model);
     executeCommand(command);
+    dispatch(addNotification({ message: `Deleted "${model.name}"`, severity: 'info' }));
   };
 
   const handleImportClick = () => {
