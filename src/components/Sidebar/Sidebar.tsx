@@ -226,7 +226,7 @@ const Sidebar: React.FC = () => {
               </Typography>
             </Box>
           ) : (
-            <List sx={{ padding: 0 }} aria-label="Model list">
+            <List sx={{ padding: 0 }}>
               {models.map((model: ModelMetadata, index: number) => (
                 <ListItem
                   key={model.id}
@@ -242,7 +242,7 @@ const Sidebar: React.FC = () => {
                   <ListItemButton
                     onClick={() => handleModelSelect(model.id)}
                     sx={styles.modelItemButton}
-                    aria-selected={model.id === selectedModelId}
+                    aria-current={model.id === selectedModelId ? "true" : undefined}
                     aria-label={`Select model ${model.name || `Model ${index + 1}`}`}
                   >
                     <Avatar
@@ -257,8 +257,6 @@ const Sidebar: React.FC = () => {
                       primary={model.name || `Model ${index + 1}`}
                       secondary={model.type || "Standard"}
                       sx={styles.modelItemText}
-                      primaryTypographyProps={{ noWrap: true }}
-                      secondaryTypographyProps={{ noWrap: true }}
                     />
                     <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
                       <Tooltip title={model.visible ? "Hide model" : "Show model"}>
@@ -498,12 +496,14 @@ const styles = {
       color: "#ffffff",
       fontWeight: 600,
       fontSize: "0.875rem",
+      whiteSpace: "nowrap",
       overflow: "hidden",
       textOverflow: "ellipsis",
     },
     "& .MuiListItemText-secondary": {
       color: "rgba(255, 255, 255, 0.7)",
       fontSize: "0.75rem",
+      whiteSpace: "nowrap",
       overflow: "hidden",
       textOverflow: "ellipsis",
     },
